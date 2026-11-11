@@ -3,7 +3,7 @@ import { after } from "next/server";
 import { jsonError, logFailure } from "@/lib/http";
 import {
   consumeTelegramLink,
-  sendTelegramNotification,
+  sendTelegramMessage,
   verifyTelegramWebhookSecret,
 } from "@/features/telegram/service";
 
@@ -58,8 +58,26 @@ export async function POST(request: Request) {
     return Response.json({ ok: true });
   }
 
-  const start = /^\/start ([a-f0-9]{64})$/.exec(message.text);
+  const start = /^\/start(?:\s+([a-f0-9]{64}))?$/.exec(message.text);
   if (!start) {
+    return Response.json({ ok: true });
+  }
+
+  const origin = new URL(request.url).origin;
+
+  // Bare /start → greeting with a Mini App button.
+  if (!start[1]) {
+    after(async () => {
+      try {
+        await sendTelegramMessage(
+          String(message.chat.id),
+          "Welcome to Mono. Tap below to open the app.",
+          [{ text: "Open Mono", webApp: `${origin}/` }],
+        );
+      } catch (error) {
+        logFailure("Telegram welcome", error);
+      }
+    });
     return Response.json({ ok: true });
   }
 
@@ -72,9 +90,10 @@ export async function POST(request: Request) {
     if (result.status === "connected") {
       after(async () => {
         try {
-          await sendTelegramNotification(
-            result.userId,
+          await sendTelegramMessage(
+            String(message.chat.id),
             "Your Mono account is now connected to Telegram.",
+            [{ text: "Open Mono", webApp: `${origin}/` }],
           );
         } catch (error) {
           logFailure("Telegram connection confirmation", error);

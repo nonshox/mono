@@ -25,36 +25,37 @@ async function AuthenticatedHome() {
   const firstName = user?.name.trim().split(/\s+/)[0] ?? "";
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 pt-14">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-        Mono
-      </p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+    <main className="w-full px-4 pb-24 pt-8 md:px-6 md:pb-0 md:pt-12 lg:px-8">
+      <h1 className="type-title">
         {firstName ? `Hey, ${firstName}.` : "Hey there."}
       </h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Your private base is ready — signed in as {account.email}.
-      </p>
+      <p className="type-lead mt-2">Signed in as {account.email}</p>
 
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Link
-          className="group rounded-2xl border border-border/60 bg-card p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] outline-none transition hover:border-border focus-visible:ring-2 focus-visible:ring-ring"
+          className="surface-card p-4 outline-none transition active:scale-[0.98] hover:border-border/80 focus-visible:ring-2 focus-visible:ring-ring"
           href="/notifications"
         >
-          <Bell aria-hidden="true" className="size-5 text-muted-foreground transition group-hover:text-foreground" strokeWidth={1.8} />
-          <p className="mt-6 text-sm font-semibold">Notifications</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Everything that happened, newest first.
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-foreground">
+            <Bell aria-hidden="true" className="size-4" strokeWidth={1.8} />
+          </span>
+          <h3 className="mt-4 text-sm font-bold tracking-tight">
+            Notifications
+          </h3>
+          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+            Everything that happened, newest first. Unread count, grouped.
           </p>
         </Link>
         <Link
-          className="group rounded-2xl border border-border/60 bg-card p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] outline-none transition hover:border-border focus-visible:ring-2 focus-visible:ring-ring"
+          className="surface-card p-4 outline-none transition active:scale-[0.98] hover:border-border/80 focus-visible:ring-2 focus-visible:ring-ring"
           href="/settings"
         >
-          <Settings aria-hidden="true" className="size-5 text-muted-foreground transition group-hover:text-foreground" strokeWidth={1.8} />
-          <p className="mt-6 text-sm font-semibold">Settings</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Name, Telegram, and your active sessions.
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-foreground">
+            <Settings aria-hidden="true" className="size-4" strokeWidth={1.8} />
+          </span>
+          <h3 className="mt-4 text-sm font-bold tracking-tight">Settings</h3>
+          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+            Name, Telegram connection, and your active sessions.
           </p>
         </Link>
       </div>

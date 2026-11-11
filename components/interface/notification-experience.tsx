@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import type { NotificationItem } from "@/features/notifications/client-api";
 import { useNotificationStore } from "@/features/notifications/store";
 import { UserAvatar } from "@/components/interface/user-avatar";
+import { EmptyState } from "@/components/interface/empty-state";
 
 /**
  * Types are past-tense verb phrases chosen by the app ("followed you",
@@ -71,10 +72,10 @@ export function NotificationExperience() {
       : "You're all caught up.";
 
   return (
-    <div className="mx-auto w-full max-w-2xl">
+    <div className="w-full">
       <header className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Notifications</h1>
+          <h1 className="type-section">Notifications</h1>
           {unreadCount > 0 && (
             <p className="mt-0.5 text-xs font-medium text-muted-foreground">
               {unreadCount} unread
@@ -98,7 +99,7 @@ export function NotificationExperience() {
 
       <div
         aria-label="Filter notifications"
-        className="mt-4 flex items-center gap-1.5 overflow-x-auto pb-1"
+        className="mt-4 inline-flex items-center gap-0.5 rounded-full bg-muted p-0.5"
         role="group"
       >
         {filters.map((item) => {
@@ -106,10 +107,10 @@ export function NotificationExperience() {
           return (
             <button
               aria-pressed={isActive}
-              className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-ring ${
+              className={`inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-xs font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-ring ${
                 isActive
-                  ? "bg-foreground text-background"
-                  : "bg-muted text-muted-foreground hover:text-foreground"
+                  ? "bg-card text-foreground shadow-thumb"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
               key={item.id}
               onClick={() => setFilter(item.id)}
@@ -117,9 +118,7 @@ export function NotificationExperience() {
             >
               {item.label}
               {item.id === "unread" && unreadCount > 0 && (
-                <span className="ml-1.5 tabular-nums opacity-70">
-                  {unreadCount}
-                </span>
+                <span className="tabular-nums opacity-70">{unreadCount}</span>
               )}
             </button>
           );
@@ -146,7 +145,7 @@ export function NotificationExperience() {
       )}
 
       {loading && !loaded ? (
-        <ul className="mt-2 divide-y divide-border/60" role="status">
+        <ul className="mt-2 surface-card divide-y divide-border/60 overflow-hidden" role="status">
           {Array.from({ length: 6 }, (_, index) => (
             <li className="flex items-center gap-3 py-3.5" key={index}>
               <div className="size-9 animate-pulse rounded-full bg-muted" />
@@ -158,20 +157,19 @@ export function NotificationExperience() {
           ))}
         </ul>
       ) : groups.length === 0 ? (
-        <div className="grid justify-items-center gap-3 py-16 text-center">
-          <span className="grid size-14 place-items-center rounded-full bg-muted text-muted-foreground">
-            <Bell aria-hidden="true" className="size-6" />
-          </span>
-          <p className="text-sm font-medium">{emptyMessage}</p>
-        </div>
+        <EmptyState
+          description="New activity will show up here."
+          icon={Bell}
+          title={emptyMessage}
+        />
       ) : (
         <div className="mt-2">
           {groups.map((group) => (
             <section aria-label={group.label} key={group.label}>
-              <h2 className="px-1 pb-1.5 pt-5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              <h2 className="type-eyebrow px-1 pb-1.5 pt-5">
                 {group.label}
               </h2>
-              <ul className="divide-y divide-border/60 border-y border-border/60">
+              <ul className="surface-card divide-y divide-border/60 overflow-hidden">
                 {group.items.map((item) => (
                   <NotificationRow
                     item={item}
@@ -213,15 +211,15 @@ function NotificationRow({
   markRead: (item: NotificationItem) => Promise<void>;
 }) {
   return (
-    <li className="flex items-center gap-3 px-1 py-3">
-      <UserAvatar name={item.actorName} size={38} />
+    <li className="flex cursor-pointer items-center gap-3 px-3 py-2.5 transition-colors hover:bg-muted/50" onClick={() => void markRead(item)} title={item.read ? undefined : "Mark as read"}>
+      <UserAvatar name={item.actorName} size={36} />
       <div className="min-w-0 flex-1">
-        <p className="text-[13px] leading-snug">
+        <p className="text-sm leading-snug">
           <span className="font-semibold">{item.actorName}</span>{" "}
           <span className="text-foreground/85">{describeItem(item)}</span>
         </p>
         <time
-          className="mt-0.5 block text-[10px] font-medium text-muted-foreground"
+          className="mt-0.5 block text-xs font-medium text-muted-foreground"
           dateTime={item.createdAt}
         >
           {formatRelativeTime(item.createdAt)}

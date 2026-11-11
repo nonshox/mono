@@ -1,22 +1,24 @@
-/** Pulsing placeholders for Suspense boundaries. No client JS needed. */
+import { Skeleton } from "@/components/ui/skeleton";
 
-function Block({ className }: { className?: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={`block animate-pulse rounded-xl bg-muted motion-reduce:animate-none ${className ?? ""}`}
-    />
-  );
-}
+/** Placeholder screens — same shapes and tokens as the real pages. */
 
 export function HomeSkeleton() {
   return (
-    <div aria-label="Loading" className="mx-auto w-full max-w-2xl px-4 pt-16" role="status">
-      <Block className="h-8 w-56" />
-      <Block className="mt-3 h-4 w-72" />
+    <div
+      aria-label="Loading"
+      className="w-full px-4 pb-24 pt-10 md:px-6 md:pb-0 md:pt-14 lg:px-8"
+      role="status"
+    >
+      <Skeleton className="h-9 w-48 md:h-11 md:w-72" />
+      <Skeleton className="mt-3 h-4 w-56" />
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Block className="h-32" />
-        <Block className="h-32" />
+        {[0, 1].map((i) => (
+          <div className="surface-card p-5" key={i}>
+            <Skeleton className="size-9 rounded-xl" />
+            <Skeleton className="mt-4 h-4 w-24" />
+            <Skeleton className="mt-2 h-3 w-40" />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -24,15 +26,21 @@ export function HomeSkeleton() {
 
 export function NotificationsSkeleton() {
   return (
-    <div aria-label="Loading" className="mx-auto w-full max-w-2xl px-4 pt-8" role="status">
-      <Block className="h-7 w-44" />
-      <div className="mt-6 grid gap-4">
+    <div
+      aria-label="Loading"
+      className="w-full px-4 pb-24 pt-6 md:px-6 md:pb-8 md:pt-8 lg:px-8"
+      role="status"
+    >
+      <Skeleton className="h-7 w-44" />
+      <Skeleton className="mt-2 h-3 w-20" />
+      <Skeleton className="mt-4 h-9 w-40 rounded-full" />
+      <div className="surface-card mt-2 divide-y divide-border/60 overflow-hidden">
         {[0, 1, 2, 3, 4].map((i) => (
-          <div className="flex items-center gap-3" key={i}>
-            <Block className="size-9 rounded-full" />
+          <div className="flex items-center gap-3 px-3 py-2.5" key={i}>
+            <Skeleton className="size-9 shrink-0 rounded-full" />
             <div className="grid flex-1 gap-2">
-              <Block className="h-3 w-2/3" />
-              <Block className="h-2 w-1/4" />
+              <Skeleton className="h-3 w-2/3" />
+              <Skeleton className="h-2.5 w-1/4" />
             </div>
           </div>
         ))}
@@ -43,12 +51,25 @@ export function NotificationsSkeleton() {
 
 export function SettingsSkeleton() {
   return (
-    <div aria-label="Loading" className="mx-auto w-full max-w-2xl px-4 pt-8" role="status">
-      <Block className="h-7 w-36" />
+    <div
+      aria-label="Loading"
+      className="w-full px-4 pb-24 pt-6 md:px-6 md:pb-8 md:pt-8 lg:px-8"
+      role="status"
+    >
+      <Skeleton className="h-7 w-36" />
+      <Skeleton className="mt-2 h-3 w-44" />
       <div className="mt-6 grid gap-4">
-        <Block className="h-24" />
-        <Block className="h-24" />
-        <Block className="h-32" />
+        {[0, 1, 2].map((i) => (
+          <div className="surface-card p-4" key={i}>
+            <div className="flex items-center gap-3">
+              <Skeleton className="size-9 shrink-0 rounded-xl" />
+              <div className="grid flex-1 gap-2">
+                <Skeleton className="h-3.5 w-24" />
+                <Skeleton className="h-3 w-40" />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -23,7 +23,7 @@ async function AuthenticatedNotifications() {
   }
 
   return (
-    <main className="px-4 py-8">
+    <main className="w-full px-4 pb-24 pt-6 md:px-6 md:py-8 md:pb-8 lg:px-8">
       <NotificationExperience />
     </main>
   );

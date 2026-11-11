@@ -23,7 +23,7 @@ async function AuthenticatedSettings() {
   }
 
   return (
-    <main className="px-4 py-8">
+    <main className="w-full px-4 py-6 md:px-6 md:py-8 lg:px-8">
       <SettingsExperience
         email={accountData.user.email}
         initialSessions={accountData.sessions}

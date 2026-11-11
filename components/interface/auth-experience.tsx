@@ -79,15 +79,7 @@ export function AuthExperience() {
             src="/auth.png"
           />
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-            <Image
-              alt=""
-              aria-hidden="true"
-              className="size-12 border-4 border-black/40 rounded-lg object-cover"
-              height={64}
-              priority
-              src="/logotype/logotype.png"
-              width={64}
-            />
+            <Image alt="" aria-hidden="true" className="size-12 rounded-lg border-4 border-black/40 object-cover" height={64} priority src="/logotype/logotype.png" width={64} />
           </div>
         </div>
       </div>
@@ -95,7 +87,7 @@ export function AuthExperience() {
       <section className="flex min-h-0 items-center justify-center px-6 py-8 md:px-12 [@media(max-height:500px)]:py-3">
         <div className="w-full max-w-sm">
           <header className="mb-6 [@media(max-height:500px)]:mb-3">
-            <h1 className="text-2xl font-semibold tracking-tight">
+            <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
               {step === "email" ? "Sign in to Mono" : "Check your email"}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground [@media(max-height:500px)]:mt-1">
@@ -127,7 +119,7 @@ export function AuthExperience() {
               )}
               <Button
                 aria-busy={pendingAction === "send"}
-                className="h-10 w-full text-[0.8125rem]"
+                className="h-10 w-full text-sm"
                 disabled={isPending || !email.trim()}
                 type="submit"
               >
@@ -182,7 +174,7 @@ export function AuthExperience() {
                 )}
                 <Button
                   aria-busy={pendingAction === "verify"}
-                  className="h-10 w-full text-[0.8125rem]"
+                  className="h-10 w-full text-sm"
                   disabled={isPending || code.length !== 6}
                   type="submit"
                 >
@@ -198,7 +190,7 @@ export function AuthExperience() {
               </form>
               <Button
                 aria-busy={pendingAction === "send"}
-                className="h-10 w-full text-[0.8125rem]"
+                className="h-10 w-full text-sm"
                 disabled={isPending}
                 onClick={() => void sendCode()}
                 type="button"
