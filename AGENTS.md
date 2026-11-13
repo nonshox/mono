@@ -28,8 +28,10 @@ Toasts: `import { toast } from "sonner"` — `<Toaster />` is mounted in the roo
 
 ## Gotchas
 
-- `app/(app)/` route group holds the authenticated chrome — sticky full-width top bar on desktop (back · Mono · bell · account dropdown), slim top bar + bottom thumb bar on mobile (Notifications · Settings only; sign out lives on a mobile-only settings row). `/auth` intentionally renders without it — do not move `auth` into the group. Keep links non-duplicated between the two chromes.
+- `app/(app)/` route group holds the authenticated chrome — sticky full-width top bar on desktop (back · Mono · Train CTA · bell · account dropdown), slim top bar (Mono · bell) + floating bottom pill on mobile (Home · raised Train · Settings). `/auth` intentionally renders without it — do not move `auth` into the group. Keep links non-duplicated between the two chromes.
 - Base UI dropdown: `DropdownMenuLabel` renders `Menu.GroupLabel` and **must** sit inside `<DropdownMenuGroup>`, or the app throws `MenuGroupContext is missing` when the menu opens.
 - Settings page edits `users.name` (rowId = account id), not the Appwrite auth name. `/api/auth/me` still returns the auth account as-is.
 - Telegram tables are `telegram` (connections) and `codes` (one-time link codes, sha256 hashed). Renaming either breaks the link flow.
+- Every file upload goes through `features/files/service.ts` — no direct `Storage` calls elsewhere; routes under `/api/files` and `/api/users/avatar` are the only file endpoints.
+- Challenges use `challenges` + `entries` tables; progress/leaderboard derive from `workouts` rows within the challenge window. Joined state is `entries` row `${challengeId}_${userId}`.
 - `features/instants` was removed; anything referencing it is stale.

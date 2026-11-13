@@ -26,7 +26,7 @@ export async function GET() {
       auth.account.email,
     );
     return NextResponse.json(
-      { email: row.email, name: row.name },
+      { email: row.email, name: row.name, avatar: row.avatar ?? "" },
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {
@@ -63,7 +63,11 @@ export async function PATCH(request: Request) {
   try {
     await ensureUserForAccount(auth.account.$id, auth.account.email);
     const row = await updateUserName(auth.account.$id, parsed.data.name);
-    return NextResponse.json({ email: row.email, name: row.name });
+    return NextResponse.json({
+      email: row.email,
+      name: row.name,
+      avatar: row.avatar ?? "",
+    });
   } catch (error) {
     logFailure("User update", error);
     return jsonError(502, "USER_UPDATE_FAILED", "Your name could not be saved.");

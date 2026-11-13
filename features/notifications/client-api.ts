@@ -5,6 +5,7 @@ export type NotificationItem = {
   type: string;
   actorId: string;
   actorName: string;
+  actorAvatar?: string;
   ref: string | null;
   createdAt: string;
   read: boolean;

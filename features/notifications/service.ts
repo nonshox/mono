@@ -78,6 +78,7 @@ export async function listNotifications(
         type: row.type,
         actorId: row.actor,
         actorName: actor.name || "Someone",
+        actorAvatar: actor.avatar ?? "",
         ref: row.ref ?? null,
         createdAt: row.$createdAt,
         read: row.read,

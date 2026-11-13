@@ -8,44 +8,19 @@ import { useNotificationStore } from "@/features/notifications/store";
 import { UserAvatar } from "@/components/interface/user-avatar";
 import { EmptyState } from "@/components/interface/empty-state";
 
-/**
- * Types are past-tense verb phrases chosen by the app ("followed you",
- * "liked your post"); rendered as `${actorName} ${type}`.
- */
 const filters = [
   { id: "all", label: "All" },
   { id: "unread", label: "Unread" },
 ] as const;
-
 type FilterId = (typeof filters)[number]["id"];
 
-function describeItem(item: NotificationItem): string {
-  return item.count > 1 ? `${item.count}× ${item.type}` : item.type;
-}
-
 export function NotificationExperience() {
-  const items = useNotificationStore((state) => state.items);
-  const unreadCount = useNotificationStore((state) => state.unreadCount);
-  const cursor = useNotificationStore((state) => state.cursor);
-  const loading = useNotificationStore((state) => state.loading);
-  const loadingMore = useNotificationStore((state) => state.loadingMore);
-  const pendingIds = useNotificationStore((state) => state.pendingIds);
-  const error = useNotificationStore((state) => state.error);
-  const loaded = useNotificationStore((state) => state.loaded);
-  const load = useNotificationStore((state) => state.load);
-  const loadMore = useNotificationStore((state) => state.loadMore);
-  const markRead = useNotificationStore((state) => state.markRead);
-  const markAllRead = useNotificationStore((state) => state.markAllRead);
-
+  const { items, unreadCount, cursor, loading, loadingMore, loaded, load, loadMore, markAllRead, markRead, error } = useNotificationStore();
   const [filter, setFilter] = useState<FilterId>("all");
 
-  const filtered = useMemo(
-    () =>
-      items.filter((item) => {
-        if (filter === "all") return true;
-        return !item.read;
-      }),
-    [filter, items],
+  const visible = useMemo(
+    () => items.filter((item) => filter === "all" || !item.read),
+    [items, filter],
   );
 
   const groups = useMemo(() => {
@@ -53,53 +28,44 @@ export function NotificationExperience() {
     startOfToday.setHours(0, 0, 0, 0);
     const today: NotificationItem[] = [];
     const earlier: NotificationItem[] = [];
-    for (const item of filtered) {
+    for (const item of visible) {
       (new Date(item.createdAt) >= startOfToday ? today : earlier).push(item);
     }
     return [
       { label: "Today", items: today },
       { label: "Earlier", items: earlier },
-    ].filter((group) => group.items.length > 0);
-  }, [filtered]);
+    ].filter((g) => g.items.length > 0);
+  }, [visible]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const emptyMessage =
-    filter === "unread"
-      ? "No unread notifications."
-      : "You're all caught up.";
-
   return (
-    <div className="w-full">
-      <header className="flex items-end justify-between gap-3">
+    <div className="mx-auto max-w-2xl px-4 pb-24 pt-6 md:px-6 md:pt-8 lg:pt-10">
+      <header className="mb-5 flex items-end justify-between gap-3">
         <div>
-          <h1 className="type-section">Notifications</h1>
-          {unreadCount > 0 && (
-            <p className="mt-0.5 text-xs font-medium text-muted-foreground">
-              {unreadCount} unread
-            </p>
-          )}
+          <p className="type-eyebrow text-primary">Inbox</p>
+          <h1 className="type-section mt-1 text-foreground">Notifications</h1>
         </div>
         {unreadCount > 0 && (
           <Button
-            className="rounded-full"
-            disabled={pendingIds.size > 0}
+            className="rounded-full text-[11px] font-semibold h-8 px-3 border-border/60"
+            disabled={items.every((i) => i.read)}
             onClick={() => void markAllRead()}
             size="sm"
-            type="button"
             variant="outline"
           >
-            <CheckCheck aria-hidden="true" />
+            <CheckCheck aria-hidden="true" className="size-3.5" />
             Mark all read
           </Button>
         )}
       </header>
 
+      {/* Filter tabs — compact segmented control */}
       <div
         aria-label="Filter notifications"
-        className="mt-4 inline-flex items-center gap-0.5 rounded-full bg-muted p-0.5"
+        className="inline-flex items-center gap-0.5 rounded-full bg-muted p-0.5"
         role="group"
       >
         {filters.map((item) => {
@@ -107,7 +73,7 @@ export function NotificationExperience() {
           return (
             <button
               aria-pressed={isActive}
-              className={`inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-xs font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-ring ${
+              className={`inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 text-xs font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-ring ${
                 isActive
                   ? "bg-card text-foreground shadow-thumb"
                   : "text-muted-foreground hover:text-foreground"
@@ -125,60 +91,103 @@ export function NotificationExperience() {
         })}
       </div>
 
+      {/* Error */}
       {error && (
         <div
-          className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-destructive/20 bg-destructive/[0.04] px-4 py-3"
+          className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3"
           role="alert"
         >
           <p className="text-xs text-destructive">{error}</p>
           <Button
+            className="h-7 px-2.5 text-[11px]"
             disabled={loading}
             onClick={() => void load(true)}
             size="sm"
-            type="button"
             variant="outline"
           >
             <RefreshCw aria-hidden="true" />
-            Try again
+            Retry
           </Button>
         </div>
       )}
 
+      {/* Content */}
       {loading && !loaded ? (
-        <ul className="mt-2 surface-card divide-y divide-border/60 overflow-hidden" role="status">
-          {Array.from({ length: 6 }, (_, index) => (
-            <li className="flex items-center gap-3 py-3.5" key={index}>
-              <div className="size-9 animate-pulse rounded-full bg-muted" />
+        <div className="mt-4 divide-y divide-border/60 rounded-2xl border border-border/60 bg-card overflow-hidden">
+          {[0, 1, 2, 3].map((i) => (
+            <div className="flex items-center gap-3 px-3 py-3" key={i}>
+              <div className="size-9 shrink-0 animate-pulse rounded-full bg-muted" />
               <div className="grid flex-1 gap-1.5">
-                <div className="h-3 w-2/3 animate-pulse rounded-full bg-muted" />
-                <div className="h-2.5 w-1/4 animate-pulse rounded-full bg-muted" />
+                <div className="h-3 w-4/5 animate-pulse rounded-full bg-muted" />
+                <div className="h-2.5 w-1/3 animate-pulse rounded-full bg-muted" />
               </div>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       ) : groups.length === 0 ? (
         <EmptyState
-          description="New activity will show up here."
+          description="When someone interacts with you, it will appear here."
           icon={Bell}
-          title={emptyMessage}
+          title="Inbox zero"
         />
       ) : (
-        <div className="mt-2">
+        <div className="mt-4 space-y-5">
           {groups.map((group) => (
             <section aria-label={group.label} key={group.label}>
-              <h2 className="type-eyebrow px-1 pb-1.5 pt-5">
+              <h2 className="type-eyebrow mb-1.5 flex items-center justify-between px-1">
                 {group.label}
+                <span className="text-muted-foreground/60 text-[10px] font-medium normal-case tracking-normal">
+                  {group.items.length} event{group.items.length === 1 ? "" : "s"}
+                </span>
               </h2>
-              <ul className="surface-card divide-y divide-border/60 overflow-hidden">
+              <div className="divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/60 bg-card">
                 {group.items.map((item) => (
-                  <NotificationRow
-                    item={item}
+                  <div
+                    className="flex cursor-pointer items-center gap-3 px-3 py-3 transition-colors hover:bg-muted/40"
                     key={item.id}
-                    markRead={markRead}
-                    pending={pendingIds.has(item.id)}
-                  />
+                    onClick={() => {
+                      if (!item.read) void markRead(item);
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        if (!item.read) void markRead(item);
+                      }
+                    }}
+                  >
+                    <UserAvatar avatar={item.actorAvatar} name={item.actorName} size={34} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] leading-snug text-foreground">
+                        <span className="font-semibold">{item.actorName}</span>{" "}
+                        <span className="text-foreground/80">
+                          {item.count > 1 ? `${item.type} ${item.count}x` : item.type}
+                        </span>
+                      </p>
+                      <time
+                        className="mt-0.5 block text-[10px] font-medium text-muted-foreground"
+                        dateTime={item.createdAt}
+                      >
+                        {formatRelative(item.createdAt)}
+                      </time>
+                    </div>
+                    {!item.read && (
+                      <button
+                        aria-label="Mark as read"
+                        className="grid size-8 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void markRead(item);
+                        }}
+                        type="button"
+                      >
+                        <Check aria-hidden="true" className="size-4" />
+                      </button>
+                    )}
+                  </div>
                 ))}
-              </ul>
+              </div>
             </section>
           ))}
         </div>
@@ -187,13 +196,13 @@ export function NotificationExperience() {
       {cursor && (
         <div className="mt-5 flex justify-center">
           <Button
-            className="min-w-36 rounded-full"
-            disabled={loadingMore}
+            className="min-w-36 h-9 rounded-full text-xs"
+            disabled={loadingMore || loading}
             onClick={() => void loadMore()}
-            type="button"
+            size="sm"
             variant="outline"
           >
-            {loadingMore ? "Loading..." : "Load older"}
+            {loadingMore ? "Loading older…" : "Load older"}
           </Button>
         </div>
       )}
@@ -201,46 +210,7 @@ export function NotificationExperience() {
   );
 }
 
-function NotificationRow({
-  item,
-  pending,
-  markRead,
-}: {
-  item: NotificationItem;
-  pending: boolean;
-  markRead: (item: NotificationItem) => Promise<void>;
-}) {
-  return (
-    <li className="flex cursor-pointer items-center gap-3 px-3 py-2.5 transition-colors hover:bg-muted/50" onClick={() => void markRead(item)} title={item.read ? undefined : "Mark as read"}>
-      <UserAvatar name={item.actorName} size={36} />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm leading-snug">
-          <span className="font-semibold">{item.actorName}</span>{" "}
-          <span className="text-foreground/85">{describeItem(item)}</span>
-        </p>
-        <time
-          className="mt-0.5 block text-xs font-medium text-muted-foreground"
-          dateTime={item.createdAt}
-        >
-          {formatRelativeTime(item.createdAt)}
-        </time>
-      </div>
-      {!item.read && (
-        <button
-          aria-label="Mark as read"
-          className="grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
-          disabled={pending}
-          onClick={() => void markRead(item)}
-          type="button"
-        >
-          <Check aria-hidden="true" className="size-4" />
-        </button>
-      )}
-    </li>
-  );
-}
-
-function formatRelativeTime(value: string): string {
+function formatRelative(value: string): string {
   const date = new Date(value);
   const timestamp = date.getTime();
   if (Number.isNaN(timestamp)) return "";

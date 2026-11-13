@@ -21,7 +21,15 @@ npm run dev
 
 Scripts: `dev` · `build` · `start` · `lint` · `typecheck` · `test` · `check` (all four) · `setup` (idempotent table setup) · `telegram:webhook` (register the webhook) · `telegram:menu` (set the Mini App menu button).
 
-Routes: `/auth` (sign in), `/` (home), `/notifications`, `/settings` (name · Telegram · sessions).
+**Storage API** — one place for uploads, nothing duplicated:
+
+- `features/files/service.ts` — the single storage service (`uploadFile`, `readFile`, `deleteFile`, `MAX_FILE_BYTES`, `IMAGE_TYPES`). All file I/O goes through it.
+- `POST /api/files` — authenticated upload (multipart, `file` field, JPEG/PNG/WebP, ≤4 MB, optional `public=1`).
+- `GET /api/files/:fileId` — serves the file to signed-in users (immutable cache).
+- `POST /api/users/avatar` / `DELETE` — avatar upload + removal (same validation; reads as `{ avatar: fileId }`).
+- Avatars render via `/api/files/:fileId` in `UserAvatar`; the current photo is stored in `users.avatar`.
+
+Routes: `/auth` (sign in), `/` (today — one CTA), `/pushups` (camera counter), `/challenges` (weekly rounds + leaderboard), `/notifications`, `/profile` (view), `/settings` (Telegram · sessions).
 
 ## Wiring notifications into your features
 
@@ -61,8 +69,11 @@ await notify(followingId, currentUserId, "followed you", followRowId);
 ```
 app/
   (app)/            # authenticated area (sticky top bar desktop · floating pill mobile)
-    page.tsx        # home
+    page.tsx        # home / today — greeting, stats, CTA
+    pushups/        # camera-verified push-up counter
+    challenges/     # weekly challenge list + detail + leaderboard
     notifications/  # notifications page
+    profile/        # public profile view + edit mode
     settings/       # account, telegram, sessions
   api/              # route handlers (thin: auth check → service call)
   auth/             # public sign-in screen
@@ -70,12 +81,15 @@ app/
   not-found.tsx     # branded 404 screen
 components/
   ui/               # design system primitives (button, card, input…)
-  interface/        # composed experiences (settings, notifications, shell…)
+  interface/        # composed experiences (settings, challenges, pushups, shell…)
 features/
   auth/             # email-code sign-in, session helpers, zod schemas
-  users/            # users row: email + name (rowId = auth account id)
+  challenges/       # challenges: list/detail/join, leaderboard
+  files/            # mono storage API: upload/read/delete (features/files/service.ts)
   notifications/    # generic notifications: notify(), list, mark-read
   telegram/         # telegram link/unlink + webhook + delivery
+  users/            # users row: email + name + avatar (rowId = auth account id)
+  workouts/         # camera-verified sessions (kind, reps, duration, streak)
 scripts/
   setup-appwrite.mjs # one-shot idempotent table setup (npm run setup)
   telegram-webhook.mjs # register/inspect the webhook (npm run telegram:webhook)
@@ -90,20 +104,23 @@ lib/
 ## Conventions
 
 - **Import alias** `@/*` → repo root. Server-only code imports `"server-only"`.
-- **Tables & attributes are one lowercase word** (`users`, `notifications`, `telegram`, `codes`; attrs like `recipient`, `actor`, `ref`, `read`). No snake_case, no multi-word columns — that includes future tables.
+- **Tables & attributes are one lowercase word** (`users`, `notifications`, `telegram`, `codes`, `challenges`, `entries`; attrs like `recipient`, `actor`, `ref`, `read`). No snake_case, no multi-word columns.
 - **`users` row id = the auth account `$id`**. One-to-one, no join table.
 - **Notifications `type`** is a past-tense verb phrase ("followed you", "liked your post"): clients render `${actorName} ${type}`. Grouping collapses same actor+type within 24h.
 - **API routes** stay thin: `getAuthAccount` → zod parse → service → `jsonError` on failure. Services never read cookies; they take explicit ids.
-- **shadcn primitives first** — `components/ui` for primitives, Tailwind for the rest; keep one-off pixel values to a minimum and prefer theme tokens (`surface-card`, `--color-*`, `--shadow-*`).
+- **shadcn primitives first** — `components/ui` for primitives, Tailwind for the rest; prefer theme tokens (`surface-card`, `--color-*`, `--shadow-*`).
 - **Env names stay as Appwrite docs define them** — see `.env.example`.
 
 ## Appwrite tables
 
 | Table | Attributes | Indexes |
 |---|---|---|
-| `users` | `email` · `name` | — (rowId = account id) |
+| `users` | `email` · `name` · `avatar` | — (rowId = account id) |
 | `notifications` | `recipient` · `actor` · `type` · `ref` · `read` | `recipient` |
 | `telegram` | `user` · `member` · `chat` · `created` | `user`, `member` (unique) |
 | `codes` | `user` · `hash` · `expires` · `used` | `hash` |
+| `workouts` | `user` · `kind` · `reps` · `duration` · `score` | `user` |
+| `challenges` | `title` · `reps` · `window` · `starts` · `ends` · `active` | `active` |
+| `entries` | `user` · `challenge` | `user`, `challenge` |
 
 Create these with `npm run setup` (idempotent), or AppwriteException 404 at runtime until you do.

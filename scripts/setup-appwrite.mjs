@@ -6,7 +6,7 @@
  *   npm run setup
  */
 import { setTimeout as delay } from "node:timers/promises";
-import { Client, TablesDB, AppwriteException } from "node-appwrite";
+import { Client, TablesDB, AppwriteException, Query, ID } from "node-appwrite";
 
 try {
   process.loadEnvFile(".env");
@@ -50,6 +50,7 @@ const SPEC = [
     columns: [
       { type: "email", key: "email", required: true },
       { type: "string", key: "name", size: 100, required: true },
+      { type: "string", key: "avatar", size: 36, required: false },
     ],
     indexes: [],
   },
@@ -80,6 +81,42 @@ const SPEC = [
     ],
   },
   {
+    id: "workouts",
+    name: "workouts",
+    columns: [
+      { type: "string", key: "user", size: 36, required: true },
+      { type: "string", key: "kind", size: 16, required: true },
+      { type: "integer", key: "reps", required: true, min: 0, max: 10000 },
+      { type: "integer", key: "duration", required: true, min: 0, max: 100000 },
+      { type: "integer", key: "score", required: false, min: 0, max: 100 },
+    ],
+    indexes: [{ key: "user", type: "key", columns: ["user"] }],
+  },
+  {
+    id: "challenges",
+    name: "challenges",
+    columns: [
+      { type: "string", key: "title", size: 64, required: true },
+      { type: "integer", key: "reps", required: true, min: 1, max: 100000 },
+      { type: "string", key: "window", size: 16, required: true },
+      { type: "datetime", key: "starts", required: true },
+      { type: "datetime", key: "ends", required: true },
+      { type: "boolean", key: "active", required: true },
+    ],
+    indexes: [{ key: "active", type: "key", columns: ["active"] }],
+  },
+  {
+    id: "entries",
+    name: "entries",
+    columns: [
+      { type: "string", key: "user", size: 36, required: true },
+      { type: "string", key: "challenge", size: 36, required: true },
+    ],
+    indexes: [
+      { key: "user", type: "key", columns: ["user"] },
+      { key: "challenge", type: "key", columns: ["challenge"] },
+    ],
+  },  {
     id: "codes",
     name: "codes",
     columns: [
@@ -117,6 +154,53 @@ const results = [];
 for (const spec of SPEC) {
   await ensureTable(spec);
 }
+
+/** Seed a starter weekly challenge if the table is empty (idempotent). */
+async function seed() {
+  const existing = await api(
+    () =>
+      tables.listRows({
+        databaseId,
+        tableId: "challenges",
+        queries: [Query.limit(1)],
+        total: false,
+      }),
+    "seed list",
+  );
+  if ((existing.rows ?? []).length > 0) {
+    results.push("seed: already present");
+    return;
+  }
+  const now = new Date();
+  const day = now.getUTCDay();
+  const daysUntilMonday = ((8 - day) % 7) || 7;
+  const end = new Date(now);
+  end.setUTCDate(end.getUTCDate() + daysUntilMonday);
+  end.setUTCHours(0, 0, 0, 0); // ends Monday 00:00 UTC
+  const start = new Date(end);
+  start.setUTCDate(start.getUTCDate() - 7);
+  await api(
+    () =>
+      tables.createRow({
+        databaseId,
+        tableId: "challenges",
+        rowId: ID.unique(),
+        permissions: [],
+        data: {
+          title: "Weekly 500",
+          reps: 500,
+          window: "week",
+          starts: start.toISOString(),
+          ends: end.toISOString(),
+          active: true,
+        },
+      }),
+    "seed challenge",
+  );
+  results.push("seed: Weekly 500 created");
+}
+
+await seed();
 
 console.log("\nSetup summary:");
 for (const line of results) console.log(`  ${line}`);
@@ -185,6 +269,14 @@ async function createColumn(tableId, column) {
       return run(() => tables.createBooleanColumn(base));
     case "datetime":
       return run(() => tables.createDatetimeColumn(base));
+    case "integer":
+      return run(() =>
+        tables.createIntegerColumn({
+          ...base,
+          ...(column.min !== undefined ? { min: column.min } : {}),
+          ...(column.max !== undefined ? { max: column.max } : {}),
+        }),
+      );
     default:
       throw new Error(`Unknown column type ${column.type}`);
   }

@@ -6,23 +6,23 @@
 
 :root {
   color-scheme: light;
-  --background: #ffffff;
-  --foreground: #0a0a0a;
+  --background: #f3f5f7;
+  --foreground: #0d1218;
   --card: #ffffff;
-  --card-foreground: #0a0a0a;
+  --card-foreground: #0d1218;
   --popover: #ffffff;
-  --popover-foreground: #0a0a0a;
+  --popover-foreground: #0d1218;
   --primary: #0062d5;
   --primary-foreground: #fcfcfc;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #17171a;
-  --muted: #f4f4f5;
-  --muted-foreground: #626871;
-  --accent: #f4f4f5;
-  --accent-foreground: #17171a;
+  --secondary: #eef2f6;
+  --secondary-foreground: #0d1218;
+  --muted: #eef2f6;
+  --muted-foreground: #4b5563;
+  --accent: #eef2f6;
+  --accent-foreground: #0d1218;
   --destructive: #e40014;
-  --border: #e7e7ea;
-  --input: #e7e7ea;
+  --border: #dde3ea;
+  --input: #dde3ea;
   --ring: #0062d5;
   --chart-1: #0062d5;
   --chart-2: #3d7ede;
@@ -67,6 +67,7 @@
   --color-badge: var(--badge);
   --shadow-dock: 0 12px 36px rgb(0 0 0 / 0.16), 0 1px 3px rgb(0 0 0 / 0.08);
   --shadow-thumb: 0 1px 4px rgb(0 0 0 / 0.12), 0 0 0 0.5px rgb(0 0 0 / 0.04);
+  --shadow-glass: 0 8px 32px rgb(0 0 0 / 0.10), 0 1px 2px rgb(0 0 0 / 0.06), inset 0 1px 0 rgb(255 255 255 / 0.8);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
@@ -208,5 +209,13 @@ input {
 .surface-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: calc(var(--radius) + 0.5rem);
+  border-radius: calc(var(--radius) + 0.375rem);
+}
+.glass {
+  background: color-mix(in oklch, var(--card) 78%, transparent);
+  backdrop-filter: blur(20px) saturate(1.1);
+  -webkit-backdrop-filter: blur(20px) saturate(1.1);
+  border: 1px solid color-mix(in oklch, var(--border) 70%, transparent);
+  border-radius: calc(var(--radius) + 0.375rem);
+  box-shadow: var(--shadow-glass);
 }

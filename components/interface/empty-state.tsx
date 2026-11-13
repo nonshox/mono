@@ -14,9 +14,9 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="grid justify-items-center gap-3 py-12 text-center">
-      <span className="grid size-16 place-items-center rounded-full bg-muted text-muted-foreground">
-        <Icon aria-hidden="true" className="size-7" strokeWidth={1.5} />
+    <div className="grid justify-items-center gap-3 py-16 text-center">
+      <span className="grid size-14 place-items-center rounded-full bg-muted text-muted-foreground">
+        <Icon aria-hidden="true" className="size-6" strokeWidth={1.5} />
       </span>
       <p className="text-sm font-semibold text-foreground">{title}</p>
       {description ? (

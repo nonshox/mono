@@ -4,7 +4,6 @@ import {
   ChevronRight,
   LoaderCircle,
   LogOut,
-  Mail,
   MonitorSmartphone,
   RefreshCw,
   Send,
@@ -12,10 +11,10 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import Link from "next/link";
+import { useEffect, useState, type ReactNode } from "react";
 import { LocalDateTime } from "@/components/interface/local-date-time";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   createTelegramLink,
   disconnectTelegram,
@@ -27,7 +26,6 @@ import {
   revokeSession,
   type AuthSession,
 } from "@/features/auth/client-api";
-import { fetchUser, saveUserName } from "@/features/users/client-api";
 import { getApiErrorMessage } from "@/lib/api-client";
 import { EmptyState } from "@/components/interface/empty-state";
 import { useRouter } from "next/navigation";
@@ -40,10 +38,6 @@ export function SettingsExperience({
   initialSessions: AuthSession[];
 }) {
   const router = useRouter();
-  const [name, setName] = useState("");
-  const [savedName, setSavedName] = useState("");
-  const [loadingUser, setLoadingUser] = useState(true);
-  const [savingName, setSavingName] = useState(false);
   const [telegramConnected, setTelegramConnected] = useState(false);
   const [loadingTelegram, setLoadingTelegram] = useState(true);
   const [telegramPending, setTelegramPending] = useState(false);
@@ -56,19 +50,6 @@ export function SettingsExperience({
 
   useEffect(() => {
     let active = true;
-
-    fetchUser()
-      .then((value) => {
-        if (!active) return;
-        setName(value.name);
-        setSavedName(value.name);
-      })
-      .catch(() => {
-        if (active) setError("Your account details could not be loaded.");
-      })
-      .finally(() => {
-        if (active) setLoadingUser(false);
-      });
 
     fetchTelegramStatus()
       .then((isConnected) => {
@@ -85,25 +66,6 @@ export function SettingsExperience({
       active = false;
     };
   }, []);
-
-  const saveName = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const next = name.trim();
-    if (savingName || next === savedName) return;
-    setSavingName(true);
-    setError("");
-    setMessage("");
-    try {
-      const user = await saveUserName(next);
-      setName(user.name);
-      setSavedName(user.name);
-      setMessage("Name saved.");
-    } catch (cause) {
-      setError(getApiErrorMessage(cause, "Your name could not be saved."));
-    } finally {
-      setSavingName(false);
-    }
-  };
 
   const toggleTelegram = async () => {
     if (telegramPending) return;
@@ -211,40 +173,29 @@ export function SettingsExperience({
       </header>
 
       <div className="grid gap-6">
-        <Section title="Account">
-          <Row icon={Mail} title="Email" description={email} />
-          <form onSubmit={saveName}>
-            <div className="flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-5">
-              <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary sm:size-9">
-                <UserRound aria-hidden="true" className="size-4" strokeWidth={1.8} />
-              </span>
-              <label className="min-w-0 flex-1">
-                <span className="text-xs font-semibold leading-5">Name</span>
-                <Input
-                  className="mt-1 h-9 text-sm"
-                  disabled={loadingUser}
-                  maxLength={50}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="Your name"
-                  value={name}
-                />
-              </label>
-              <Button
-                disabled={
-                  loadingUser || savingName || name.trim() === savedName
-                }
-                size="sm"
-                type="submit"
-              >
-                {savingName ? (
-                  <LoaderCircle aria-hidden="true" className="animate-spin" />
-                ) : (
-                  "Save"
-                )}
-              </Button>
-            </div>
-          </form>
-        </Section>
+        {/* Profile gateway — this page is for operations; the person lives at /profile. */}
+        <Link
+          aria-label="Open your profile"
+          className="surface-card flex items-center gap-4 px-4 py-3.5 outline-none transition hover:border-border/80 focus-visible:ring-2 focus-visible:ring-ring sm:px-5"
+          href="/profile"
+        >
+          <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary sm:size-9">
+            <UserRound aria-hidden="true" className="size-4" strokeWidth={1.8} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs font-semibold leading-5">
+              Your profile
+            </span>
+            <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">
+              Photo, name, and training history
+            </span>
+          </span>
+          <ChevronRight
+            aria-hidden="true"
+            className="size-4 shrink-0 text-muted-foreground"
+            strokeWidth={1.8}
+          />
+        </Link>
 
         <Section title="Notifications">
           <Row
@@ -305,53 +256,57 @@ export function SettingsExperience({
 
         <Section
           action={
-              <button
-                aria-label="Refresh sessions"
-                className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
-                disabled={refreshingSessions}
-                onClick={() => void refreshSessions()}
-                type="button"
-              >
-                <RefreshCw
-                  aria-hidden="true"
-                  className={`size-4 ${refreshingSessions ? "animate-spin" : ""}`}
-                />
-              </button>
-            }
-            title="Sessions"
-          >
-            {sessions.length === 0 ? (
-              <EmptyState
-                description="Devices signed in to this account appear here."
-                icon={MonitorSmartphone}
-                title="No active sessions"
+            <button
+              aria-label="Refresh sessions"
+              className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+              disabled={refreshingSessions}
+              onClick={() => void refreshSessions()}
+              type="button"
+            >
+              <RefreshCw
+                aria-hidden="true"
+                className={`size-4 ${refreshingSessions ? "animate-spin" : ""}`}
               />
-            ) : (
-              <ul className="divide-y divide-border/60">
-                {sessions.map((session) => (
-                  <li className="flex items-center gap-3 px-4 py-2.5 sm:px-5" key={session.id}>
-                    <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                      <MonitorSmartphone aria-hidden="true" className="size-4" strokeWidth={1.8} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="flex items-center gap-2 text-xs font-semibold leading-5">
-                        <span className="truncate">{session.device}</span>
-                        {session.current && (
-                          <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            This device
-                          </span>
-                        )}
-                      </p>
-                      <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
-                        {session.operatingSystem ? `${session.operatingSystem} — ` : ""}
-                        <LocalDateTime value={session.createdAt} />
-                      </p>
-                    </div>
-                    {!session.current && sessionRevokeButton(session)}
-                  </li>
-                ))}
-              </ul>
-            )}
+            </button>
+          }
+          title="Sessions"
+        >
+          {sessions.length === 0 ? (
+            <EmptyState
+              description="Devices signed in to this account appear here."
+              icon={MonitorSmartphone}
+              title="No active sessions"
+            />
+          ) : (
+            <ul className="divide-y divide-border/60">
+              {sessions.map((session) => (
+                <li className="flex items-center gap-3 px-4 py-2.5 sm:px-5" key={session.id}>
+                  <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                    <MonitorSmartphone
+                      aria-hidden="true"
+                      className="size-4"
+                      strokeWidth={1.8}
+                    />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="flex items-center gap-2 text-xs font-semibold leading-5">
+                      <span className="truncate">{session.device}</span>
+                      {session.current && (
+                        <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          This device
+                        </span>
+                      )}
+                    </p>
+                    <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
+                      {session.operatingSystem ? `${session.operatingSystem} — ` : ""}
+                      <LocalDateTime value={session.createdAt} />
+                    </p>
+                  </div>
+                  {!session.current && sessionRevokeButton(session)}
+                </li>
+              ))}
+            </ul>
+          )}
         </Section>
 
         {/* Sign out lives in the desktop account dropdown; mobile has no dropdown. */}
@@ -416,7 +371,7 @@ function Row({
   description,
   action,
 }: {
-  icon: typeof Mail;
+  icon: typeof Send;
   title: string;
   description?: string;
   action?: ReactNode;

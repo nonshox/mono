@@ -7,10 +7,12 @@ const tableId = "users";
 export type UserRow = Models.Row & {
   email: string;
   name: string;
+  avatar?: string;
 };
 
 export type UserPreview = Models.Row & {
   name: string;
+  avatar?: string;
 };
 
 export async function getUserRow(userId: string): Promise<UserRow | null> {
@@ -99,7 +101,7 @@ export async function getUsersByIds(
     queries: [
       Query.equal("$id", ids),
       Query.limit(100),
-      Query.select(["$id", "name"]),
+      Query.select(["$id", "name", "avatar"]),
     ],
     total: false,
   });

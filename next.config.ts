@@ -5,8 +5,12 @@ const nextConfig: NextConfig = {
   experimental: {
     agentFeedback: true,
   },
+  poweredByHeader: false,
   cacheComponents: true,
   partialPrefetching: true,
+  compiler: {
+    removeConsole: { exclude: ["error"] },
+  },
   turbopack: {
     rules: {
       "*.css": {
@@ -25,7 +29,7 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=()",
+            value: "camera=(self), microphone=(), geolocation=()",
           },
         ],
       },
@@ -34,4 +38,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-
