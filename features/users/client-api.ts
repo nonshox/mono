@@ -16,6 +16,10 @@ export async function saveUserName(name: string): Promise<UserProfile> {
   return data;
 }
 
+export async function deleteAccount(): Promise<void> {
+  await apiClient.delete("/account");
+}
+
 export async function saveAvatar(image: File): Promise<string> {
   const form = new FormData();
   form.append("image", image);

@@ -5,7 +5,6 @@ export type WorkoutRow = Models.Row & {
   kind: string;
   reps: number;
   duration: number;
-  score?: number;
 };
 
 export type WorkoutSummary = {

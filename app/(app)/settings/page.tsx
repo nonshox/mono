@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { SettingsExperience } from "@/components/interface/settings-experience";
-import { SettingsSkeleton } from "@/components/interface/skeletons";
-import { SessionExpired } from "@/components/interface/session-expired";
+import { PageLoader } from "@/components/interface/page-loader";import { SessionExpired } from "@/components/interface/session-expired";
 import { getCurrentAccountData } from "@/features/auth/session";
 
 export const metadata = {
@@ -10,7 +9,7 @@ export const metadata = {
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<SettingsSkeleton />}>
+    <Suspense fallback={<PageLoader />}>
       <AuthenticatedSettings />
     </Suspense>
   );
@@ -23,7 +22,7 @@ async function AuthenticatedSettings() {
   }
 
   return (
-    <main className="w-full px-4 py-6 md:px-6 md:py-8 lg:px-8">
+    <main className="min-h-full w-full bg-white px-4 pb-20 pt-5 sm:px-6 sm:pt-8">
       <SettingsExperience
         email={accountData.user.email}
         initialSessions={accountData.sessions}

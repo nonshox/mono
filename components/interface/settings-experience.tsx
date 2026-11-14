@@ -1,12 +1,14 @@
 "use client";
 
 import {
+  Camera,
   ChevronRight,
   LoaderCircle,
   LogOut,
   MonitorSmartphone,
   RefreshCw,
   Send,
+  Trash2,
   Unlink,
   UserRound,
   X,
@@ -27,6 +29,8 @@ import {
   type AuthSession,
 } from "@/features/auth/client-api";
 import { getApiErrorMessage } from "@/lib/api-client";
+import { useUiPrefs } from "@/features/ui/store";
+import { deleteAccount } from "@/features/users/client-api";
 import { EmptyState } from "@/components/interface/empty-state";
 import { useRouter } from "next/navigation";
 
@@ -47,6 +51,32 @@ export function SettingsExperience({
   const [refreshingSessions, setRefreshingSessions] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const cameraFacing = useUiPrefs((state) => state.cameraFacing);
+  const setCameraFacing = useUiPrefs((state) => state.setCameraFacing);
+  const rearCamera = cameraFacing === "environment";
+
+  const toggleCamera = () => {
+    const next = !rearCamera;
+    setCameraFacing(next ? "environment" : "user");
+    setMessage(next ? "Rear camera will be used." : "Front camera will be used.");
+    setError("");
+  };
+
+  const confirmDeleteAccount = async () => {
+    if (deleting || deleteConfirm.trim().toUpperCase() !== "DELETE") return;
+    setDeleting(true);
+    setError("");
+    try {
+      await deleteAccount();
+      router.replace("/auth");
+      router.refresh();
+    } catch (cause) {
+      setError(getApiErrorMessage(cause, "Your account could not be deleted."));
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -99,7 +129,7 @@ export function SettingsExperience({
       setMessage(
         isConnected
           ? "Telegram is connected."
-          : "Not connected yet — finish linking in Telegram first.",
+          : "Not connected yet Ã¢â‚¬â€ finish linking in Telegram first.",
       );
     } catch {
       setError("Telegram status could not be checked.");
@@ -167,35 +197,45 @@ export function SettingsExperience({
 
   return (
     <div className="w-full">
-      <header className="mb-6">
-        <h1 className="type-section">Settings</h1>
-        <p className="mt-0.5 truncate text-xs text-muted-foreground">{email}</p>
-      </header>
+      <div className="mb-6 items-end border-b border-border/60 pb-3">
+        <h1 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+          Settings
+        </h1>
+        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{email}</p>
+      </div>
 
-      <div className="grid gap-6">
-        {/* Profile gateway — this page is for operations; the person lives at /profile. */}
-        <Link
-          aria-label="Open your profile"
-          className="surface-card flex items-center gap-4 px-4 py-3.5 outline-none transition hover:border-border/80 focus-visible:ring-2 focus-visible:ring-ring sm:px-5"
-          href="/profile"
-        >
-          <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary sm:size-9">
-            <UserRound aria-hidden="true" className="size-4" strokeWidth={1.8} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-xs font-semibold leading-5">
-              Your profile
-            </span>
-            <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">
-              Photo, name, and training history
-            </span>
-          </span>
-          <ChevronRight
-            aria-hidden="true"
-            className="size-4 shrink-0 text-muted-foreground"
-            strokeWidth={1.8}
-          />
-        </Link>
+      <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
+        <div className="grid gap-6">
+        {/* Profile gateway Ã¢â‚¬â€ this page is for operations; the person lives at /profile. */}
+        <section aria-label="Profile">
+          <div className="mb-1.5 flex items-center justify-between gap-3 px-0.5">
+            <h2 className="type-eyebrow">Profile</h2>
+          </div>
+          <div className="border-y border-border/60">
+            <Link
+              aria-label="Open your profile"
+              className="flex items-center gap-3 px-1 py-3 outline-none transition hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
+              href="/profile"
+            >
+              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
+                <UserRound aria-hidden="true" className="size-4" strokeWidth={1.8} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-xs font-semibold leading-5 text-foreground">
+                  Your profile
+                </span>
+                <span className="mt-0.5 block text-[10px] leading-4 text-muted-foreground">
+                  Photo, name, and training history
+                </span>
+              </span>
+              <ChevronRight
+                aria-hidden="true"
+                className="size-4 shrink-0 text-muted-foreground"
+                strokeWidth={1.8}
+              />
+            </Link>
+          </div>
+        </section>
 
         <Section title="Notifications">
           <Row
@@ -223,14 +263,14 @@ export function SettingsExperience({
               loadingTelegram
                 ? "Checking connection..."
                 : telegramConnected
-                  ? "Connected — you get a private message when something happens."
+                  ? "Connected Ã¢â‚¬â€ you get a private message when something happens."
                   : "Not connected"
             }
             icon={Send}
             title="Telegram"
           />
           {telegramLink && (
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 bg-muted/40 px-4 py-3 sm:px-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 px-1 py-3">
               <a
                 className="inline-flex items-center gap-1 text-xs font-medium text-primary underline underline-offset-4 hover:opacity-80"
                 href={telegramLink}
@@ -254,6 +294,36 @@ export function SettingsExperience({
           )}
         </Section>
 
+        <Section title="Camera">
+          <Row
+            action={
+              <button
+                aria-checked={rearCamera}
+                aria-label={rearCamera ? "Use front camera" : "Use rear camera"}
+                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  rearCamera ? "bg-primary" : "bg-muted"
+                }`}
+                onClick={toggleCamera}
+                role="switch"
+                type="button"
+              >
+                <span
+                  aria-hidden="true"
+                  className={`inline-block size-5 transform rounded-full bg-white shadow transition-transform ${
+                    rearCamera ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            }
+            description="Rear (world-facing) cameras work better when you prop the phone up and step back."
+            icon={Camera}
+            title="Rear camera"
+          />
+        </Section>
+
+        </div>
+
+        <div className="grid gap-6">
         <Section
           action={
             <button
@@ -280,8 +350,8 @@ export function SettingsExperience({
           ) : (
             <ul className="divide-y divide-border/60">
               {sessions.map((session) => (
-                <li className="flex items-center gap-3 px-4 py-2.5 sm:px-5" key={session.id}>
-                  <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                <li className="flex items-center gap-3 px-1 py-2.5" key={session.id}>
+                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
                     <MonitorSmartphone
                       aria-hidden="true"
                       className="size-4"
@@ -298,7 +368,7 @@ export function SettingsExperience({
                       )}
                     </p>
                     <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
-                      {session.operatingSystem ? `${session.operatingSystem} — ` : ""}
+                      {session.operatingSystem ? `${session.operatingSystem} Ã¢â‚¬â€ ` : ""}
                       <LocalDateTime value={session.createdAt} />
                     </p>
                   </div>
@@ -309,8 +379,8 @@ export function SettingsExperience({
           )}
         </Section>
 
-        {/* Sign out lives in the desktop account dropdown; mobile has no dropdown. */}
-        <div className="md:hidden">
+        {/* Sign out lives in the sidebar / account dropdown; mobile has neither. */}
+        <div className="lg:hidden">
           <Section title="Session">
             <Row
               action={
@@ -328,6 +398,47 @@ export function SettingsExperience({
               title="Sign out"
             />
           </Section>
+        </div>
+
+        <Section title="Danger zone">
+          <div className="py-4">
+            <p className="text-xs font-semibold text-foreground">Delete account</p>
+            <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
+              Permanently erases your workouts, badges and sessions, and
+              closes your Mono account. This cannot be undone.
+            </p>
+            <label className="mt-3 block">
+              <span className="type-eyebrow mb-1.5 block">Type DELETE to confirm</span>
+              <input
+                aria-label="Type DELETE to confirm account deletion"
+                autoComplete="off"
+                className="h-11 w-full rounded-lg border border-destructive/40 bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-destructive"
+                onChange={(event) => setDeleteConfirm(event.target.value)}
+                placeholder="DELETE"
+                value={deleteConfirm}
+              />
+            </label>
+            <Button
+              className="mt-3 h-11 w-full rounded-xl"
+              disabled={deleting || deleteConfirm.trim().toUpperCase() !== "DELETE"}
+              onClick={() => void confirmDeleteAccount()}
+              type="button"
+              variant="destructive"
+            >
+              {deleting ? (
+                <>
+                  <LoaderCircle aria-hidden="true" className="animate-spin" />
+                  Deleting accountÃ¢â‚¬Â¦
+                </>
+              ) : (
+                <>
+                  <Trash2 aria-hidden="true" />
+                  Delete my account
+                </>
+              )}
+            </Button>
+          </div>
+        </Section>
         </div>
       </div>
 
@@ -354,11 +465,11 @@ function Section({
 }) {
   return (
     <section aria-label={title}>
-      <div className="mb-1.5 flex items-center justify-between gap-3 px-1">
+      <div className="mb-1.5 flex items-center justify-between gap-3 px-0.5">
         <h2 className="type-eyebrow">{title}</h2>
         {action}
       </div>
-      <div className="surface-card divide-y divide-border/60 overflow-hidden">
+      <div className="divide-y divide-border/60 border-y border-border/60">
         {children}
       </div>
     </section>
@@ -377,14 +488,14 @@ function Row({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-5">
-      <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary sm:size-9">
+    <div className="flex items-center gap-3 px-1 py-3 sm:gap-4">
+      <span className="grid size-8 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground sm:size-9">
         <Icon aria-hidden="true" className="size-4" strokeWidth={1.8} />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-semibold leading-5">{title}</p>
+        <p className="text-xs font-semibold leading-5 text-foreground">{title}</p>
         {description && (
-          <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
+          <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
             {description}
           </p>
         )}

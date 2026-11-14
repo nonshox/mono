@@ -61,6 +61,61 @@ export async function getJoinedChallengeIds(
   return new Set(result.rows.map((row) => String(row.challenge)));
 }
 
+/**
+ * Count of every joined challenge (active or finished) whose rep target the
+ * user has reached inside the challenge window. Rewards-once safe: this is
+ * purely derived from verified workouts.
+ */
+export async function getCompletedChallengeCount(
+  userId: string,
+): Promise<number> {
+  const entries = await joinedUserIdsAllTime(userId);
+  if (entries.length === 0) return 0;
+
+  const challenges = await Promise.all(entries.map((id) => getChallenge(id)));
+  let completed = 0;
+  for (const challenge of challenges) {
+    if (!challenge) continue;
+    const reps = await repsForUserInWindow(challenge, userId);
+    if (reps >= challenge.reps) completed += 1;
+  }
+  return completed;
+}
+
+async function joinedUserIdsAllTime(userId: string): Promise<string[]> {
+  const result = await getTables().listRows<EntryRow>({
+    databaseId: getDatabaseId(),
+    tableId: entriesTable,
+    queries: [
+      Query.equal("user", userId),
+      Query.limit(100),
+      Query.select(["challenge"]),
+    ],
+    total: false,
+  });
+  return result.rows.map((row) => String(row.challenge));
+}
+
+export async function repsForUserInWindow(
+  challenge: Challenge,
+  userId: string,
+): Promise<number> {
+  const result = await getTables().listRows<WorkoutRow>({
+    databaseId: getDatabaseId(),
+    tableId: "workouts",
+    queries: [
+      Query.equal("kind", "pushup"),
+      Query.equal("user", userId),
+      Query.greaterThanEqual("$createdAt", challenge.starts),
+      Query.lessThanEqual("$createdAt", challenge.ends),
+      Query.limit(2000),
+      Query.select(["reps"]),
+    ],
+    total: false,
+  });
+  return result.rows.reduce((sum, row) => sum + Number(row.reps || 0), 0);
+}
+
 export async function getChallenge(id: string): Promise<Challenge | null> {
   try {
     const row = await getTables().getRow<ChallengeRow>({
@@ -85,7 +140,7 @@ async function repsByUserInWindow(
       Query.equal("kind", "pushup"),
       Query.greaterThanEqual("$createdAt", challenge.starts),
       Query.lessThanEqual("$createdAt", challenge.ends),
-      Query.limit(5000),
+      Query.limit(3000),
       Query.select(["user", "reps"]),
     ],
     total: false,

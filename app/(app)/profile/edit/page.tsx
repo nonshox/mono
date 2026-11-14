@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { ProfileEditor } from "@/components/interface/profile-editor";
-import { ProfileSkeleton } from "@/components/interface/skeletons";
-import { SessionExpired } from "@/components/interface/session-expired";
+import { PageLoader } from "@/components/interface/page-loader";import { SessionExpired } from "@/components/interface/session-expired";
 import { getCurrentAccount } from "@/features/auth/session";
 
 export const metadata = {
@@ -10,7 +9,7 @@ export const metadata = {
 
 export default function EditProfilePage() {
   return (
-    <Suspense fallback={<ProfileSkeleton />}>
+    <Suspense fallback={<PageLoader />}>
       <AuthenticatedEditor />
     </Suspense>
   );

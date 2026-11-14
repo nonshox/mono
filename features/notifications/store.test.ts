@@ -20,6 +20,7 @@ const firstNotification = {
   read: false,
   count: 1,
   ids: ["notification-1"],
+  self: false,
 };
 
 const secondNotification = {

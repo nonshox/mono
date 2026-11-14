@@ -1,12 +1,24 @@
 "use client";
 
-import { Bell, Check, CheckCheck, RefreshCw } from "lucide-react";
+import { Bell, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import type { NotificationItem } from "@/features/notifications/client-api";
 import { useNotificationStore } from "@/features/notifications/store";
 import { UserAvatar } from "@/components/interface/user-avatar";
 import { EmptyState } from "@/components/interface/empty-state";
+
+/** Where a notification should take you when tapped. */
+function hrefFor(item: NotificationItem): string | null {
+  if (item.type.startsWith("followed")) return `/profile/${item.actorId}`;
+  if (item.ref?.startsWith("achievement:")) return "/profile";
+  if (item.ref?.startsWith("challenge:")) {
+    return `/challenges/${item.ref.slice("challenge:".length)}`;
+  }
+  if (item.ref === "leaderboard") return "/leaderboard";
+  if (item.ref && item.type.includes("overtake")) return `/challenges/${item.ref}`;
+  return null;
+}
 
 const filters = [
   { id: "all", label: "All" },
@@ -15,6 +27,7 @@ const filters = [
 type FilterId = (typeof filters)[number]["id"];
 
 export function NotificationExperience() {
+  const router = useRouter();
   const { items, unreadCount, cursor, loading, loadingMore, loaded, load, loadMore, markAllRead, markRead, error } = useNotificationStore();
   const [filter, setFilter] = useState<FilterId>("all");
 
@@ -41,31 +54,36 @@ export function NotificationExperience() {
     void load();
   }, [load]);
 
+  const totalUnread = unreadCount;
+
   return (
-    <div className="mx-auto max-w-2xl px-4 pb-24 pt-6 md:px-6 md:pt-8 lg:pt-10">
-      <header className="mb-5 flex items-end justify-between gap-3">
+    <div className="mx-auto w-full max-w-2xl md:max-w-3xl">
+      {/* Header */}
+      <header className="flex items-end justify-between gap-3 border-b border-border/60 pb-3">
         <div>
-          <p className="type-eyebrow text-primary">Inbox</p>
-          <h1 className="type-section mt-1 text-foreground">Notifications</h1>
+          <h1 className="text-lg font-semibold sm:text-xl tracking-tight text-foreground">
+            Notifications
+          </h1>
+          <p className="mt-0.5 text-[10px] text-muted-foreground">
+            {totalUnread > 0 ? `${totalUnread} unread` : "All caught up"}
+          </p>
         </div>
-        {unreadCount > 0 && (
-          <Button
-            className="rounded-full text-[11px] font-semibold h-8 px-3 border-border/60"
+        {totalUnread > 0 && (
+          <button
+            className="shrink-0 text-xs sm:text-sm font-semibold text-primary outline-none transition hover:underline focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
             disabled={items.every((i) => i.read)}
             onClick={() => void markAllRead()}
-            size="sm"
-            variant="outline"
+            type="button"
           >
-            <CheckCheck aria-hidden="true" className="size-3.5" />
             Mark all read
-          </Button>
+          </button>
         )}
       </header>
 
-      {/* Filter tabs — compact segmented control */}
+      {/* Filter tabs — underline style */}
       <div
         aria-label="Filter notifications"
-        className="inline-flex items-center gap-0.5 rounded-full bg-muted p-0.5"
+        className="flex items-center gap-4 border-b border-border/60"
         role="group"
       >
         {filters.map((item) => {
@@ -73,18 +91,20 @@ export function NotificationExperience() {
           return (
             <button
               aria-pressed={isActive}
-              className={`inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 text-xs font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-ring ${
+              className={`-mb-px inline-flex h-11 items-center gap-1.5 border-b-2 text-xs sm:text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-ring ${
                 isActive
-                  ? "bg-card text-foreground shadow-thumb"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "border-foreground font-semibold text-foreground"
+                  : "border-transparent font-medium text-muted-foreground hover:text-foreground"
               }`}
               key={item.id}
               onClick={() => setFilter(item.id)}
               type="button"
             >
               {item.label}
-              {item.id === "unread" && unreadCount > 0 && (
-                <span className="tabular-nums opacity-70">{unreadCount}</span>
+              {item.id === "unread" && totalUnread > 0 && (
+                <span className="tabular-nums text-[11px] text-muted-foreground">
+                  {totalUnread}
+                </span>
               )}
             </button>
           );
@@ -94,116 +114,109 @@ export function NotificationExperience() {
       {/* Error */}
       {error && (
         <div
-          className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3"
+          className="mt-3 flex items-center justify-between gap-3 border-b border-destructive/20 py-2"
           role="alert"
         >
-          <p className="text-xs text-destructive">{error}</p>
-          <Button
-            className="h-7 px-2.5 text-[11px]"
+          <p className="text-xs sm:text-sm text-destructive">{error}</p>
+          <button
+            className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-primary outline-none transition hover:underline focus-visible:ring-2 focus-visible:ring-ring"
             disabled={loading}
             onClick={() => void load(true)}
-            size="sm"
-            variant="outline"
+            type="button"
           >
-            <RefreshCw aria-hidden="true" />
+            <RefreshCw aria-hidden="true" className="size-3.5" />
             Retry
-          </Button>
+          </button>
         </div>
       )}
 
       {/* Content */}
       {loading && !loaded ? (
-        <div className="mt-4 divide-y divide-border/60 rounded-2xl border border-border/60 bg-card overflow-hidden">
-          {[0, 1, 2, 3].map((i) => (
-            <div className="flex items-center gap-3 px-3 py-3" key={i}>
-              <div className="size-9 shrink-0 animate-pulse rounded-full bg-muted" />
-              <div className="grid flex-1 gap-1.5">
-                <div className="h-3 w-4/5 animate-pulse rounded-full bg-muted" />
-                <div className="h-2.5 w-1/3 animate-pulse rounded-full bg-muted" />
+        <ul className="divide-y divide-border/60 border-b border-border/60">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <li className="flex items-center gap-3 py-2.5 sm:py-3" key={i}>
+              <div className="size-7 shrink-0 animate-pulse rounded-full bg-muted" />
+              <div className="grid flex-1 gap-1">
+                <div className="h-2.5 w-3/4 animate-pulse rounded-full bg-muted" />
               </div>
-            </div>
+              <div className="h-2.5 w-8 animate-pulse rounded-full bg-muted" />
+            </li>
           ))}
-        </div>
+        </ul>
       ) : groups.length === 0 ? (
-        <EmptyState
-          description="When someone interacts with you, it will appear here."
-          icon={Bell}
-          title="Inbox zero"
-        />
+        <div className="border-b border-border/60 py-10">
+          <EmptyState
+            description="Overtakes, badges and challenge wins will land here."
+            icon={Bell}
+            title="Nothing yet"
+          />
+        </div>
       ) : (
-        <div className="mt-4 space-y-5">
-          {groups.map((group) => (
-            <section aria-label={group.label} key={group.label}>
-              <h2 className="type-eyebrow mb-1.5 flex items-center justify-between px-1">
-                {group.label}
-                <span className="text-muted-foreground/60 text-[10px] font-medium normal-case tracking-normal">
-                  {group.items.length} event{group.items.length === 1 ? "" : "s"}
-                </span>
-              </h2>
-              <div className="divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/60 bg-card">
-                {group.items.map((item) => (
+        groups.map((group) => (
+          <section aria-label={group.label} className="mt-4" key={group.label}>
+            <h2 className="mb-1 px-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+              {group.label}
+            </h2>
+            <ul className="divide-y divide-border/60 border-y border-border/60">
+              {group.items.map((item) => (
+                <li key={item.id}>
                   <div
-                    className="flex cursor-pointer items-center gap-3 px-3 py-3 transition-colors hover:bg-muted/40"
-                    key={item.id}
+                    aria-label={`${item.self ? "You" : item.actorName} ${item.type}`}
+                    className="flex cursor-pointer items-center gap-2.5 py-2.5 sm:py-3 outline-none transition hover:bg-muted/40 focus-visible:bg-muted/40"
                     onClick={() => {
+                      const href = hrefFor(item);
                       if (!item.read) void markRead(item);
+                      if (href) router.push(href);
                     }}
-                    role="button"
-                    tabIndex={0}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
+                        const href = hrefFor(item);
                         if (!item.read) void markRead(item);
+                        if (href) router.push(href);
                       }
                     }}
+                    role="button"
+                    tabIndex={0}
                   >
-                    <UserAvatar avatar={item.actorAvatar} name={item.actorName} size={34} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[13px] leading-snug text-foreground">
-                        <span className="font-semibold">{item.actorName}</span>{" "}
-                        <span className="text-foreground/80">
-                          {item.count > 1 ? `${item.type} ${item.count}x` : item.type}
-                        </span>
-                      </p>
-                      <time
-                        className="mt-0.5 block text-[10px] font-medium text-muted-foreground"
-                        dateTime={item.createdAt}
-                      >
-                        {formatRelative(item.createdAt)}
-                      </time>
-                    </div>
-                    {!item.read && (
-                      <button
-                        aria-label="Mark as read"
-                        className="grid size-8 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void markRead(item);
-                        }}
-                        type="button"
-                      >
-                        <Check aria-hidden="true" className="size-4" />
-                      </button>
-                    )}
+                    <span className="grid w-2 shrink-0 place-items-center">
+                      {!item.read && (
+                        <span aria-hidden="true" className="size-1.5 rounded-full bg-primary" />
+                      )}
+                    </span>
+                    <UserAvatar avatar={item.actorAvatar} name={item.actorName} size={28} />
+                    <span className="min-w-0 flex-1 truncate text-xs sm:text-sm leading-4 text-foreground">
+                      <span className="font-medium">
+                        {item.self ? "You" : item.actorName}
+                      </span>{" "}
+                      <span className="text-muted-foreground">
+                        {item.count > 1 ? `${item.type} ×${item.count}` : item.type}
+                      </span>
+                    </span>
+                    <time
+                      className="shrink-0 text-[10px] font-medium tabular-nums text-muted-foreground/80"
+                      dateTime={item.createdAt}
+                    >
+                      {formatRelative(item.createdAt)}
+                    </time>
                   </div>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
       )}
 
       {cursor && (
-        <div className="mt-5 flex justify-center">
-          <Button
-            className="min-w-36 h-9 rounded-full text-xs"
+        <div className="mt-4 flex justify-center">
+          <button
+            className="text-xs sm:text-sm font-semibold text-primary outline-none transition hover:underline disabled:opacity-40"
             disabled={loadingMore || loading}
             onClick={() => void loadMore()}
-            size="sm"
-            variant="outline"
+            type="button"
           >
-            {loadingMore ? "Loading older…" : "Load older"}
-          </Button>
+            {loadingMore ? "Loading…" : "Load older"}
+          </button>
         </div>
       )}
     </div>
@@ -216,13 +229,13 @@ function formatRelative(value: string): string {
   if (Number.isNaN(timestamp)) return "";
 
   const seconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
-  if (seconds < 60) return "just now";
+  if (seconds < 60) return "now";
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return `${hours}h`;
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
+  if (days < 7) return `${days}d`;
 
   return new Intl.DateTimeFormat(undefined, {
     month: "short",

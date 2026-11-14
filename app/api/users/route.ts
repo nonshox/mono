@@ -7,6 +7,7 @@ import {
 } from "@/lib/http";
 import {
   ensureUserForAccount,
+  getUserRow,
   updateUserName,
 } from "@/features/users/service";
 import { updateUserNameSchema } from "@/features/users/schemas";
@@ -26,7 +27,11 @@ export async function GET() {
       auth.account.email,
     );
     return NextResponse.json(
-      { email: row.email, name: row.name, avatar: row.avatar ?? "" },
+      {
+        email: row.email,
+        name: row.name,
+        avatar: row.avatar ?? "",
+      },
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {
@@ -57,19 +62,22 @@ export async function PATCH(request: Request) {
 
   const parsed = updateUserNameSchema.safeParse(body);
   if (!parsed.success) {
-    return jsonError(400, "INVALID_INPUT", "Check the name and try again.");
+    return jsonError(400, "INVALID_INPUT", "Check what you sent and try again.");
   }
 
   try {
     await ensureUserForAccount(auth.account.$id, auth.account.email);
-    const row = await updateUserName(auth.account.$id, parsed.data.name);
+    if (parsed.data.name !== undefined) {
+      await updateUserName(auth.account.$id, parsed.data.name);
+    }
+    const row = await getUserRow(auth.account.$id);
     return NextResponse.json({
-      email: row.email,
-      name: row.name,
-      avatar: row.avatar ?? "",
+      email: row?.email ?? auth.account.email,
+      name: row?.name ?? "",
+      avatar: row?.avatar ?? "",
     });
   } catch (error) {
     logFailure("User update", error);
-    return jsonError(502, "USER_UPDATE_FAILED", "Your name could not be saved.");
+    return jsonError(502, "USER_UPDATE_FAILED", "Your profile could not be saved.");
   }
 }

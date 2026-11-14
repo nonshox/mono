@@ -7,6 +7,7 @@ describe("workout input", () => {
       createWorkoutSchema.safeParse({ kind: "pushup", reps: 25, duration: 120 })
         .success,
     ).toBe(true);
+    // Legacy `score` payloads are rejected now that form scoring is gone.
     expect(
       createWorkoutSchema.safeParse({
         kind: "pushup",
@@ -14,14 +15,18 @@ describe("workout input", () => {
         duration: 120,
         score: 87,
       }).success,
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("rejects bad payloads and extra fields", () => {
     expect(
       createWorkoutSchema.safeParse({ kind: "squat", reps: 10, duration: 60 })
         .success,
-    ).toBe(false);
+    ).toBe(true);
+    expect(
+      createWorkoutSchema.safeParse({ kind: "plank", reps: 0, duration: 60 })
+        .success,
+    ).toBe(true);
     expect(
       createWorkoutSchema.safeParse({ kind: "pushup", reps: 10001, duration: 60 })
         .success,

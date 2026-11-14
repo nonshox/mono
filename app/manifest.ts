@@ -3,9 +3,9 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "Mono",
+    name: "Mono Performance",
     short_name: "Mono",
-    description: "Mono — a minimal, private base for your next app.",
+    description: "Mono Performance — camera-verified push-ups, one leaderboard, prestige only.",
     lang: "en",
     dir: "ltr",
     start_url: "/",

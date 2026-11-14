@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { getCurrentAccount } from "@/features/auth/session";
 import { getChallengeDetail } from "@/features/challenges/service";
 import { ChallengeDetailBody } from "@/components/interface/challenge-detail";
-import { ChallengeSkeleton } from "@/components/interface/skeletons";
+import { PageLoader } from "@/components/interface/page-loader";
 import { SessionExpired } from "@/components/interface/session-expired";
 
 export const metadata = {
@@ -19,7 +19,7 @@ export default function ChallengeDetailPage({
   params: Promise<{ id: string }>;
 }) {
   return (
-    <Suspense fallback={<ChallengeSkeleton />}>
+    <Suspense fallback={<PageLoader />}>
       <AuthenticatedDetail params={params} />
     </Suspense>
   );
@@ -39,11 +39,18 @@ async function AuthenticatedDetail({
   const detail = await getChallengeDetail(id, account.$id);
   if (!detail) {
     return (
-      <main className="grid flex-1 place-items-center px-6">
-        <div className="text-center">
-          <p className="type-section">Challenge not found</p>
-          <p className="type-lead mt-2">Maybe the round ended. Tap Train and keep going.</p>
-          <Link className="mt-6 inline-flex h-10 items-center gap-2 rounded-full bg-primary px-6 text-xs font-semibold text-primary-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring" href="/challenges">
+      <main className="grid min-h-full w-full flex-1 place-items-center bg-white px-6">
+        <div className="max-w-xs text-center">
+          <p className="text-base font-semibold tracking-tight text-foreground">
+            Challenge not found
+          </p>
+          <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+            The round ended or the link is wrong.
+          </p>
+          <Link
+            className="mt-4 inline-flex h-10 items-center gap-1.5 rounded-full bg-foreground px-5 text-[11px] font-semibold text-background outline-none transition hover:opacity-90"
+            href="/challenges"
+          >
             <ArrowLeft aria-hidden="true" className="size-4" strokeWidth={2} />
             Challenges
           </Link>
@@ -53,7 +60,7 @@ async function AuthenticatedDetail({
   }
 
   return (
-    <main className="w-full px-4 pb-24 pt-6 md:px-6 md:pb-8 md:pt-8 lg:px-8">
+    <main className="min-h-full w-full bg-white px-4 pb-20 pt-5 sm:px-6 sm:pt-8">
       <ChallengeDetailBody
         challengeId={detail.id}
         initial={detail}

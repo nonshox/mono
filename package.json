@@ -11,6 +11,8 @@
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run lint && npm test && npm run build",
     "setup": "node scripts/setup-appwrite.mjs",
+    "counters:backfill": "node scripts/backfill-counters.mjs",
+    "rewards:backfill": "node scripts/backfill-rewards.mjs",
     "telegram:webhook": "node scripts/telegram-webhook.mjs",
     "telegram:menu": "node scripts/telegram-menu.mjs"
   },
@@ -44,7 +46,7 @@
     "typescript": "^5",
     "vitest": "^4.1.12"
   },
-  "description": "Mono - a minimal, private base for your next app (Next.js + Appwrite).",
+  "description": "Mono Performance — camera-verified push-ups (Next.js + Appwrite).",
   "engines": {
     "node": ">=20"
   }

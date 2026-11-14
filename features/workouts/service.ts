@@ -1,6 +1,8 @@
 import "server-only";
 import { ID, Query } from "node-appwrite";
 import { getDatabaseId, getTables, isNotFound } from "@/lib/appwrite/tables";
+import { getUsersByIds } from "@/features/users/service";
+import { logFailure } from "@/lib/http";
 import type { WorkoutRow, WorkoutSummary } from "./types";
 import type { createWorkoutSchema } from "./schemas";
 import type { z } from "zod";
@@ -18,6 +20,22 @@ export async function createWorkout(
     permissions: [],
     data: { user: userId, ...input },
   });
+
+  // Keep the lifetime verified-pushup counter in step. Atomic — safe even
+  // under simultaneous saves. Failures never fail the session.
+  if (input.kind === "pushup" && input.reps > 0) {
+    try {
+      await getTables().incrementRowColumn({
+        databaseId: getDatabaseId(),
+        tableId: "users",
+        rowId: userId,
+        column: "pushups",
+        value: input.reps,
+      });
+    } catch (error) {
+      logFailure("Pushup counter increment", error);
+    }
+  }
 }
 
 export type StoredSession = {
@@ -25,7 +43,6 @@ export type StoredSession = {
   kind: string;
   reps: number;
   duration: number;
-  score: number | null;
   createdAt: string;
 };
 
@@ -50,7 +67,6 @@ export async function getRecentWorkouts(
       kind: row.kind,
       reps: row.reps,
       duration: row.duration,
-      score: row.score ?? null,
       createdAt: row.$createdAt,
     }));
   } catch (error) {
@@ -65,6 +81,65 @@ export async function getRecentWorkouts(
  * Totals + current streak (consecutive days with at least one session).
  * Scans the most recent 200 rows — plenty for a streak.
  */
+export type CommunitySession = {
+  id: string;
+  userId: string;
+  name: string;
+  avatar: string;
+  reps: number;
+  kind: string;
+  createdAt: string;
+};
+
+/**
+ * Latest public sessions across the app. Used on the home screen to make the
+ * board feel alive; private profiles are filtered out.
+ */
+export async function getRecentCommunitySessions(
+  limit = 6,
+): Promise<CommunitySession[]> {
+  let rows: WorkoutRow[];
+  try {
+    const result = await getTables().listRows<WorkoutRow>({
+      databaseId: getDatabaseId(),
+      tableId,
+      queries: [
+        Query.orderDesc("$createdAt"),
+        Query.limit(Math.min(limit * 2, 50)),
+        Query.select(["user", "reps", "kind", "$createdAt"]),
+      ],
+      total: false,
+    });
+    rows = result.rows;
+  } catch (error) {
+    if (isNotFound(error)) {
+      return [];
+    }
+    throw error;
+  }
+
+  const userIds = [...new Set(rows.map((row) => String(row.user)))];
+  const users = await getUsersByIds(userIds);
+
+  const sessions: CommunitySession[] = [];
+  for (const row of rows) {
+    const userId = String(row.user);
+    const user = users.get(userId);
+    if (!user) continue;
+    sessions.push({
+      id: row.$id,
+      userId,
+      name: user.name || "Athlete",
+      avatar: user.avatar ?? "",
+      reps: Number(row.reps) || 0,
+      kind: String(row.kind),
+      createdAt: row.$createdAt,
+    });
+    if (sessions.length >= limit) break;
+  }
+  return sessions;
+}
+
 export async function getWorkoutSummary(userId: string): Promise<WorkoutSummary> {
   let rows: WorkoutRow[];
   try {

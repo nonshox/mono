@@ -1,7 +1,6 @@
 import { Suspense } from "react";
-import { PushupCounter } from "@/components/interface/pushup-counter";
-import { NotificationsSkeleton } from "@/components/interface/skeletons";
-import { SessionExpired } from "@/components/interface/session-expired";
+import { ExerciseCounter } from "@/components/interface/exercise-counter";
+import { PageLoader } from "@/components/interface/page-loader";import { SessionExpired } from "@/components/interface/session-expired";
 import { getCurrentAccount } from "@/features/auth/session";
 
 export const metadata = {
@@ -10,7 +9,7 @@ export const metadata = {
 
 export default function PushupsPage() {
   return (
-    <Suspense fallback={<NotificationsSkeleton />}>
+    <Suspense fallback={<PageLoader />}>
       <AuthenticatedPushups />
     </Suspense>
   );
@@ -23,8 +22,8 @@ async function AuthenticatedPushups() {
   }
 
   return (
-    <main className="w-full px-4 pb-24 pt-6 md:px-6 md:pb-8 md:pt-8 lg:px-8">
-      <PushupCounter />
+    <main className="h-[calc(100svh-7rem)] w-full overflow-hidden bg-white md:grid md:place-items-center md:p-6 lg:h-svh lg:p-8">
+      <ExerciseCounter kind="pushup" />
     </main>
   );
 }

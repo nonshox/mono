@@ -51,8 +51,9 @@ const SPEC = [
       { type: "email", key: "email", required: true },
       { type: "string", key: "name", size: 100, required: true },
       { type: "string", key: "avatar", size: 36, required: false },
+      { type: "integer", key: "pushups", required: false, min: 0, max: 100000000 },
     ],
-    indexes: [],
+    indexes: [{ key: "pushups", type: "key", columns: ["pushups"] }],
   },
   {
     id: "notifications",
@@ -88,9 +89,12 @@ const SPEC = [
       { type: "string", key: "kind", size: 16, required: true },
       { type: "integer", key: "reps", required: true, min: 0, max: 10000 },
       { type: "integer", key: "duration", required: true, min: 0, max: 100000 },
-      { type: "integer", key: "score", required: false, min: 0, max: 100 },
     ],
-    indexes: [{ key: "user", type: "key", columns: ["user"] }],
+    indexes: [
+      { key: "user", type: "key", columns: ["user"] },
+      // System-field range index so windowed leaderboard scans stay indexed.
+      { key: "created", type: "key", columns: ["$createdAt"], optional: true },
+    ],
   },
   {
     id: "challenges",
@@ -116,7 +120,8 @@ const SPEC = [
       { key: "user", type: "key", columns: ["user"] },
       { key: "challenge", type: "key", columns: ["challenge"] },
     ],
-  },  {
+  },
+  {
     id: "codes",
     name: "codes",
     columns: [
@@ -200,6 +205,44 @@ async function seed() {
   results.push("seed: Weekly 500 created");
 }
 
+/** One-time cleanup of retired columns/tables. Safe to re-run; logs and continues. */
+async function legacyCleanup() {
+  const droppableColumns = [
+    { tableId: "users", key: "private" },
+    { tableId: "workouts", key: "score" },
+  ];
+  for (const { tableId, key } of droppableColumns) {
+    try {
+      await api(
+        () => tables.deleteColumn({ databaseId, tableId, key }),
+        `drop column ${tableId}.${key}`,
+        1,
+      );
+      results.push(`  column ${tableId}.${key}: dropped (legacy)`);
+    } catch (error) {
+      const missing =
+        error instanceof AppwriteException &&
+        error.code >= 400 &&
+        error.code < 500;
+      results.push(
+        `  column ${tableId}.${key}: not present${missing ? "" : ` (${error?.message ?? error})`}`,
+      );
+    }
+  }
+
+  try {
+    await api(
+      () => tables.deleteTable({ databaseId, tableId: "follows" }),
+      "drop table follows",
+      1,
+    );
+    results.push("  table follows: dropped (legacy)");
+  } catch {
+    results.push("  table follows: not present");
+  }
+}
+
+await legacyCleanup();
 await seed();
 
 console.log("\nSetup summary:");
@@ -236,18 +279,26 @@ async function ensureTable(spec) {
       results.push(`  index ${index.key}: exists`);
       continue;
     }
-    await api(
-      () =>
-        tables.createIndex({
-          databaseId,
-          tableId: spec.id,
-          key: index.key,
-          type: index.type,
-          columns: index.columns,
-        }),
-      `create index ${spec.id}.${index.key}`,
-    );
-    results.push(`  index ${index.key}: created`);
+    try {
+      await api(
+        () =>
+          tables.createIndex({
+            databaseId,
+            tableId: spec.id,
+            key: index.key,
+            type: index.type,
+            columns: index.columns,
+          }),
+        `create index ${spec.id}.${index.key}`,
+      );
+      results.push(`  index ${index.key}: created`);
+    } catch (error) {
+      if (index.optional) {
+        results.push(`  index ${index.key}: skipped (${error?.message ?? error})`);
+        continue;
+      }
+      throw error;
+    }
   }
 }
 

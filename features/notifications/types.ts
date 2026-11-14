@@ -26,4 +26,6 @@ export type NotificationItem = {
   count: number;
   /** All row ids in this collapsed group (for mark-as-read). */
   ids: string[];
+  /** True when the actor is the recipient themselves (e.g. badge earned). */
+  self: boolean;
 };

@@ -11,6 +11,7 @@ export type NotificationItem = {
   read: boolean;
   count: number;
   ids: string[];
+  self: boolean;
 };
 
 export type NotificationPage = {

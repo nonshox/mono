@@ -6,12 +6,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Mono",
-    template: "%s | Mono",
+    default: "Mono Performance",
+    template: "%s | Mono Performance",
   },
-  description: "A minimal, private base for your next app.",
+  description: "Camera-verified push-ups, one global leaderboard, prestige only.",
   manifest: "/manifest.webmanifest",
-  applicationName: "Mono",
+  applicationName: "Mono Performance",
   appleWebApp: {
     capable: true,
     title: "Mono",

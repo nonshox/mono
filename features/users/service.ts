@@ -1,6 +1,8 @@
 import "server-only";
-import { AppwriteException, Query, type Models } from "node-appwrite";
+import { AppwriteException, Query, Users, type Models } from "node-appwrite";
+import { createAdminClient } from "@/lib/appwrite/server";
 import { getDatabaseId, getTables, isNotFound } from "@/lib/appwrite/tables";
+import { logFailure } from "@/lib/http";
 
 const tableId = "users";
 
@@ -8,6 +10,8 @@ export type UserRow = Models.Row & {
   email: string;
   name: string;
   avatar?: string;
+  /** Lifetime verified push-ups, maintained at write time. */
+  pushups?: number;
 };
 
 export type UserPreview = Models.Row & {
@@ -106,4 +110,55 @@ export async function getUsersByIds(
     total: false,
   });
   return new Map(result.rows.map((row) => [row.$id, row]));
+}
+
+/**
+ * Best-effort erasure of everything mono stores about an account, then the
+ * Appwrite account itself. Each step is independent; failures are logged and
+ * don't abort the deletion of the rest.
+ */
+export async function deleteUserEverywhere(userId: string): Promise<void> {
+  const tables = getTables();
+  const databaseId = getDatabaseId();
+
+  const wipe = async (table: string, column: string) => {
+    for (;;) {
+      const batch = await tables.listRows({
+        databaseId,
+        tableId: table,
+        queries: [Query.equal(column, userId), Query.limit(100), Query.select(["$id"])],
+        total: false,
+      });
+      if (batch.rows.length === 0) return;
+      await Promise.allSettled(
+        batch.rows.map((row) =>
+          tables.deleteRow({ databaseId, tableId: table, rowId: row.$id }),
+        ),
+      );
+      if (batch.rows.length < 100) return;
+    }
+  };
+
+  await Promise.allSettled([
+    wipe("workouts", "user"),
+    wipe("entries", "user"),
+    wipe("notifications", "recipient"),
+    wipe("notifications", "actor"),
+    // Legacy table from the retired follow feature — wiped if present.
+    wipe("follows", "follower"),
+    wipe("follows", "following"),
+    wipe("telegram", "user"),
+    wipe("codes", "user"),
+  ]);
+  await tables
+    .deleteRow({ databaseId, tableId, rowId: userId })
+    .catch((error) => logFailure("Delete user row", error));
+
+  try {
+    const users = new Users(createAdminClient());
+    await users.delete(userId);
+  } catch (error) {
+    logFailure("Delete auth account", error);
+    throw error;
+  }
 }

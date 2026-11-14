@@ -23,10 +23,20 @@ export async function notify(
   actor: string,
   type: string,
   ref?: string,
+  allowSelf = false,
 ): Promise<void> {
-  if (recipient === actor) {
+  if (!allowSelf && recipient === actor) {
     return;
   }
+
+  const actorName =
+    recipient === actor
+      ? "You"
+      : (
+          await getUsersByIds([actor]).catch(() => new Map())
+        ).get(actor)?.name?.trim() || "Someone";
+  const line = `${actorName} ${type}`;
+  const headline = line.charAt(0).toUpperCase() + line.slice(1);
 
   await getTables().createRow<NotificationRow>({
     databaseId: getDatabaseId(),
@@ -44,10 +54,7 @@ export async function notify(
 
   after(async () => {
     try {
-      await sendTelegramNotification(
-        recipient,
-        `You have a new notification: ${type}`,
-      );
+      await sendTelegramNotification(recipient, headline);
     } catch (error) {
       logFailure("Telegram delivery", error);
     }
@@ -84,6 +91,7 @@ export async function listNotifications(
         read: row.read,
         count: 1,
         ids: [row.$id],
+        self: row.actor === userId,
       },
     ];
   });
