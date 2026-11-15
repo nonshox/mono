@@ -447,7 +447,7 @@ export function SettingsExperience({
                 {reviewLoading ? "Reading your yearâ€¦" : "Generate review"}
               </button>
             ) : (
-              <p className="mt-2 text-xs text-muted-foreground/70">
+              <p className="mt-2 text-xs text-muted-foreground">
                 Enable Mono AI above to generate.
               </p>
             )}
@@ -518,4 +518,5 @@ export function SettingsExperience({
     </main>
   );
 }
+
 

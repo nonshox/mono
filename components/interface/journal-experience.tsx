@@ -145,12 +145,12 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
         <div className="flex items-center gap-2 pb-2 pt-1">
           <Search
             aria-hidden="true"
-            className="size-3.5 shrink-0 text-muted-foreground/70"
+            className="size-3.5 shrink-0 text-muted-foreground"
             strokeWidth={2}
           />
           <input
             aria-label="Search your journal"
-            className="h-6 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/60"
+            className="h-6 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Escape") setQuery("");
@@ -178,7 +178,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
 
         {themes.length > 0 && (
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 px-0.5 pb-2">
-            <span className="type-eyebrow text-muted-foreground/60">
+            <span className="type-eyebrow text-muted-foreground">
               last 30 days
             </span>
             {themes.map((theme, index) => (
@@ -191,7 +191,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                   {theme.label}
                 </button>
                 {index < themes.length - 1 && (
-                  <span aria-hidden="true" className="type-eyebrow text-muted-foreground/40">
+                  <span aria-hidden="true" className="type-eyebrow text-muted-foreground">
                     Â·
                   </span>
                 )}
@@ -353,4 +353,5 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
     </main>
   );
 }
+
 

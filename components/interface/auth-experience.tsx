@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { ArrowLeft, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -91,7 +91,7 @@ export function AuthExperience() {
           </h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
             {step === "email" ? (
-              "No password — we\u2019ll email you a one-time code."
+              "No password â€” we\u2019ll email you a one-time code."
             ) : (
               <>
                 Code sent to{" "}
@@ -130,7 +130,7 @@ export function AuthExperience() {
               type="submit"
             >
               {pending && <LoaderCircle aria-hidden="true" className="animate-spin" />}
-              {pending ? "Sending…" : "Continue"}
+              {pending ? "Sendingâ€¦" : "Continue"}
             </Button>
           </form>
         ) : (
@@ -177,7 +177,7 @@ export function AuthExperience() {
                 type="submit"
               >
                 {pending && <LoaderCircle aria-hidden="true" className="animate-spin" />}
-                {pending ? "Verifying…" : "Sign in"}
+                {pending ? "Verifyingâ€¦" : "Sign in"}
               </Button>
             </form>
 
@@ -204,9 +204,10 @@ export function AuthExperience() {
         )}
       </div>
 
-      <p className="type-eyebrow mt-12 text-muted-foreground/60">
-        Mono — a minimal app base
+      <p className="type-eyebrow mt-12 text-muted-foreground">
+        Mono â€” a minimal app base
       </p>
     </main>
   );
 }
+

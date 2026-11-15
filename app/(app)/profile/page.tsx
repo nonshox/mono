@@ -85,11 +85,12 @@ async function AuthenticatedProfile() {
           )}
         </dl>
 
-        <p className="mt-6 text-xs leading-5 text-muted-foreground/80">
+        <p className="mt-6 text-xs leading-5 text-muted-foreground">
           This is the generic base profile. Wire your productâ€™s data in here when you build the next thing.
         </p>
       </div>
     </main>
   );
 }
+
 

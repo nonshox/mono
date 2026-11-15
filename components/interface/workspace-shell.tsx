@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   ArrowLeft,
@@ -77,7 +77,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     try {
       localStorage.setItem("mono-theme", next ? "dark" : "light");
     } catch {
-      // Private mode / storage disabled — theme simply doesn't persist.
+      // Private mode / storage disabled â€” theme simply doesn't persist.
     }
   };
 
@@ -107,12 +107,12 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
 
   return (
     <>
-      {/* Navbar — glassy, sticky, the only top chrome */}
+      {/* Navbar â€” glassy, sticky, the only top chrome */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/70 backdrop-blur-xl backdrop-saturate-[1.15]">
         <div className="mx-auto flex h-12 max-w-7xl items-center justify-between gap-2 px-3 sm:px-5">
           {/* Brand */}
           <Link
-            aria-label="Mono — home"
+            aria-label="Mono â€” home"
             className="flex shrink-0 items-center gap-2 outline-none transition hover:opacity-70"
             href="/"
           >
@@ -129,7 +129,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             </span>
           </Link>
 
-          {/* Center pill — desktop primary nav */}
+          {/* Center pill â€” desktop primary nav */}
           <nav aria-label="Primary" className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-full border border-border/60 bg-muted/60 p-1 md:flex">
             {([
               { href: "/", icon: House, label: "Home" },
@@ -157,7 +157,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
 
           {/* Right icons */}
           <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
-            {/* Notifications — icon button with dropdown panel */}
+            {/* Notifications â€” icon button with dropdown panel */}
             <DropdownMenu>
               <DropdownMenuTrigger
                 aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
@@ -217,11 +217,11 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                               {item.self ? "You" : item.actorName}
                             </span>{" "}
                             <span className="text-muted-foreground">
-                              {item.count > 1 ? `${item.type} ×${item.count}` : item.type}
+                              {item.count > 1 ? `${item.type} Ã—${item.count}` : item.type}
                             </span>
                           </span>
                           <time
-                            className="mt-0.5 block text-xs tabular-nums text-muted-foreground/75"
+                            className="mt-0.5 block text-xs tabular-nums text-muted-foreground"
                             dateTime={item.createdAt}
                           >
                             {relativeTime(item.createdAt)}
@@ -290,7 +290,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        {/* Breadcrumb — back arrow + section */}
+        {/* Breadcrumb â€” back arrow + section */}
         {breadcrumb && (
           <div className="border-t border-border/50">
             <div className="mx-auto flex h-8 max-w-7xl items-center gap-1 px-2 text-xs text-muted-foreground sm:px-4">
@@ -303,12 +303,12 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
               </Link>
               <Link
                 aria-label="Home"
-                className="grid size-6 place-items-center rounded-md text-muted-foreground/70 outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                className="grid size-6 place-items-center rounded-md text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                 href="/"
               >
                 <House aria-hidden="true" className="size-3" strokeWidth={1.8} />
               </Link>
-              <ChevronRight aria-hidden="true" className="size-3 text-muted-foreground/50" strokeWidth={2} />
+              <ChevronRight aria-hidden="true" className="size-3 text-muted-foreground" strokeWidth={2} />
               <span aria-current="page" className="type-eyebrow text-foreground">
                 {breadcrumb}
               </span>
@@ -319,7 +319,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
 
       <div className="flex min-h-0 flex-1 flex-col">{children}</div>
 
-      {/* Mobile bottom pill — glassy, icons only */}
+      {/* Mobile bottom pill â€” glassy, icons only */}
       <div className="pointer-events-none sticky bottom-3 z-30 flex justify-center px-4 pb-[max(env(safe-area-inset-bottom),0.25rem)] lg:hidden">
         <nav
           aria-label="Primary"
@@ -342,7 +342,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                 <Icon
                   aria-hidden
                   className={`size-[19px] transition-colors ${
-                    active ? "text-foreground" : "text-muted-foreground/60"
+                    active ? "text-foreground" : "text-muted-foreground"
                   }`}
                   strokeWidth={active ? 2.1 : 1.6}
                 />
@@ -354,3 +354,4 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     </>
   );
 }
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Popover } from "@base-ui/react/popover";
 import {
@@ -246,7 +246,7 @@ export function DayDots({
   const showResults = searchOpen && trimmedQuery.length >= 2;
 
   return (
-    <section aria-label={`${year} — the year in dots`} className="mt-8">
+    <section aria-label={`${year} â€” the year in dots`} className="mt-8">
       <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-2">
         <h2 className="type-eyebrow">{year} dots</h2>
         <div className="flex shrink-0 items-center gap-0.5">
@@ -291,13 +291,13 @@ export function DayDots({
         <div className="flex items-center gap-2 border-b border-border/60 py-1.5">
           <Search
             aria-hidden="true"
-            className="size-3.5 shrink-0 text-muted-foreground/70"
+            className="size-3.5 shrink-0 text-muted-foreground"
             strokeWidth={2}
           />
           <input
             aria-label="Search your days"
             autoFocus
-            className="h-6 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/60"
+            className="h-6 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
             onChange={(event) => updateQuery(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter" && results.length > 0) {
@@ -308,7 +308,7 @@ export function DayDots({
                 else toggleSearch();
               }
             }}
-            placeholder="Search your days, all years…"
+            placeholder="Search your days, all yearsâ€¦"
             spellCheck={false}
             value={query}
           />
@@ -331,10 +331,10 @@ export function DayDots({
           className="mt-2 max-h-64 divide-y divide-border/50 overflow-y-auto rounded-xl border border-border/60"
         >
           {searching ? (
-            <p className="px-3 py-3 text-xs text-muted-foreground">Searching…</p>
+            <p className="px-3 py-3 text-xs text-muted-foreground">Searchingâ€¦</p>
           ) : results.length === 0 ? (
             <p className="px-3 py-3 text-xs text-muted-foreground">
-              No days match “{trimmedQuery}”.
+              No days match â€œ{trimmedQuery}â€.
             </p>
           ) : (
             results.map((entry) => (
@@ -368,7 +368,7 @@ export function DayDots({
           const isToday = day === today;
           return (
             <button
-              aria-label={`${longLabel(day)} — ${isFilled ? "written" : isFuture ? "upcoming" : "empty"}`}
+              aria-label={`${longLabel(day)} â€” ${isFilled ? "written" : isFuture ? "upcoming" : "empty"}`}
               aria-pressed={isFilled}
               className={cn(
                 "size-[1.05rem] rounded-full border outline-none transition-all duration-150 focus-visible:ring-2 focus-visible:ring-ring sm:size-[1.15rem]",
@@ -430,7 +430,7 @@ export function DayDots({
                   <div>
                     <textarea
                       autoFocus
-                      className="block h-24 w-full resize-none bg-transparent text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground/60"
+                      className="block h-24 w-full resize-none bg-transparent text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground"
                       maxLength={MAX_LENGTH}
                       onChange={(event) => setDraft(event.target.value)}
                       onKeyDown={(event) => {
@@ -448,7 +448,7 @@ export function DayDots({
                           "text-xs tabular-nums",
                           draft.length >= MAX_LENGTH
                             ? "text-destructive"
-                            : "text-muted-foreground/60",
+                            : "text-muted-foreground",
                         )}
                       >
                         {showCounter ? `${draft.length} / ${MAX_LENGTH}` : ""}
@@ -557,3 +557,4 @@ export function DayDots({
     </section>
   );
 }
+

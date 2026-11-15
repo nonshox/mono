@@ -89,7 +89,7 @@ export function ProfileEditor() {
             </span>
             <input
               autoFocus
-              className="mt-1 h-10 w-full border-0 bg-transparent p-0 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/50"
+              className="mt-1 h-10 w-full border-0 bg-transparent p-0 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground"
               disabled={loading}
               maxLength={50}
               onChange={(event) => {
@@ -110,7 +110,7 @@ export function ProfileEditor() {
               <Lock aria-hidden="true" className="size-3.5 shrink-0" strokeWidth={1.8} />
               <span className="min-w-0 flex-1 truncate">{email}</span>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground/70">
+            <p className="mt-1 text-xs text-muted-foreground">
               Tied to your sign-in â€” can&apos;t be changed here.
             </p>
           </div>
@@ -140,4 +140,5 @@ export function ProfileEditor() {
     </main>
   );
 }
+
 
