@@ -250,13 +250,13 @@ export function DayDots({
       <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-2">
         <h2 className="type-eyebrow">{year} dots</h2>
         <div className="flex shrink-0 items-center gap-0.5">
-          <span className="mr-1 text-xs tabular-nums text-muted-foreground">
+          <span className="mr-1 text-xs tabular-nums text-foreground">
             {filled} / {days.length}
           </span>
           <button
             aria-label="Search your days"
             aria-pressed={searchOpen}
-            className="grid size-6 place-items-center rounded-md text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            className="grid size-6 place-items-center rounded-md text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
             onClick={toggleSearch}
             type="button"
           >
@@ -266,7 +266,7 @@ export function DayDots({
             <>
               <button
                 aria-label="Previous year"
-                className="grid size-6 place-items-center rounded-md text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-30"
+                className="grid size-6 place-items-center rounded-md text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-30"
                 disabled={loading || navIndex <= 0}
                 onClick={() => switchYear(-1)}
                 type="button"
@@ -275,7 +275,7 @@ export function DayDots({
               </button>
               <button
                 aria-label="Next year"
-                className="grid size-6 place-items-center rounded-md text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-30"
+                className="grid size-6 place-items-center rounded-md text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-30"
                 disabled={loading || navIndex === navigable.length - 1}
                 onClick={() => switchYear(1)}
                 type="button"
@@ -291,7 +291,7 @@ export function DayDots({
         <div className="flex items-center gap-2 border-b border-border/60 py-1.5">
           <Search
             aria-hidden="true"
-            className="size-3.5 shrink-0 text-muted-foreground"
+            className="size-3.5 shrink-0 text-foreground"
             strokeWidth={2}
           />
           <input
@@ -315,7 +315,7 @@ export function DayDots({
           {query && (
             <button
               aria-label="Clear search"
-              className="grid size-5 shrink-0 place-items-center rounded-full text-muted-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+              className="grid size-5 shrink-0 place-items-center rounded-full text-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => updateQuery("")}
               type="button"
             >
@@ -331,9 +331,9 @@ export function DayDots({
           className="mt-2 max-h-64 divide-y divide-border/50 overflow-y-auto rounded-xl border border-border/60"
         >
           {searching ? (
-            <p className="px-3 py-3 text-xs text-muted-foreground">Searchingâ€¦</p>
+            <p className="px-3 py-3 text-xs text-foreground">Searchingâ€¦</p>
           ) : results.length === 0 ? (
-            <p className="px-3 py-3 text-xs text-muted-foreground">
+            <p className="px-3 py-3 text-xs text-foreground">
               No days match â€œ{trimmedQuery}â€.
             </p>
           ) : (
@@ -347,7 +347,7 @@ export function DayDots({
                 <span className="text-xs font-semibold tabular-nums text-foreground">
                   {shortLabel(entry.day)}
                 </span>
-                <span className="mt-0.5 block truncate text-xs leading-4 text-muted-foreground">
+                <span className="mt-0.5 block truncate text-xs leading-4 text-foreground">
                   {entry.text}
                 </span>
               </button>
@@ -419,7 +419,7 @@ export function DayDots({
                 </Popover.Title>
                 <Popover.Close
                   aria-label="Close"
-                  className="-mr-1 grid size-6 shrink-0 place-items-center rounded-full text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                  className="-mr-1 grid size-6 shrink-0 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <X aria-hidden="true" className="size-3.5" strokeWidth={2} />
                 </Popover.Close>
@@ -448,14 +448,14 @@ export function DayDots({
                           "text-xs tabular-nums",
                           draft.length >= MAX_LENGTH
                             ? "text-destructive"
-                            : "text-muted-foreground",
+                            : "text-foreground",
                         )}
                       >
                         {showCounter ? `${draft.length} / ${MAX_LENGTH}` : ""}
                       </span>
                       <div className="flex items-center gap-1.5">
                         <button
-                          className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                          className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                           onClick={() => {
                             setDraft(activeText ?? "");
                             setEditing(false);
@@ -490,7 +490,7 @@ export function DayDots({
                         </p>
                         <div className="mt-2.5 flex items-center gap-1 border-t border-border/50 pt-2">
                           <button
-                            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                             onClick={() => {
                               setDraft(activeText);
                               setEditing(true);
@@ -502,7 +502,7 @@ export function DayDots({
                           </button>
                           <button
                             aria-busy={saving}
-                            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-muted-foreground outline-none transition hover:bg-muted hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring"
+                            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:bg-muted hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring"
                             onClick={() => void erase()}
                             type="button"
                           >
@@ -516,7 +516,7 @@ export function DayDots({
                         <p className="text-sm font-semibold text-foreground">
                           Nothing written yet.
                         </p>
-                        <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                        <p className="mt-0.5 text-xs leading-5 text-foreground">
                           Two or three words is plenty for a day like this.
                         </p>
                         <button
@@ -536,10 +536,10 @@ export function DayDots({
                         <ul className="mt-1.5 grid gap-1.5">
                           {flashback.map((entry) => (
                             <li className="min-w-0" key={entry.day}>
-                              <span className="text-xs font-bold tabular-nums text-muted-foreground">
+                              <span className="text-xs font-bold tabular-nums text-foreground">
                                 {shortYear(entry.day)}
                               </span>
-                              <p className="line-clamp-2 text-xs leading-5 text-muted-foreground">
+                              <p className="line-clamp-2 text-xs leading-5 text-foreground">
                                 {entry.text}
                               </p>
                             </li>
@@ -557,4 +557,6 @@ export function DayDots({
     </section>
   );
 }
+
+
 

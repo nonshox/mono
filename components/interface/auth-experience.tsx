@@ -89,7 +89,7 @@ export function AuthExperience() {
           <h1 className="type-title mt-4 text-foreground">
             {step === "email" ? "Sign in" : "Check your email"}
           </h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">
+          <p className="mt-1.5 text-sm text-foreground">
             {step === "email" ? (
               "No password â€” we\u2019ll email you a one-time code."
             ) : (
@@ -183,7 +183,7 @@ export function AuthExperience() {
 
             <div className="flex items-center justify-between text-sm">
               <button
-                className="inline-flex items-center gap-1 text-muted-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                className="inline-flex items-center gap-1 text-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                 disabled={pending}
                 onClick={backToEmail}
                 type="button"
@@ -192,7 +192,7 @@ export function AuthExperience() {
                 Change email
               </button>
               <button
-                className="text-muted-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                className="text-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
                 disabled={pending || cooldown > 0}
                 onClick={() => void sendCode()}
                 type="button"
@@ -204,10 +204,11 @@ export function AuthExperience() {
         )}
       </div>
 
-      <p className="type-eyebrow mt-12 text-muted-foreground">
+      <p className="type-eyebrow mt-12 text-foreground">
         Mono â€” a minimal app base
       </p>
     </main>
   );
 }
+
 

@@ -218,7 +218,7 @@ export function SettingsExperience({
           <h1 className="type-title text-foreground">
             Settings
           </h1>
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">{email}</p>
+          <p className="mt-0.5 truncate text-xs text-foreground">{email}</p>
         </header>
 
         {/* Notifications â€” Telegram */}
@@ -228,10 +228,10 @@ export function SettingsExperience({
           </h2>
           <div className="border-y border-border/60">
             <div className="flex items-center gap-3 py-3">
-              <Send aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.8} />
+              <Send aria-hidden="true" className="size-4 shrink-0 text-foreground" strokeWidth={1.8} />
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold leading-4 text-foreground">Telegram</p>
-                <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
+                <p className="mt-0.5 text-xs leading-4 text-foreground">
                   {loadingTelegram
                     ? "Checkingâ€¦"
                     : telegramConnected
@@ -269,7 +269,7 @@ export function SettingsExperience({
                   Open Telegram to finish linking
                 </a>
                 <button
-                  className="text-xs font-semibold text-muted-foreground transition hover:text-foreground"
+                  className="text-xs font-semibold text-foreground transition hover:text-foreground"
                   disabled={telegramPending}
                   onClick={() => void refreshTelegram()}
                   type="button"
@@ -282,14 +282,14 @@ export function SettingsExperience({
             <div className="flex items-center gap-3 border-t border-border/60 py-3">
               <BellRing
                 aria-hidden="true"
-                className="size-4 shrink-0 text-muted-foreground"
+                className="size-4 shrink-0 text-foreground"
                 strokeWidth={1.8}
               />
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold leading-4 text-foreground">
                   Evening nudge
                 </p>
-                <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
+                <p className="mt-0.5 text-xs leading-4 text-foreground">
                   {telegramConnected
                     ? "8pm UTC â€” only if you havenâ€™t written that day."
                     : "Connect Telegram first."}
@@ -319,14 +319,14 @@ export function SettingsExperience({
             <div className="flex items-center gap-3 border-t border-border/60 py-3">
               <Sparkles
                 aria-hidden="true"
-                className="size-4 shrink-0 text-muted-foreground"
+                className="size-4 shrink-0 text-foreground"
                 strokeWidth={1.8}
               />
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold leading-4 text-foreground">
                   Mono AI
                 </p>
-                <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
+                <p className="mt-0.5 text-xs leading-4 text-foreground">
                   Weekly letter Â· smarter nudge Â· year review â€” your entries go
                   to Google Gemini. Off means nothing leaves.
                 </p>
@@ -362,7 +362,7 @@ export function SettingsExperience({
             </h2>
             <button
               aria-label="Refresh sessions"
-              className="grid size-6 place-items-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50"
+              className="grid size-6 place-items-center rounded-md text-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50"
               disabled={refreshingSessions}
               onClick={() => void refreshSessions()}
               type="button"
@@ -374,7 +374,7 @@ export function SettingsExperience({
             </button>
           </div>
           {sessions.length === 0 ? (
-            <p className="border-y border-border/60 py-3 text-xs text-muted-foreground">
+            <p className="border-y border-border/60 py-3 text-xs text-foreground">
               No active sessions.
             </p>
           ) : (
@@ -383,7 +383,7 @@ export function SettingsExperience({
                 <li className="flex items-center gap-3 py-2" key={session.id}>
                   <MonitorSmartphone
                     aria-hidden="true"
-                    className="size-4 shrink-0 text-muted-foreground"
+                    className="size-4 shrink-0 text-foreground"
                     strokeWidth={1.8}
                   />
                   <div className="min-w-0 flex-1">
@@ -395,7 +395,7 @@ export function SettingsExperience({
                         </span>
                       )}
                     </p>
-                    <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
+                    <p className="mt-0.5 text-xs leading-4 text-foreground">
                       {session.operatingSystem ? `${session.operatingSystem} Â· ` : ""}
                       <LocalDateTime value={session.createdAt} />
                     </p>
@@ -403,7 +403,7 @@ export function SettingsExperience({
                   {!session.current && (
                     <button
                       aria-label={`Revoke ${session.device} session`}
-                      className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-destructive disabled:opacity-50"
+                      className="grid size-7 shrink-0 place-items-center rounded-md text-foreground transition hover:bg-muted hover:text-destructive disabled:opacity-50"
                       disabled={pendingSession === session.id}
                       onClick={() => void revokeSessionForAccount(session)}
                       type="button"
@@ -427,7 +427,7 @@ export function SettingsExperience({
             {new Date().getUTCFullYear()} in review
           </h2>
           <div className="border-y border-border/60 py-3">
-            <p className="text-xs leading-5 text-muted-foreground">
+            <p className="text-xs leading-5 text-foreground">
               A letter compiling everything you wrote this year â€” the shape,
               what recurred, one line to keep.
             </p>
@@ -447,7 +447,7 @@ export function SettingsExperience({
                 {reviewLoading ? "Reading your yearâ€¦" : "Generate review"}
               </button>
             ) : (
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 text-xs text-foreground">
                 Enable Mono AI above to generate.
               </p>
             )}
@@ -458,7 +458,7 @@ export function SettingsExperience({
                 </p>
                 <div className="mt-3 border-t border-border/50 pt-2">
                   <button
-                    className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                    className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={downloadReview}
                     type="button"
                   >
@@ -477,7 +477,7 @@ export function SettingsExperience({
             Delete account
           </h2>
           <div className="border-y border-destructive/20 py-3">
-            <p className="text-xs leading-5 text-muted-foreground">
+            <p className="text-xs leading-5 text-foreground">
               Erases your account and all data linked to it. This cannot be undone.
             </p>
             <div className="mt-2 flex items-center gap-2">
@@ -508,7 +508,7 @@ export function SettingsExperience({
 
         {(error || message) && (
           <p
-            className={`mt-4 px-0.5 text-xs leading-5 ${error ? "text-destructive" : "text-muted-foreground"}`}
+            className={`mt-4 px-0.5 text-xs leading-5 ${error ? "text-destructive" : "text-foreground"}`}
             role={error ? "alert" : "status"}
           >
             {error || message}
@@ -518,5 +518,7 @@ export function SettingsExperience({
     </main>
   );
 }
+
+
 
 

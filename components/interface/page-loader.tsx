@@ -20,12 +20,13 @@ export function PageLoader({ label = "Loading Mono" }: { label?: string }) {
           src="/logotype/android-chrome-192x192.png"
           width={36}
         />
-        <span className="type-brand text-muted-foreground">
+        <span className="type-brand text-foreground">
           Mono
         </span>
       </div>
     </div>
   );
 }
+
 
 

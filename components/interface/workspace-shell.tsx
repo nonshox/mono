@@ -143,7 +143,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                   className={`flex h-6 items-center gap-1.5 rounded-full px-3 text-xs font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-ring ${
                     active
                       ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
+                      : "text-foreground hover:text-foreground"
                   }`}
                   href={href}
                   key={href}
@@ -182,7 +182,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                   </p>
                   {unread > 0 && (
                     <button
-                      className="text-xs font-semibold text-foreground outline-none transition hover:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                      className="text-xs font-semibold text-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                       onClick={() => void markAllRead()}
                       type="button"
                     >
@@ -198,7 +198,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                   ) : latest.length === 0 ? (
                     <div className="px-4 py-8 text-center">
                       <p className="text-xs font-semibold text-foreground">All quiet</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
+                      <p className="mt-1 text-xs text-foreground">
                         Nothing new right now.
                       </p>
                     </div>
@@ -216,12 +216,12 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                             <span className="font-semibold">
                               {item.self ? "You" : item.actorName}
                             </span>{" "}
-                            <span className="text-muted-foreground">
+                            <span className="text-foreground">
                               {item.count > 1 ? `${item.type} Ã—${item.count}` : item.type}
                             </span>
                           </span>
                           <time
-                            className="mt-0.5 block text-xs tabular-nums text-muted-foreground"
+                            className="mt-0.5 block text-xs tabular-nums text-foreground"
                             dateTime={item.createdAt}
                           >
                             {relativeTime(item.createdAt)}
@@ -252,7 +252,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                 <DropdownMenuGroup>
                   <DropdownMenuLabel className="px-2 py-2">
                     <span className="block text-xs font-semibold">{name || "Account"}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{email}</span>
+                    <span className="block truncate text-xs text-foreground">{email}</span>
                   </DropdownMenuLabel>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
@@ -293,7 +293,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         {/* Breadcrumb â€” back arrow + section */}
         {breadcrumb && (
           <div className="border-t border-border/50">
-            <div className="mx-auto flex h-8 max-w-7xl items-center gap-1 px-2 text-xs text-muted-foreground sm:px-4">
+            <div className="mx-auto flex h-8 max-w-7xl items-center gap-1 px-2 text-xs text-foreground sm:px-4">
               <Link
                 aria-label="Back to home"
                 className="grid size-6 place-items-center rounded-md outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
@@ -303,12 +303,12 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
               </Link>
               <Link
                 aria-label="Home"
-                className="grid size-6 place-items-center rounded-md text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                className="grid size-6 place-items-center rounded-md text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                 href="/"
               >
                 <House aria-hidden="true" className="size-3" strokeWidth={1.8} />
               </Link>
-              <ChevronRight aria-hidden="true" className="size-3 text-muted-foreground" strokeWidth={2} />
+              <ChevronRight aria-hidden="true" className="size-3 text-foreground" strokeWidth={2} />
               <span aria-current="page" className="type-eyebrow text-foreground">
                 {breadcrumb}
               </span>
@@ -342,7 +342,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                 <Icon
                   aria-hidden
                   className={`size-[19px] transition-colors ${
-                    active ? "text-foreground" : "text-muted-foreground"
+                    active ? "text-foreground" : "text-foreground"
                   }`}
                   strokeWidth={active ? 2.1 : 1.6}
                 />
@@ -354,4 +354,5 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     </>
   );
 }
+
 

@@ -151,23 +151,7 @@ html {
   scrollbar-width: thin;
 }
 
-/* Ledger paper — faint dot grid for the reading surface, both themes. */
-.journal-ledger {
-  background-image: radial-gradient(
-    color-mix(in oklch, var(--foreground) 11%, transparent) 1px,
-    transparent 1.4px
-  );
-  background-size: 22px 22px;
-}
 
-/* Drop cap for the first entry of each year, book style. Serif prose only. */
-.dropcap::first-letter {
-  float: left;
-  padding-right: 0.12em;
-  font-size: 2.4em;
-  font-weight: 700;
-  line-height: 0.82;
-}
 
 body {
   min-height: 100%;
@@ -250,10 +234,19 @@ input {
   text-wrap: balance;
 }
 .type-eyebrow {
-  color: var(--muted-foreground);
-  font-size: 11px;
+  color: var(--foreground);
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.16em;
   line-height: 1.35;
   text-transform: uppercase;
+}
+/* Journal labels — same voice, no shouting. */
+.type-label {
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+  text-transform: none;
 }

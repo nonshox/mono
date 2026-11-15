@@ -120,11 +120,11 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
     return (
       <main className="min-h-full w-full bg-background px-4 pb-20 pt-6 sm:px-6 sm:pt-10">
         <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-3 pt-16 text-center md:max-w-3xl">
-          <span className="grid size-14 place-items-center rounded-full bg-muted text-muted-foreground">
+          <span className="grid size-14 place-items-center rounded-full bg-muted text-foreground">
             <BookOpen aria-hidden="true" className="size-6" strokeWidth={1.5} />
           </span>
           <p className="text-sm font-semibold text-foreground">Nothing written yet</p>
-          <p className="max-w-xs text-xs leading-relaxed text-muted-foreground">
+          <p className="max-w-xs text-xs leading-relaxed text-foreground">
             Your days gather here in order â€” write your first dot on the home page.
           </p>
           <Link
@@ -139,13 +139,13 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
   }
 
   return (
-    <main className="journal-ledger min-h-full w-full bg-background px-4 pb-20 pt-6 sm:px-6 sm:pt-10">
+    <main className="min-h-full w-full bg-background px-4 pb-20 pt-6 sm:px-6 sm:pt-10">
       <div className="mx-auto w-full max-w-2xl md:max-w-3xl">
         {/* Search-within â€” the only chrome on the page */}
         <div className="flex items-center gap-2 pb-2 pt-1">
           <Search
             aria-hidden="true"
-            className="size-3.5 shrink-0 text-muted-foreground"
+            className="size-3.5 shrink-0 text-foreground"
             strokeWidth={2}
           />
           <input
@@ -160,14 +160,14 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
             value={query}
           />
           {trimmedQuery && (
-            <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+            <span className="shrink-0 text-xs tabular-nums text-foreground">
               {filtered.length} / {items.length}
             </span>
           )}
           {query && (
             <button
               aria-label="Clear search"
-              className="grid size-5 shrink-0 place-items-center rounded-full text-muted-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+              className="grid size-5 shrink-0 place-items-center rounded-full text-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => setQuery("")}
               type="button"
             >
@@ -178,20 +178,20 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
 
         {themes.length > 0 && (
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 px-0.5 pb-2">
-            <span className="type-eyebrow text-muted-foreground">
+            <span className="type-label">
               last 30 days
             </span>
             {themes.map((theme, index) => (
               <span className="inline-flex items-baseline gap-2" key={theme.label}>
                 <button
-                  className="type-eyebrow text-foreground outline-none transition hover:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                  className="type-label text-foreground outline-none transition hover:opacity-70 focus-visible:ring-2 focus-visible:ring-ring"
                   onClick={() => setQuery(theme.label)}
                   type="button"
                 >
                   {theme.label}
                 </button>
                 {index < themes.length - 1 && (
-                  <span aria-hidden="true" className="type-eyebrow text-muted-foreground">
+                  <span aria-hidden="true" className="type-label text-foreground">
                     Â·
                   </span>
                 )}
@@ -201,7 +201,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
         )}
 
         {groups.length === 0 && (
-          <p className="px-0.5 py-10 text-center text-sm text-muted-foreground">
+          <p className="px-0.5 py-10 text-center text-sm text-foreground">
             No days match â€œ{trimmedQuery}â€.
           </p>
         )}
@@ -210,16 +210,14 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
           <section aria-label={String(year)} className="pt-6" key={year}>
             <div aria-hidden="true" className="flex items-center gap-3">
               <span className="h-px flex-1 bg-border/70" />
-              <h2 className="type-eyebrow">{year}</h2>
+              <h2 className="type-label">{year}</h2>
               <span className="h-px flex-1 bg-border/70" />
             </div>
 
             <ul className="mt-1.5 space-y-1.5">
-              {months.flatMap((month) => month.entries).map((entry, index) => {
+              {months.flatMap((month) => month.entries).map((entry) => {
                 const isExpanded = expandedDay === entry.day;
                 const isEditing = editingDay === entry.day;
-                // Drop cap on the first entry of each year, book style.
-                const isDropcap = index === 0 && !trimmedQuery;
                 return (
                   <li key={entry.day}>
                     {!isExpanded ? (
@@ -231,7 +229,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                         onClick={() => toggleExpand(entry.day)}
                         type="button"
                       >
-                        <p className={`whitespace-pre-wrap break-words font-serif text-[15px] leading-7 text-foreground ${isDropcap ? "dropcap" : ""}`}>
+                        <p className="whitespace-pre-wrap break-words font-serif text-[15px] leading-7 text-foreground">
                           {trimmedQuery
                             ? highlightParts(entry.text, trimmedQuery).map((part, index) =>
                                 part.match ? (
@@ -252,11 +250,11 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                       /* Expanded â€” separate solid card in place: date, words, actions */
                       <div className="min-w-0 overflow-hidden rounded-2xl border border-border/70 bg-popover shadow-md shadow-foreground/5">
                             <div className="flex items-center justify-between gap-3 border-b border-border/50 py-1.5 pl-3.5 pr-1.5">
-                              <p className="type-eyebrow">{fullLabel(entry.day)}</p>
+                              <p className="type-label">{fullLabel(entry.day)}</p>
                               <button
                                 aria-label="Close"
                                 aria-expanded={true}
-                                className="grid size-6 shrink-0 place-items-center rounded-full text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                className="grid size-6 shrink-0 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                                 onClick={() => toggleExpand(entry.day)}
                                 type="button"
                               >
@@ -294,7 +292,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                               {isEditing ? (
                                 <>
                                   <button
-                                    className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                    className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                                     onClick={() => setEditingDay(null)}
                                     type="button"
                                   >
@@ -318,7 +316,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                               ) : (
                                 <>
                                   <button
-                                    className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                    className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                                     onClick={() => startEdit(entry)}
                                     type="button"
                                   >
@@ -330,7 +328,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                                     className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-ring ${
                                       eraseArmed
                                         ? "bg-destructive/10 text-destructive"
-                                        : "text-muted-foreground hover:bg-muted hover:text-destructive"
+                                        : "text-foreground hover:bg-muted hover:text-destructive"
                                     }`}
                                     onClick={() => void erase()}
                                     type="button"
@@ -353,5 +351,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
     </main>
   );
 }
+
+
 
 

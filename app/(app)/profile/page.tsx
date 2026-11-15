@@ -48,13 +48,13 @@ async function AuthenticatedProfile() {
             <h1 className="type-title truncate text-foreground">
               {name || "Your name"}
             </h1>
-            <p className="mt-0.5 truncate text-sm text-muted-foreground">
+            <p className="mt-0.5 truncate text-sm text-foreground">
               {email}
             </p>
           </div>
           <Link
             aria-label="Edit profile"
-            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
             href="/profile/edit"
           >
             <Pencil aria-hidden="true" className="size-4" strokeWidth={1.8} />
@@ -64,7 +64,7 @@ async function AuthenticatedProfile() {
         {/* Details */}
         <dl className="divide-y divide-border/60 border-b border-border/60">
           <div className="flex items-center gap-3 py-3">
-            <Mail aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.8} />
+            <Mail aria-hidden="true" className="size-4 shrink-0 text-foreground" strokeWidth={1.8} />
             <div className="min-w-0">
               <dt className="type-eyebrow">
                 Email
@@ -74,7 +74,7 @@ async function AuthenticatedProfile() {
           </div>
           {joined && (
             <div className="flex items-center gap-3 py-3">
-              <CalendarDays aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.8} />
+              <CalendarDays aria-hidden="true" className="size-4 shrink-0 text-foreground" strokeWidth={1.8} />
               <div className="min-w-0">
                 <dt className="type-eyebrow">
                   Member since
@@ -85,12 +85,13 @@ async function AuthenticatedProfile() {
           )}
         </dl>
 
-        <p className="mt-6 text-xs leading-5 text-muted-foreground">
+        <p className="mt-6 text-xs leading-5 text-foreground">
           This is the generic base profile. Wire your productâ€™s data in here when you build the next thing.
         </p>
       </div>
     </main>
   );
 }
+
 
 

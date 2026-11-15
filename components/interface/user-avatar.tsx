@@ -1,8 +1,8 @@
-type UserAvatarProps = {
+﻿type UserAvatarProps = {
   name?: string;
   size?: number;
   className?: string;
-  /** Ignored in this base build — kept so avatar code can be re-added later. */
+  /** Ignored in this base build â€” kept so avatar code can be re-added later. */
   avatar?: string | null;
 };
 
@@ -14,10 +14,11 @@ export function UserAvatar({ name, size = 40, className }: UserAvatarProps) {
   return (
     <span
       aria-hidden="true"
-      className={`grid shrink-0 place-items-center rounded-full bg-muted font-semibold text-muted-foreground ring-1 ring-border/60 ${className ?? ""}`}
+      className={`grid shrink-0 place-items-center rounded-full bg-muted font-semibold text-foreground ring-1 ring-border/60 ${className ?? ""}`}
       style={{ height: dimension, width: dimension, fontSize: size * 0.4 }}
     >
       {initial}
     </span>
   );
 }
+

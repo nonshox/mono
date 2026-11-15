@@ -71,7 +71,7 @@ export function ProfileEditor() {
         <header className="flex items-center gap-2 border-b border-border/60 pb-4">
           <Link
             aria-label="Back to profile"
-            className="grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            className="grid size-9 shrink-0 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
             href="/profile"
           >
             <ArrowLeft aria-hidden="true" className="size-4" strokeWidth={1.8} />
@@ -106,11 +106,11 @@ export function ProfileEditor() {
             <span className="type-eyebrow">
               Email
             </span>
-            <div className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+            <div className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-foreground">
               <Lock aria-hidden="true" className="size-3.5 shrink-0" strokeWidth={1.8} />
               <span className="min-w-0 flex-1 truncate">{email}</span>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-xs text-foreground">
               Tied to your sign-in â€” can&apos;t be changed here.
             </p>
           </div>
@@ -129,7 +129,7 @@ export function ProfileEditor() {
               )}
             </button>
             <Link
-              className="inline-flex h-11 items-center rounded-full px-4 text-xs font-semibold text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex h-11 items-center rounded-full px-4 text-xs font-semibold text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
               href="/profile"
             >
               Cancel
@@ -140,5 +140,7 @@ export function ProfileEditor() {
     </main>
   );
 }
+
+
 
 

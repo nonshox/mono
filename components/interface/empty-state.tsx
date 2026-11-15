@@ -1,7 +1,7 @@
-import type { LucideIcon } from "lucide-react";
+﻿import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
-/** Canonical empty/error presentation — icon tile, title, hint, optional action. */
+/** Canonical empty/error presentation â€” icon tile, title, hint, optional action. */
 export function EmptyState({
   icon: Icon,
   title,
@@ -15,12 +15,12 @@ export function EmptyState({
 }) {
   return (
     <div className="grid justify-items-center gap-3 py-16 text-center">
-      <span className="grid size-14 place-items-center rounded-full bg-muted text-muted-foreground">
+      <span className="grid size-14 place-items-center rounded-full bg-muted text-foreground">
         <Icon aria-hidden="true" className="size-6" strokeWidth={1.5} />
       </span>
       <p className="text-sm font-semibold text-foreground">{title}</p>
       {description ? (
-        <p className="max-w-xs text-xs leading-relaxed text-muted-foreground">
+        <p className="max-w-xs text-xs leading-relaxed text-foreground">
           {description}
         </p>
       ) : null}
@@ -28,3 +28,4 @@ export function EmptyState({
     </div>
   );
 }
+
