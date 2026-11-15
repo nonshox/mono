@@ -212,8 +212,8 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                         </p>
                       </button>
                     ) : (
-                      /* Expanded — separate glassy card: date, words, actions */
-                      <div className="min-w-0 overflow-hidden rounded-2xl border border-border/70 bg-popover/80 shadow-lg shadow-foreground/5 backdrop-blur-xl">
+                      /* Expanded — separate solid card in place: date, words, actions */
+                      <div className="min-w-0 overflow-hidden rounded-2xl border border-border/70 bg-popover shadow-md shadow-foreground/5">
                             <div className="flex items-center justify-between gap-3 border-b border-border/50 py-1.5 pl-3.5 pr-1.5">
                               <p className="type-eyebrow">{fullLabel(entry.day)}</p>
                               <button
