@@ -1,11 +1,12 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { jsonError, logFailure } from "@/lib/http";
-import { listNudgeTargets } from "@/features/users/service";
-import { hasDayEntry } from "@/features/days/service";
+import { listAiTargets, listNudgeTargets } from "@/features/users/service";
+import { hasDayEntry, listRecentEntries } from "@/features/days/service";
 import { sendTelegramNotification } from "@/features/telegram/service";
+import { generateNudgeQuestion } from "@/features/ai/generate";
 
-const MESSAGE =
+const FALLBACK_MESSAGE =
   "How was today? Open Mono and stamp a dot — two or three words is enough.";
 
 function isAuthorized(request: Request): boolean {
@@ -40,8 +41,12 @@ export async function GET(request: Request) {
   const today = new Date().toISOString().slice(0, 10);
 
   let targets: string[];
+  let aiTargets: Set<string>;
   try {
-    targets = await listNudgeTargets();
+    [targets, aiTargets] = await Promise.all([
+      listNudgeTargets(),
+      listAiTargets().then((ids) => new Set(ids)),
+    ]);
   } catch (error) {
     logFailure("Nudge cron", error);
     return jsonError(502, "NUDGE_LOOKUP_FAILED", "Nudges are unavailable right now.");
@@ -57,7 +62,23 @@ export async function GET(request: Request) {
         skipped += 1;
         continue;
       }
-      await sendTelegramNotification(userId, MESSAGE);
+
+      let message = FALLBACK_MESSAGE;
+      if (aiTargets.has(userId)) {
+        try {
+          const question = await generateNudgeQuestion(
+            await listRecentEntries(userId, 7),
+          );
+          if (question) {
+            message = `How was today? ${question}`;
+          }
+        } catch (error) {
+          // AI is best-effort — fall back to the generic line.
+          logFailure("Nudge prompt", error);
+        }
+      }
+
+      await sendTelegramNotification(userId, message);
       sent += 1;
     } catch (error) {
       failed += 1;

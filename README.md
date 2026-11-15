@@ -28,7 +28,9 @@ npm run dev
 | `codes` | `user`, `hash` (strings), `expires` (datetime), `used` (bool) | unique on `hash` |
 | `days` | `user`, `day` (`YYYY-MM-DD`), `text` (≤1000) | key on `user` |
 
-`users` also needs a `nudge` (bool, default false) attribute for the optional evening Telegram nudge (`/api/cron/nudge`, Vercel cron at 20:00 UTC, requires `CRON_SECRET`).
+`users` also needs a `nudge` (bool, default false) attribute for the optional evening Telegram nudge (`/api/cron/nudge`, Vercel cron at 20:00 UTC, requires `CRON_SECRET`) and an `ai` (bool, default false) attribute for the opt-in Mono AI (weekly letter via `/api/cron/letter` at 09:00 UTC Sunday, smarter nudge, year review in Settings — requires `GEMINI_API_KEY`).
+
+**Mono AI (opt-in, default off):** one Settings toggle ("Mono AI") gates every feature that sends your entries to Google Gemini — the Sunday letter, the smarter evening nudge, and the `Generate review` button in Settings. Off means your entries never leave Mono for AI. Themes under `/journal` are computed locally and need no key, never leave the device. Tapping a theme filters the journal for it. `GEMINI_API_KEY` from [Google AI Studio](https://aistudio.google.com/apikey); `GEMINI_MODEL` optional (defaults to `gemini-3.5-flash`, free-tier eligible — the 3.x family is thinking-native, so the client budgets extra tokens for short outputs).
 
 Both are provisioned automatically (idempotent) by:
 
@@ -43,7 +45,7 @@ Scripts: `dev` — `build` — `start` — `lint` — `test` — `typecheck` —
 - `/auth` — email-code sign-in (6-digit code, no password)
 - bell icon (navbar) — inbox panel: grouping, unread badge, mark read/all-read
 - `/` — greeting + **year in dots** (365-day journal: hollow dot, tap to write/edit/erase, “on this day” flashback, `/api/days*`)
-- `/journal` — reading mode (every entry as one book, year dividers, search-within, tap to edit)
+- `/journal` — reading mode (every entry as one book, year dividers, search-within + last-30-days themes, tap to expand as a card)
 - `/profile` — identity card (initials avatar, name, email, member since) + edit
 - `/settings` — account (sessions w/ revoke, Telegram connect, delete account)
 - Navbar everywhere — logo + bell icon (notifications open as a dropdown panel), account menu

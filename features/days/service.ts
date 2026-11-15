@@ -119,6 +119,16 @@ export async function hasDayEntry(userId: string, day: string): Promise<boolean>
   }
 }
 
+/** The last `limit` entries of the current year, ascending by day. */
+export async function listRecentEntries(
+  userId: string,
+  limit = 7,
+): Promise<DayEntry[]> {
+  const year = new Date().getUTCFullYear();
+  const entries = await listYearEntries(userId, year);
+  return entries.slice(-limit);
+}
+
 /** Every entry the user has, ascending by day. Caps at 5000 rows. */
 export async function listAllEntries(
   userId: string,

@@ -51,17 +51,22 @@ if (await tableExists("days")) {
 }
 
 const columns = await db.listColumns({ databaseId, tableId: "users" });
-if (columns.columns.some((column) => column.key === "nudge")) {
-  console.log("users.nudge: already exists — keeping it");
-} else {
+const ensureBooleanColumn = async (key) => {
+  if (columns.columns.some((column) => column.key === key)) {
+    console.log(`users.${key}: already exists — keeping it`);
+    return;
+  }
   await db.createBooleanColumn({
     databaseId,
     tableId: "users",
-    key: "nudge",
+    key,
     required: false,
     xdefault: false,
   });
-  console.log("users.nudge: created (default false)");
-}
+  console.log(`users.${key}: created (default false)`);
+};
+
+await ensureBooleanColumn("nudge");
+await ensureBooleanColumn("ai");
 
 console.log("Setup complete.");

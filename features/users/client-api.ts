@@ -5,6 +5,7 @@ export type UserProfile = {
   name: string;
   avatar?: string;
   nudge?: boolean;
+  ai?: boolean;
 };
 
 export async function fetchUser(): Promise<UserProfile> {
@@ -19,6 +20,11 @@ export async function saveUserName(name: string): Promise<UserProfile> {
 
 export async function saveUserNudge(nudge: boolean): Promise<UserProfile> {
   const { data } = await apiClient.patch<UserProfile>("/users", { nudge });
+  return data;
+}
+
+export async function saveUserAi(ai: boolean): Promise<UserProfile> {
+  const { data } = await apiClient.patch<UserProfile>("/users", { ai });
   return data;
 }
 

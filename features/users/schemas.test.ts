@@ -16,6 +16,13 @@ describe("user update input", () => {
     ).toEqual({ name: "Sam", nudge: false });
   });
 
+  it("accepts an ai-only update", () => {
+    expect(updateUserSchema.parse({ ai: true })).toEqual({ ai: true });
+    expect(
+      updateUserSchema.parse({ nudge: true, ai: true }),
+    ).toEqual({ nudge: true, ai: true });
+  });
+
   it("rejects empty payloads and unexpected fields", () => {
     expect(updateUserSchema.safeParse({}).success).toBe(false);
     expect(

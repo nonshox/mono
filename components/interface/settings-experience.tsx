@@ -1,11 +1,13 @@
 "use client";
 
 import {
+  Download,
   LoaderCircle,
   MonitorSmartphone,
   RefreshCw,
   Send,
   BellRing,
+  Sparkles,
   Trash2,
   Unlink,
   X,
@@ -18,8 +20,8 @@ import {
   fetchTelegramStatus,
 } from "@/features/telegram/client-api";
 import { fetchSessions, type AuthSession, revokeSession } from "@/features/auth/client-api";
-import { getApiErrorMessage } from "@/lib/api-client";
-import { deleteAccount, fetchUser, saveUserNudge } from "@/features/users/client-api";
+import { apiClient, getApiErrorMessage } from "@/lib/api-client";
+import { deleteAccount, fetchUser, saveUserAi, saveUserNudge } from "@/features/users/client-api";
 import { useUserStore } from "@/features/users/store";
 import { useRouter } from "next/navigation";
 
@@ -37,6 +39,10 @@ export function SettingsExperience({
   const [telegramLink, setTelegramLink] = useState("");
   const [nudgeOn, setNudgeOn] = useState(false);
   const [nudgeSaving, setNudgeSaving] = useState(false);
+  const [aiOn, setAiOn] = useState(false);
+  const [aiSaving, setAiSaving] = useState(false);
+  const [review, setReview] = useState("");
+  const [reviewLoading, setReviewLoading] = useState(false);
   const [sessions, setSessions] = useState(initialSessions);
   const [pendingSession, setPendingSession] = useState("");
   const [refreshingSessions, setRefreshingSessions] = useState(false);
@@ -52,7 +58,11 @@ export function SettingsExperience({
       .catch(() => active && setError("Telegram status could not be checked."))
       .finally(() => active && setLoadingTelegram(false));
     fetchUser()
-      .then((user) => active && setNudgeOn(user.nudge ?? false))
+      .then((user) => {
+        if (!active) return;
+        setNudgeOn(user.nudge ?? false);
+        setAiOn(user.ai ?? false);
+      })
       .catch(() => {});
     return () => {
       active = false;
@@ -95,6 +105,48 @@ export function SettingsExperience({
     } finally {
       setNudgeSaving(false);
     }
+  };
+
+  const toggleAi = async () => {
+    if (aiSaving) return;
+    const next = !aiOn;
+    setAiOn(next);
+    setAiSaving(true);
+    try {
+      const saved = await saveUserAi(next);
+      const current = useUserStore.getState().user;
+      if (current) useUserStore.getState().setUser({ ...current, ai: saved.ai ?? next });
+    } catch (cause) {
+      setAiOn(!next);
+      setError(getApiErrorMessage(cause, "The Mono AI setting could not be saved."));
+    } finally {
+      setAiSaving(false);
+    }
+  };
+
+  const generateReview = async () => {
+    if (reviewLoading) return;
+    setReviewLoading(true);
+    setError("");
+    try {
+      const { data } = await apiClient.post<{ review: string }>("/ai/review");
+      setReview(data.review);
+    } catch (cause) {
+      setError(getApiErrorMessage(cause, "Your year could not be compiled right now."));
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
+  const downloadReview = () => {
+    if (!review) return;
+    const blob = new Blob([review], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "mono-year-in-review.txt";
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   const refreshTelegram = async () => {
@@ -263,6 +315,42 @@ export function SettingsExperience({
                 />
               </button>
             </div>
+            {/* Mono AI — opt-in; entries go to Google Gemini when on */}
+            <div className="flex items-center gap-3 border-t border-border/60 py-3">
+              <Sparkles
+                aria-hidden="true"
+                className="size-4 shrink-0 text-muted-foreground"
+                strokeWidth={1.8}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold leading-4 text-foreground">
+                  Mono AI
+                </p>
+                <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
+                  Weekly letter · smarter nudge · year review — your entries go
+                  to Google Gemini. Off means nothing leaves.
+                </p>
+              </div>
+              <button
+                aria-busy={aiSaving}
+                aria-checked={aiOn}
+                aria-label="Mono AI"
+                className={`relative h-6 w-10 shrink-0 rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 ${
+                  aiOn ? "bg-foreground" : "bg-muted-foreground/25"
+                }`}
+                disabled={aiSaving}
+                onClick={() => void toggleAi()}
+                role="switch"
+                type="button"
+              >
+                <span
+                  aria-hidden="true"
+                  className={`absolute left-0.5 top-0.5 size-5 rounded-full bg-background shadow transition-transform ${
+                    aiOn ? "translate-x-4" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
           </div>
         </section>
 
@@ -331,6 +419,56 @@ export function SettingsExperience({
               ))}
             </ul>
           )}
+        </section>
+
+        {/* Year in review — Mono AI compiles the year into a letter */}
+        <section aria-label="Year in review" className="mt-6">
+          <h2 className="type-eyebrow mb-1 px-0.5">
+            {new Date().getUTCFullYear()} in review
+          </h2>
+          <div className="border-y border-border/60 py-3">
+            <p className="text-xs leading-5 text-muted-foreground">
+              A letter compiling everything you wrote this year — the shape,
+              what recurred, one line to keep.
+            </p>
+            {aiOn ? (
+              <button
+                aria-busy={reviewLoading}
+                className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-4 text-xs font-semibold text-foreground outline-none transition hover:bg-muted disabled:opacity-40"
+                disabled={reviewLoading}
+                onClick={() => void generateReview()}
+                type="button"
+              >
+                {reviewLoading ? (
+                  <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+                ) : (
+                  <Sparkles aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+                )}
+                {reviewLoading ? "Reading your year…" : "Generate review"}
+              </button>
+            ) : (
+              <p className="mt-2 text-xs text-muted-foreground/70">
+                Enable Mono AI above to generate.
+              </p>
+            )}
+            {review && (
+              <div className="mt-3 rounded-2xl border border-border/70 bg-popover p-4 shadow-sm">
+                <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">
+                  {review}
+                </p>
+                <div className="mt-3 border-t border-border/50 pt-2">
+                  <button
+                    className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                    onClick={downloadReview}
+                    type="button"
+                  >
+                    <Download aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+                    Download .txt
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </section>
 
         {/* Danger zone */}

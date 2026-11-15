@@ -8,6 +8,7 @@ import {
 import {
   ensureUserForAccount,
   getUserRow,
+  setUserAi,
   setUserNudge,
   updateUserName,
 } from "@/features/users/service";
@@ -33,6 +34,7 @@ export async function GET() {
         name: row.name,
         avatar: row.avatar ?? "",
         nudge: row.nudge ?? false,
+        ai: row.ai ?? false,
       },
       { headers: { "Cache-Control": "private, no-store" } },
     );
@@ -75,12 +77,16 @@ export async function PATCH(request: Request) {
     if (parsed.data.nudge !== undefined) {
       await setUserNudge(auth.account.$id, parsed.data.nudge);
     }
+    if (parsed.data.ai !== undefined) {
+      await setUserAi(auth.account.$id, parsed.data.ai);
+    }
     const row = await getUserRow(auth.account.$id);
     return NextResponse.json({
       email: row?.email ?? auth.account.email,
       name: row?.name ?? "",
       avatar: row?.avatar ?? "",
       nudge: row?.nudge ?? false,
+      ai: row?.ai ?? false,
     });
   } catch (error) {
     logFailure("User update", error);

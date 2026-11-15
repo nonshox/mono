@@ -9,6 +9,7 @@ import {
   highlightParts,
   matchesQuery,
 } from "@/features/days/group";
+import { extractThemes } from "@/features/days/themes";
 import { getApiErrorMessage } from "@/lib/api-client";
 import Link from "next/link";
 
@@ -42,6 +43,16 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
     [items, trimmedQuery],
   );
   const groups = useMemo(() => groupJournalEntries(filtered), [filtered]);
+
+  // Themes from the last 30 days of entries (data-derived, no clock).
+  const themes = useMemo(() => {
+    const latest = items[items.length - 1]?.day;
+    if (!latest) return [];
+    const start = new Date(new Date(`${latest}T00:00:00.000Z`).getTime() - 29 * 86400000)
+      .toISOString()
+      .slice(0, 10);
+    return extractThemes(items.filter((entry) => entry.day >= start));
+  }, [items]);
 
   const toggleExpand = (day: string) => {
     setExpandedDay((prev) => (prev === day ? null : day));
@@ -164,6 +175,30 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
             </button>
           )}
         </div>
+
+        {themes.length > 0 && (
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 px-0.5 pb-2">
+            <span className="type-eyebrow text-muted-foreground/60">
+              last 30 days
+            </span>
+            {themes.map((theme, index) => (
+              <span className="inline-flex items-baseline gap-2" key={theme.label}>
+                <button
+                  className="type-eyebrow text-foreground outline-none transition hover:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                  onClick={() => setQuery(theme.label)}
+                  type="button"
+                >
+                  {theme.label}
+                </button>
+                {index < themes.length - 1 && (
+                  <span aria-hidden="true" className="type-eyebrow text-muted-foreground/40">
+                    ·
+                  </span>
+                )}
+              </span>
+            ))}
+          </div>
+        )}
 
         {groups.length === 0 && (
           <p className="px-0.5 py-10 text-center text-sm text-muted-foreground">

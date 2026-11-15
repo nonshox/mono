@@ -12,6 +12,8 @@ export type UserRow = Models.Row & {
   avatar?: string;
   /** Opt-in for the daily evening Telegram nudge. */
   nudge?: boolean;
+  /** Opt-in for Mono AI (entries sent to Google Gemini). */
+  ai?: boolean;
 };
 
 export type UserPreview = Models.Row & {
@@ -107,6 +109,34 @@ export async function setUserNudge(
     rowId: userId,
     data: { nudge },
   });
+}
+
+export async function setUserAi(
+  userId: string,
+  ai: boolean,
+): Promise<UserRow> {
+  const existing = await getUserRow(userId);
+  if (!existing) {
+    throw new Error("Users row is missing for this account.");
+  }
+
+  return getTables().updateRow<UserRow>({
+    databaseId: getDatabaseId(),
+    tableId,
+    rowId: userId,
+    data: { ai },
+  });
+}
+
+/** Account ids opted into Mono AI; used by the AI cron routes. */
+export async function listAiTargets(): Promise<string[]> {
+  const result = await getTables().listRows<UserRow>({
+    databaseId: getDatabaseId(),
+    tableId,
+    queries: [Query.equal("ai", true), Query.select(["$id"]), Query.limit(500)],
+    total: false,
+  });
+  return result.rows.map((row) => row.$id);
 }
 
 /** Account ids opted into the daily nudge; used by the cron endpoint. */
