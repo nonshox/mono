@@ -43,6 +43,7 @@ Scripts: `dev` — `build` — `start` — `lint` — `test` — `typecheck` —
 - `/auth` — email-code sign-in (6-digit code, no password)
 - bell icon (navbar) — inbox panel: grouping, unread badge, mark read/all-read
 - `/` — greeting + **year in dots** (365-day journal: hollow dot, tap to write/edit/erase, “on this day” flashback, `/api/days*`)
+- `/journal` — reading mode (every entry as one book, year dividers, search-within, tap to edit)
 - `/profile` — identity card (initials avatar, name, email, member since) + edit
 - `/settings` — account (sessions w/ revoke, Telegram connect, delete account)
 - Navbar everywhere — logo + bell icon (notifications open as a dropdown panel), account menu

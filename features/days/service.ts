@@ -119,6 +119,25 @@ export async function hasDayEntry(userId: string, day: string): Promise<boolean>
   }
 }
 
+/** Every entry the user has, ascending by day. Caps at 5000 rows. */
+export async function listAllEntries(
+  userId: string,
+): Promise<DayEntry[]> {
+  const result = await getTables().listRows<DayRow>({
+    databaseId: getDatabaseId(),
+    tableId,
+    queries: [
+      Query.equal("user", userId),
+      Query.select(["day", "text"]),
+      Query.limit(5000),
+    ],
+    total: false,
+  });
+  return result.rows
+    .map((row) => ({ day: row.day, text: row.text }))
+    .sort((a, b) => a.day.localeCompare(b.day));
+}
+
 /** Distinct years that contain at least one entry, ascending. */
 export async function listYearsWithEntries(
   userId: string,

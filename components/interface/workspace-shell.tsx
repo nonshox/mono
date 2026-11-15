@@ -3,6 +3,7 @@
 import {
   ArrowLeft,
   Bell,
+  BookOpenText,
   ChevronRight,
   House,
   LogOut,
@@ -33,6 +34,7 @@ const breadcrumbs: Record<string, string> = {
   "/settings": "Settings",
   "/profile": "Profile",
   "/profile/edit": "Edit profile",
+  "/journal": "Journal",
 };
 
 export function WorkspaceShell({ children }: { children: ReactNode }) {
@@ -206,6 +208,10 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                   <UserRound aria-hidden="true" className="size-4" strokeWidth={1.75} />
                   Profile
                 </DropdownMenuItem>
+                <DropdownMenuItem className="rounded-lg px-2 py-2 text-xs" onClick={() => router.push("/journal")}>
+                  <BookOpenText aria-hidden="true" className="size-4" strokeWidth={1.75} />
+                  Journal
+                </DropdownMenuItem>
                 <DropdownMenuItem className="rounded-lg px-2 py-2 text-xs" onClick={() => router.push("/settings")}>
                   <Settings aria-hidden="true" className="size-4" strokeWidth={1.75} />
                   Settings
@@ -261,6 +267,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         >
           {([
             { href: "/", icon: House, label: "Home" },
+            { href: "/journal", icon: BookOpenText, label: "Journal" },
             { href: "/profile", icon: UserRound, label: "Profile" },
           ]).map(({ href, icon: Icon, label }) => {
             const active = pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));

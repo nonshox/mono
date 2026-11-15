@@ -8,9 +8,6 @@ import { sendTelegramNotification } from "@/features/telegram/service";
 const MESSAGE =
   "How was today? Open Mono and stamp a dot — two or three words is enough.";
 
-/** Never prerender or cache — cron only, headers auth. */
-export const dynamic = "force-dynamic";
-
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
   const header = request.headers.get("authorization");
