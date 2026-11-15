@@ -24,6 +24,13 @@ export async function deleteDay(day: string): Promise<void> {
   await apiClient.delete("/days", { data: { day } });
 }
 
+export async function searchDays(query: string): Promise<DayEntry[]> {
+  const { data } = await apiClient.get<{ entries: DayEntry[] }>("/days/search", {
+    params: { q: query },
+  });
+  return data.entries;
+}
+
 export async function fetchFlashback(day: string): Promise<DayEntry[]> {
   const { data } = await apiClient.get<{ entries: DayEntry[] }>(
     "/days/flashback",

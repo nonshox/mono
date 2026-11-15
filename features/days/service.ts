@@ -119,6 +119,47 @@ export async function hasDayEntry(userId: string, day: string): Promise<boolean>
   }
 }
 
+/** Distinct years that contain at least one entry, ascending. */
+export async function listYearsWithEntries(
+  userId: string,
+): Promise<number[]> {
+  const result = await getTables().listRows<DayRow>({
+    databaseId: getDatabaseId(),
+    tableId,
+    queries: [
+      Query.equal("user", userId),
+      Query.select(["day"]),
+      Query.limit(5000),
+    ],
+    total: false,
+  });
+  return [
+    ...new Set(result.rows.map((row) => Number(row.day.slice(0, 4)))),
+  ].sort((a, b) => a - b);
+}
+
+/** Substring search across every year, newest first. Max 20 rows. */
+export async function searchDayEntries(
+  userId: string,
+  query: string,
+): Promise<DayEntry[]> {
+  const result = await getTables().listRows<DayRow>({
+    databaseId: getDatabaseId(),
+    tableId,
+    queries: [
+      Query.equal("user", userId),
+      Query.contains("text", query),
+      Query.select(["day", "text"]),
+      Query.limit(50),
+    ],
+    total: false,
+  });
+  return result.rows
+    .map((row) => ({ day: row.day, text: row.text }))
+    .sort((a, b) => b.day.localeCompare(a.day))
+    .slice(0, 20);
+}
+
 /**
  * Same month-day in earlier years, newest first. `excludeYear` keeps the
  * currently-viewed year out of the list. At most 3 entries.
