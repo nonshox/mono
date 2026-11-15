@@ -10,8 +10,8 @@ export type UserRow = Models.Row & {
   email: string;
   name: string;
   avatar?: string;
-  /** Lifetime verified push-ups, maintained at write time. */
-  pushups?: number;
+  /** Opt-in for the daily evening Telegram nudge. */
+  nudge?: boolean;
 };
 
 export type UserPreview = Models.Row & {
@@ -92,6 +92,38 @@ export async function updateUserName(
   });
 }
 
+export async function setUserNudge(
+  userId: string,
+  nudge: boolean,
+): Promise<UserRow> {
+  const existing = await getUserRow(userId);
+  if (!existing) {
+    throw new Error("Users row is missing for this account.");
+  }
+
+  return getTables().updateRow<UserRow>({
+    databaseId: getDatabaseId(),
+    tableId,
+    rowId: userId,
+    data: { nudge },
+  });
+}
+
+/** Account ids opted into the daily nudge; used by the cron endpoint. */
+export async function listNudgeTargets(): Promise<string[]> {
+  const result = await getTables().listRows<UserRow>({
+    databaseId: getDatabaseId(),
+    tableId,
+    queries: [
+      Query.equal("nudge", true),
+      Query.select(["$id"]),
+      Query.limit(500),
+    ],
+    total: false,
+  });
+  return result.rows.map((row) => row.$id);
+}
+
 /** Lightweight lookup used by other features (e.g. notification actors). */
 export async function getUsersByIds(
   ids: string[],
@@ -140,15 +172,11 @@ export async function deleteUserEverywhere(userId: string): Promise<void> {
   };
 
   await Promise.allSettled([
-    wipe("workouts", "user"),
-    wipe("entries", "user"),
     wipe("notifications", "recipient"),
     wipe("notifications", "actor"),
-    // Legacy table from the retired follow feature — wiped if present.
-    wipe("follows", "follower"),
-    wipe("follows", "following"),
     wipe("telegram", "user"),
     wipe("codes", "user"),
+    wipe("days", "user"),
   ]);
   await tables
     .deleteRow({ databaseId, tableId, rowId: userId })

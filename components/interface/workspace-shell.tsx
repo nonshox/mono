@@ -1,20 +1,17 @@
 "use client";
 
 import {
+  ArrowLeft,
   Bell,
+  ChevronRight,
   House,
   LogOut,
   Settings,
-  ShieldCheck,
   UserRound,
-  Dumbbell,
-  PersonStanding,
-  Timer,
-  Trophy,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   DropdownMenu,
@@ -28,61 +25,67 @@ import {
 import { logout } from "@/features/auth/client-api";
 import { useUserStore } from "@/features/users/store";
 import { useNotificationStore } from "@/features/notifications/store";
+import { notificationHref, relativeTime } from "@/lib/notification-link";
+import type { NotificationItem } from "@/features/notifications/client-api";
 import { UserAvatar } from "@/components/interface/user-avatar";
 
-const navItems = [
-  { href: "/", label: "Home", icon: House, exact: true },
-  { href: "/pushups", label: "Push-ups", icon: Dumbbell },
-  { href: "/squats", label: "Squats", icon: PersonStanding },
-  { href: "/plank", label: "Plank", icon: Timer },
-  { href: "/challenges", label: "Challenges", icon: ShieldCheck },
-  { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { href: "/notifications", label: "Notifications", icon: Bell, badge: true },
-] as const;
+const breadcrumbs: Record<string, string> = {
+  "/settings": "Settings",
+  "/profile": "Profile",
+  "/profile/edit": "Edit profile",
+};
 
 export function WorkspaceShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const unread = useNotificationStore((state) => state.unreadCount);
+  const items = useNotificationStore((state) => state.items);
+  const loading = useNotificationStore((state) => state.loading);
+  const loaded = useNotificationStore((state) => state.loaded);
+  const load = useNotificationStore((state) => state.load);
+  const markRead = useNotificationStore((state) => state.markRead);
+  const markAllRead = useNotificationStore((state) => state.markAllRead);
   const user = useUserStore((state) => state.user);
   const loadUser = useUserStore((state) => state.load);
   const resetUser = useUserStore((state) => state.reset);
-  const [signingOut, setSigningOut] = useState(false);
 
   const email = user?.email ?? "";
   const name = user?.name ?? "";
-  const avatar = user?.avatar ?? "";
+  const breadcrumb = breadcrumbs[pathname] ?? null;
 
   useEffect(() => {
     void loadUser();
-  }, [loadUser]);
+    void load();
+  }, [loadUser, load]);
 
   const signOut = async () => {
-    if (signingOut) return;
-    setSigningOut(true);
     try {
       await logout();
     } finally {
       resetUser();
+      useNotificationStore.getState().reset();
       router.replace("/auth");
       router.refresh();
     }
   };
 
-  const isActive = (href: string, exact?: boolean) =>
-    exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+  const openNotification = (item: NotificationItem) => {
+    if (!item.read) void markRead(item);
+    const href = notificationHref(item);
+    if (href) router.push(href);
+  };
+
+  const latest = items.slice(0, 7);
 
   return (
     <>
-      {/* Sidebar — desktop only */}
-      <aside
-        aria-label="Primary navigation"
-        className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-border/60 bg-white lg:flex"
-      >
-        <div className="flex h-14 shrink-0 items-center border-b border-border/60 px-4">
+      {/* Navbar — glassy, sticky, the only top chrome */}
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/70 backdrop-blur-xl backdrop-saturate-[1.15]">
+        <div className="mx-auto flex h-12 max-w-7xl items-center justify-between gap-2 px-3 sm:px-5">
+          {/* Brand */}
           <Link
             aria-label="Mono — home"
-            className="flex items-center gap-1.5 outline-none transition hover:opacity-70"
+            className="flex shrink-0 items-center gap-2 outline-none transition hover:opacity-70"
             href="/"
           >
             <Image
@@ -90,175 +93,180 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
               className="rounded-[5px]"
               height={18}
               priority
-              src="/logotype/logotype.png"
+              src="/logotype/apple-touch-icon.png"
               width={18}
             />
-            <span className="text-[12px] font-semibold tracking-tight text-foreground">
+            <span className="type-brand text-foreground">
               Mono
-              <span className="ml-1 text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                Performance
-              </span>
             </span>
           </Link>
-        </div>
 
-        <div className="shrink-0 px-3 pt-3">
-          <Link
-            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-foreground text-xs font-semibold text-background outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
-            href="/pushups"
-          >
-            <Dumbbell aria-hidden="true" className="size-3.5" strokeWidth={2} />
-            Train
-          </Link>
-        </div>
-
-        <nav aria-label="Sections" className="flex-1 overflow-y-auto px-2 py-2">
-          <ul className="grid gap-0.5">
-            {navItems.map((item) => {
-              const active = isActive(item.href, "exact" in item ? item.exact : false);
-              const Icon = item.icon;
-              const showBadge = "badge" in item && item.badge && unread > 0;
-              return (
-                <li key={item.href}>
-                  <Link
-                    aria-current={active ? "page" : undefined}
-                    className={`relative flex h-10 items-center gap-2.5 rounded-lg px-2 text-[13px] outline-none transition focus-visible:ring-2 focus-visible:ring-ring ${
-                      active
-                        ? "bg-muted font-semibold text-foreground"
-                        : "font-normal text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                    }`}
-                    href={item.href}
-                  >
-                    <Icon
-                      aria-hidden="true"
-                      className="size-[18px] shrink-0"
-                      strokeWidth={active ? 2 : 1.6}
-                    />
-                    <span className="flex-1 truncate">{item.label}</span>
-                    {showBadge && (
-                      <span className="grid h-4 min-w-4 place-items-center rounded-full bg-badge px-1 text-[9px] font-bold leading-none text-white">
-                        {unread > 99 ? "99+" : unread}
-                      </span>
-                    )}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-
-        <div className="shrink-0 border-t border-border/60 p-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              aria-label="Account menu"
-              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <UserAvatar avatar={avatar} name={name || email || "?"} size={28} />
-              <span className="min-w-0 flex-1 text-left">
-                <span className="block truncate text-[11px] font-semibold leading-4 text-foreground">
-                  {name || "Account"}
-                </span>
-                <span className="block truncate text-[9px] leading-3 text-muted-foreground">
-                  {email}
-                </span>
-              </span>
-              <Settings
-                aria-hidden="true"
-                className="size-3.5 shrink-0 text-muted-foreground"
-                strokeWidth={1.75}
-              />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" side="top" className="w-56 border-border/60 bg-popover p-1.5 shadow-thumb" sideOffset={6}>
-              <DropdownMenuGroup>
-                <DropdownMenuLabel className="px-2 py-2">
-                  <span className="block text-xs font-semibold">{name || "Account"}</span>
-                  <span className="block truncate text-[11px] text-muted-foreground">{email}</span>
-                </DropdownMenuLabel>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator className="my-1 bg-border/50" />
-              <DropdownMenuItem className="rounded-md px-2 py-2 text-xs" onClick={() => router.push("/profile")}>
-                <UserRound aria-hidden="true" className="size-3.5" strokeWidth={1.75} />
-                Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem className="rounded-md px-2 py-2 text-xs" onClick={() => router.push("/settings")}>
-                <Settings aria-hidden="true" className="size-3.5" strokeWidth={1.75} />
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="my-1 bg-border/50" />
-              <DropdownMenuItem disabled={signingOut} className="rounded-md px-2 py-2 text-xs text-destructive focus:text-destructive" onClick={() => void signOut()}>
-                <LogOut aria-hidden="true" className="size-3.5" strokeWidth={1.75} />
-                {signingOut ? "Signing out…" : "Sign out"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </aside>
-
-      {/* Top bar — mobile & tablet only */}
-      <div className="sticky top-0 z-40 border-b border-border/60 bg-white lg:hidden">
-        <header className="h-14">
-          <div className="flex h-full items-center justify-between px-4 sm:px-6">
-            <Link
-              aria-label="Mono — home"
-              className="flex items-center gap-2 outline-none transition hover:opacity-80"
-              href="/"
-            >
-              <Image
-                alt=""
-                className="rounded-[6px]"
-                height={22}
-                priority
-                src="/logotype/logotype.png"
-                width={22}
-              />
-              <span className="text-[13px] font-semibold tracking-tight text-foreground">
-                Mono
-              </span>
-            </Link>
-
-            <div className="flex items-center gap-1.5">
-              <Link
+          {/* Right icons */}
+          <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+            {/* Notifications — icon button with dropdown panel */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
                 aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
-                className="relative grid size-9 place-items-center rounded-full text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground"
-                href="/notifications"
+                className="relative grid size-9 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <Bell aria-hidden="true" className="size-5" strokeWidth={1.8} />
+                <Bell aria-hidden="true" className="size-[17px]" strokeWidth={1.8} />
                 {unread > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-badge px-1 text-[9px] font-bold leading-none text-white">
-                    {unread > 9 ? "9+" : unread}
-                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="absolute right-[7px] top-[7px] size-2 rounded-full bg-badge ring-2 ring-background"
+                  />
                 )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-[21rem] overflow-hidden rounded-2xl border-border/70 p-0"
+                sideOffset={8}
+              >
+                <div className="flex items-center justify-between border-b border-border/60 px-4 py-2.5">
+                  <p className="type-eyebrow">
+                    Notifications
+                  </p>
+                  {unread > 0 && (
+                    <button
+                      className="text-xs font-semibold text-foreground outline-none transition hover:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                      onClick={() => void markAllRead()}
+                      type="button"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-[22rem] overflow-y-auto">
+                  {!loaded || (loading && latest.length === 0) ? (
+                    <div className="type-eyebrow grid place-items-center px-4 py-8">
+                      Loading
+                    </div>
+                  ) : latest.length === 0 ? (
+                    <div className="px-4 py-8 text-center">
+                      <p className="text-xs font-semibold text-foreground">All quiet</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Nothing new right now.
+                      </p>
+                    </div>
+                  ) : (
+                    latest.map((item) => (
+                      <button
+                        className="flex w-full items-center gap-2.5 border-b border-border/40 px-3 py-2.5 text-left outline-none transition last:border-b-0 hover:bg-muted/60 focus-visible:bg-muted/60"
+                        key={item.id}
+                        onClick={() => openNotification(item)}
+                        type="button"
+                      >
+                        <UserAvatar avatar={item.actorAvatar} name={item.actorName} size={26} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-xs leading-5 text-foreground">
+                            <span className="font-semibold">
+                              {item.self ? "You" : item.actorName}
+                            </span>{" "}
+                            <span className="text-muted-foreground">
+                              {item.count > 1 ? `${item.type} ×${item.count}` : item.type}
+                            </span>
+                          </span>
+                          <time
+                            className="mt-0.5 block text-xs tabular-nums text-muted-foreground/75"
+                            dateTime={item.createdAt}
+                          >
+                            {relativeTime(item.createdAt)}
+                          </time>
+                        </span>
+                        {!item.read && (
+                          <span
+                            aria-hidden="true"
+                            className="size-1.5 shrink-0 rounded-full bg-badge"
+                          />
+                        )}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Account */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                aria-label="Account menu"
+                className="grid size-9 place-items-center rounded-full outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <UserAvatar name={name || email || "?"} size={26} />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56" sideOffset={8}>
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="px-2 py-2">
+                    <span className="block text-xs font-semibold">{name || "Account"}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{email}</span>
+                  </DropdownMenuLabel>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="rounded-lg px-2 py-2 text-xs" onClick={() => router.push("/profile")}>
+                  <UserRound aria-hidden="true" className="size-4" strokeWidth={1.75} />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem className="rounded-lg px-2 py-2 text-xs" onClick={() => router.push("/settings")}>
+                  <Settings aria-hidden="true" className="size-4" strokeWidth={1.75} />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="rounded-lg px-2 py-2 text-xs hover:bg-[#faf0ee] focus:bg-[#faf0ee] data-[variant=destructive]:focus:bg-[#f7e6e3] data-[variant=destructive]:text-destructive"
+                  onClick={() => void signOut()}
+                  variant="destructive"
+                >
+                  <LogOut aria-hidden="true" className="size-4" strokeWidth={1.75} />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        {/* Breadcrumb — back arrow + section */}
+        {breadcrumb && (
+          <div className="border-t border-border/50">
+            <div className="mx-auto flex h-8 max-w-7xl items-center gap-1 px-2 text-xs text-muted-foreground sm:px-4">
+              <Link
+                aria-label="Back to home"
+                className="grid size-6 place-items-center rounded-md outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                href="/"
+              >
+                <ArrowLeft aria-hidden="true" className="size-3.5" strokeWidth={2} />
               </Link>
               <Link
-                aria-label="Settings"
-                className="grid size-9 place-items-center rounded-full text-muted-foreground outline-none transition hover:bg-muted hover:text-foreground"
-                href="/settings"
+                aria-label="Home"
+                className="grid size-6 place-items-center rounded-md text-muted-foreground/70 outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                href="/"
               >
-                <Settings aria-hidden="true" className="size-5" strokeWidth={1.8} />
+                <House aria-hidden="true" className="size-3" strokeWidth={1.8} />
               </Link>
+              <ChevronRight aria-hidden="true" className="size-3 text-muted-foreground/50" strokeWidth={2} />
+              <span aria-current="page" className="type-eyebrow text-foreground">
+                {breadcrumb}
+              </span>
             </div>
           </div>
-        </header>
-      </div>
+        )}
+      </header>
 
-      <div className="flex min-h-0 flex-1 flex-col lg:pl-60">{children}</div>
+      <div className="flex min-h-0 flex-1 flex-col">{children}</div>
 
-      {/* Mobile & tablet bottom bar */}
-      <div className="pointer-events-none sticky bottom-2 z-30 flex justify-center px-3 pb-[env(safe-area-inset-bottom)] lg:hidden">
+      {/* Mobile bottom pill — glassy, icons only */}
+      <div className="pointer-events-none sticky bottom-3 z-30 flex justify-center px-4 pb-[max(env(safe-area-inset-bottom),0.25rem)] lg:hidden">
         <nav
           aria-label="Primary"
-          className="pointer-events-auto flex h-12 min-w-0 items-stretch rounded-full border border-border/60 bg-white/95 px-1 shadow-glass backdrop-blur-sm"
+          className="pointer-events-auto flex h-12 items-stretch gap-0.5 rounded-full border border-border/70 bg-background/75 px-1 backdrop-blur-xl"
         >
           {([
-            { href: "/" as const, icon: House },
-            { href: "/pushups" as const, icon: Dumbbell },
-            { href: "/challenges" as const, icon: ShieldCheck },
-            { href: "/profile" as const, icon: UserRound },
-          ]).map(({ href, icon: Icon }) => {
-            const active = pathname === href || pathname.startsWith(`${href}/`);
+            { href: "/", icon: House, label: "Home" },
+            { href: "/profile", icon: UserRound, label: "Profile" },
+          ]).map(({ href, icon: Icon, label }) => {
+            const active = pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
             return (
               <Link
-                aria-label={href === "/" ? "Home" : href === "/pushups" ? "Train" : href === "/challenges" ? "Challenges" : "Profile"}
+                aria-label={label}
                 aria-current={active ? "page" : undefined}
                 className="relative grid h-full w-16 place-items-center outline-none"
                 href={href}
@@ -266,17 +274,11 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
               >
                 <Icon
                   aria-hidden
-                  className={`pointer-events-none size-5 transition-colors ${
+                  className={`size-[19px] transition-colors ${
                     active ? "text-foreground" : "text-muted-foreground/60"
                   }`}
-                  strokeWidth={active ? 2 : 1.5}
+                  strokeWidth={active ? 2.1 : 1.6}
                 />
-                {active && (
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute bottom-1 size-1 rounded-full bg-foreground"
-                  />
-                )}
               </Link>
             );
           })}

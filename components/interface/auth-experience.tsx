@@ -1,114 +1,167 @@
 "use client";
 
-import Image from "next/image";
 import { ArrowLeft, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  fetchCurrentUser,
   requestEmailCode,
   verifyEmailCode,
 } from "@/features/auth/client-api";
 import { useNotificationStore } from "@/features/notifications/store";
+import { useUserStore } from "@/features/users/store";
 import { getApiErrorMessage } from "@/lib/api-client";
+
+const RESEND_COOLDOWN_SECONDS = 30;
 
 export function AuthExperience() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [userId, setUserId] = useState("");
   const [step, setStep] = useState<"email" | "code">("email");
-  const [pendingAction, setPendingAction] = useState<"send" | "verify" | null>(
-    null,
-  );
+  const [email, setEmail] = useState("");
+  const [userId, setUserId] = useState("");
+  const [code, setCode] = useState("");
+  const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  const isPending = pendingAction !== null;
+  const [cooldown, setCooldown] = useState(0);
+  const verifying = useRef(false);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = setInterval(() => setCooldown((value) => value - 1), 1000);
+    return () => clearInterval(id);
+  }, [cooldown]);
 
   const sendCode = async (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
-    setPendingAction("send");
+    if (pending) return;
+    setPending(true);
     setError("");
 
     try {
       setUserId(await requestEmailCode(email.trim()));
       setCode("");
       setStep("code");
+      setCooldown(RESEND_COOLDOWN_SECONDS);
     } catch (cause) {
       setError(
         getApiErrorMessage(cause, "We could not send a sign-in code."),
       );
     } finally {
-      setPendingAction(null);
+      setPending(false);
     }
   };
 
-  const verifyCode = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setPendingAction("verify");
+  const verify = async (value: string) => {
+    if (verifying.current) return;
+    verifying.current = true;
+    setPending(true);
     setError("");
 
     try {
-      await verifyEmailCode(userId, code);
-      const user = await fetchCurrentUser();
-      if (!user) {
-        setError("Sign-in could not be completed. Request a new code and try again.");
-        return;
-      }
+      await verifyEmailCode(userId, value);
       useNotificationStore.getState().reset();
+      useUserStore.getState().reset();
       router.replace("/");
     } catch (cause) {
+      setCode("");
       setError(getApiErrorMessage(cause, "That code could not be verified."));
-    } finally {
-      setPendingAction(null);
+      verifying.current = false;
+      setPending(false);
     }
   };
 
+  const backToEmail = () => {
+    setStep("email");
+    setCode("");
+    setError("");
+    setCooldown(0);
+  };
+
   return (
-    <main className="mx-auto grid min-h-svh w-full max-w-6xl grid-rows-[auto_1fr] bg-background md:grid-cols-2 md:grid-rows-1 md:items-center md:px-8">
-      <div className="flex items-center justify-center px-4 pt-4 md:p-8 [@media(max-height:500px)]:hidden">
-        <div className="relative h-[clamp(6rem,20svh,12rem)] w-full overflow-hidden rounded-2xl md:aspect-square md:h-auto md:max-w-[min(42vw,40rem)]">
-          <Image
-            alt="Sunlit fields"
-            className="object-cover"
-            fill
-            priority
-            sizes="(max-width: 767px) 100vw, 42vw"
-            src="/auth.png"
-          />
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-            <Image alt="" aria-hidden="true" className="size-12 rounded-lg border-4 border-black/40 object-cover" height={64} priority src="/logotype/logotype.png" width={64} />
-          </div>
-        </div>
-      </div>
+    <main className="flex min-h-svh flex-col items-center justify-center bg-background px-6 py-12">
+      <div className="w-full max-w-xs">
+        <header className="mb-10 flex flex-col items-center text-center">
+          <span className="type-brand text-foreground">
+            Mono
+          </span>
+          <h1 className="type-title mt-4 text-foreground">
+            {step === "email" ? "Sign in" : "Check your email"}
+          </h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            {step === "email" ? (
+              "No password — we\u2019ll email you a one-time code."
+            ) : (
+              <>
+                Code sent to{" "}
+                <span className="font-medium text-foreground">{email}</span>
+              </>
+            )}
+          </p>
+        </header>
 
-      <section className="flex min-h-0 items-center justify-center px-6 py-8 md:px-12 [@media(max-height:500px)]:py-3">
-        <div className="w-full max-w-sm">
-          <header className="mb-6 [@media(max-height:500px)]:mb-3">
-            <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
-              {step === "email" ? "Sign in to Mono" : "Check your email"}
-            </h1>
-            <p className="mt-2 text-sm text-muted-foreground [@media(max-height:500px)]:mt-1">
-              {step === "email"
-                ? "Enter your email to receive a sign-in code."
-                : <>Enter the six-digit code sent to <strong className="font-medium text-foreground">{email}</strong>.</>}
-            </p>
-          </header>
-
-          {step === "email" ? (
-            <form className="grid gap-4 [@media(max-height:500px)]:gap-2" onSubmit={(event) => void sendCode(event)}>
-              <div className="grid gap-2 [@media(max-height:500px)]:gap-1">
-                <Label htmlFor="email">Email address</Label>
+        {step === "email" ? (
+          <form className="grid gap-4" onSubmit={(event) => void sendCode(event)}>
+            <div className="grid gap-1.5">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                autoComplete="email"
+                autoFocus
+                id="email"
+                inputMode="email"
+                name="email"
+                spellCheck={false}
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+            </div>
+            {error && (
+              <p className="text-sm text-destructive" role="alert">
+                {error}
+              </p>
+            )}
+            <Button
+              aria-busy={pending}
+              className="h-10 w-full"
+              disabled={pending || !email.trim()}
+              type="submit"
+            >
+              {pending && <LoaderCircle aria-hidden="true" className="animate-spin" />}
+              {pending ? "Sending…" : "Continue"}
+            </Button>
+          </form>
+        ) : (
+          <div className="grid gap-4">
+            <form
+              className="grid gap-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void verify(code);
+              }}
+            >
+              <div className="grid gap-1.5">
+                <Label htmlFor="code">Six-digit code</Label>
                 <Input
-                  autoComplete="email"
+                  autoComplete="one-time-code"
                   autoFocus
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  className="h-12 text-center text-lg font-semibold tracking-[0.5em]"
+                  disabled={pending}
+                  id="code"
+                  inputMode="numeric"
+                  maxLength={6}
+                  name="code"
+                  pattern="[0-9]{6}"
+                  value={code}
+                  onChange={(event) => {
+                    const value = event.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, 6);
+                    setCode(value);
+                    if (value.length === 6) void verify(value);
+                  }}
                   required
                 />
               </div>
@@ -118,97 +171,42 @@ export function AuthExperience() {
                 </p>
               )}
               <Button
-                aria-busy={pendingAction === "send"}
-                className="h-10 w-full text-sm"
-                disabled={isPending || !email.trim()}
+                aria-busy={pending}
+                className="h-10 w-full"
+                disabled={pending || code.length !== 6}
                 type="submit"
               >
-                {pendingAction === "send" ? (
-                  <>
-                    <LoaderCircle aria-hidden="true" className="animate-spin" />
-                    Sending code...
-                  </>
-                ) : (
-                  "Continue with email"
-                )}
+                {pending && <LoaderCircle aria-hidden="true" className="animate-spin" />}
+                {pending ? "Verifying…" : "Sign in"}
               </Button>
             </form>
-          ) : (
-            <div className="grid gap-4 [@media(max-height:500px)]:gap-2">
-              <Button
-                className="-ml-2 w-fit"
-                disabled={isPending}
-                onClick={() => {
-                  setStep("email");
-                  setCode("");
-                  setError("");
-                }}
+
+            <div className="flex items-center justify-between text-sm">
+              <button
+                className="inline-flex items-center gap-1 text-muted-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                disabled={pending}
+                onClick={backToEmail}
                 type="button"
-                variant="ghost"
               >
-                <ArrowLeft aria-hidden="true" />
+                <ArrowLeft aria-hidden="true" className="size-3.5" strokeWidth={2} />
                 Change email
-              </Button>
-              <form className="grid gap-4 [@media(max-height:500px)]:gap-2" onSubmit={verifyCode}>
-                <div className="grid gap-2 [@media(max-height:500px)]:gap-1">
-                  <Label htmlFor="code">Sign-in code</Label>
-                  <Input
-                    autoComplete="one-time-code"
-                    autoFocus
-                    id="code"
-                    inputMode="numeric"
-                    maxLength={6}
-                    name="code"
-                    pattern="[0-9]{6}"
-                    value={code}
-                    onChange={(event) =>
-                      setCode(event.target.value.replace(/\D/g, "").slice(0, 6))
-                    }
-                    required
-                  />
-                </div>
-                {error && (
-                  <p className="text-sm text-destructive" role="alert">
-                    {error}
-                  </p>
-                )}
-                <Button
-                  aria-busy={pendingAction === "verify"}
-                  className="h-10 w-full text-sm"
-                  disabled={isPending || code.length !== 6}
-                  type="submit"
-                >
-                  {pendingAction === "verify" ? (
-                    <>
-                      <LoaderCircle aria-hidden="true" className="animate-spin" />
-                      Signing in...
-                    </>
-                  ) : (
-                    "Sign in"
-                  )}
-                </Button>
-              </form>
-              <Button
-                aria-busy={pendingAction === "send"}
-                className="h-10 w-full text-sm"
-                disabled={isPending}
+              </button>
+              <button
+                className="text-muted-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                disabled={pending || cooldown > 0}
                 onClick={() => void sendCode()}
                 type="button"
-                variant="outline"
               >
-                {pendingAction === "send" ? (
-                  <>
-                    <LoaderCircle aria-hidden="true" className="animate-spin" />
-                    Sending code...
-                  </>
-                ) : (
-                  "Send a new code"
-                )}
-              </Button>
+                {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}
+              </button>
             </div>
-          )}
-        </div>
-      </section>
+          </div>
+        )}
+      </div>
+
+      <p className="type-eyebrow mt-12 text-muted-foreground/60">
+        Mono — a minimal app base
+      </p>
     </main>
   );
 }

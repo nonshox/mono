@@ -3,9 +3,9 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "Mono Performance",
+    name: "Mono",
     short_name: "Mono",
-    description: "Mono Performance — camera-verified push-ups, one leaderboard, prestige only.",
+    description: "Mono — a minimal app base.",
     lang: "en",
     dir: "ltr",
     start_url: "/",
@@ -13,15 +13,10 @@ export default function manifest(): MetadataRoute.Manifest {
     display: "standalone",
     display_override: ["standalone", "minimal-ui"],
     orientation: "any",
-    theme_color: "#f5f5f7",
-    background_color: "#f5f5f7",
+    theme_color: "#ffffff",
+    background_color: "#ffffff",
     categories: ["utilities", "productivity"],
     icons: [
-      {
-        src: "/logotype/favicon-48x48.png",
-        sizes: "48x48",
-        type: "image/png",
-      },
       {
         src: "/logotype/favicon-16x16.png",
         sizes: "16x16",

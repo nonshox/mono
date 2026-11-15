@@ -21,12 +21,48 @@ type TelegramConnectionRow = Models.Row & {
   created: string;
 };
 
+/**
+ * Deletes every used or expired one-time link code. Best-effort; never throws.
+ * Called on every link creation/consumption so the table can't accumulate dead rows.
+ */
+async function pruneCodes(): Promise<number> {
+  const nowIso = new Date().toISOString();
+  let deleted = 0;
+  const tables = getTables();
+  const databaseId = getDatabaseId();
+
+  for (const queries of [
+    [Query.equal("used", true)],
+    [Query.lessThan("expires", nowIso)],
+  ]) {
+    for (;;) {
+      const page = await tables.listRows({
+        databaseId,
+        tableId: "codes",
+        queries: [...queries, Query.limit(100), Query.select(["$id"])],
+        total: false,
+      });
+      if (page.rows.length === 0) break;
+      await Promise.allSettled(
+        page.rows.map((row) =>
+          tables.deleteRow({ databaseId, tableId: "codes", rowId: row.$id }),
+        ),
+      );
+      deleted += page.rows.length;
+      if (page.rows.length < 100) break;
+    }
+  }
+  return deleted;
+}
+
 export async function createTelegramLink(userId: string): Promise<string> {
   const botUsername = process.env.TELEGRAM_BOT_USERNAME?.trim().replace(/^@/, "");
   if (!botUsername || !/^[A-Za-z0-9_]{2,29}bot$/i.test(botUsername)) {
     throw new Error("Telegram bot username is not configured.");
   }
   const tables = getTables();
+  // Self-cleaning: purge dead rows before adding new ones. Never fails the link.
+  await pruneCodes().catch(() => 0);
   const currentToken = await getTelegramTokenByUser(userId);
   const now = Date.now();
   if (
@@ -142,6 +178,9 @@ export async function consumeTelegramLink(
         });
       }
     });
+    // Self-cleaning after a successful link — purge dead rows.
+    await pruneCodes().catch(() => 0);
+
     return { status: "connected", userId: token.user };
   } catch (error) {
     if (error instanceof TelegramLinkRaceError) {

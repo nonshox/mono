@@ -1,37 +1,26 @@
 "use client";
 
 import {
-  Camera,
-  ChevronRight,
   LoaderCircle,
-  LogOut,
   MonitorSmartphone,
   RefreshCw,
   Send,
+  BellRing,
   Trash2,
   Unlink,
-  UserRound,
   X,
 } from "lucide-react";
-import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { LocalDateTime } from "@/components/interface/local-date-time";
-import { Button } from "@/components/ui/button";
 import {
   createTelegramLink,
   disconnectTelegram,
   fetchTelegramStatus,
 } from "@/features/telegram/client-api";
-import {
-  fetchSessions,
-  logout,
-  revokeSession,
-  type AuthSession,
-} from "@/features/auth/client-api";
+import { fetchSessions, type AuthSession, revokeSession } from "@/features/auth/client-api";
 import { getApiErrorMessage } from "@/lib/api-client";
-import { useUiPrefs } from "@/features/ui/store";
-import { deleteAccount } from "@/features/users/client-api";
-import { EmptyState } from "@/components/interface/empty-state";
+import { deleteAccount, fetchUser, saveUserNudge } from "@/features/users/client-api";
+import { useUserStore } from "@/features/users/store";
 import { useRouter } from "next/navigation";
 
 export function SettingsExperience({
@@ -46,6 +35,8 @@ export function SettingsExperience({
   const [loadingTelegram, setLoadingTelegram] = useState(true);
   const [telegramPending, setTelegramPending] = useState(false);
   const [telegramLink, setTelegramLink] = useState("");
+  const [nudgeOn, setNudgeOn] = useState(false);
+  const [nudgeSaving, setNudgeSaving] = useState(false);
   const [sessions, setSessions] = useState(initialSessions);
   const [pendingSession, setPendingSession] = useState("");
   const [refreshingSessions, setRefreshingSessions] = useState(false);
@@ -53,45 +44,16 @@ export function SettingsExperience({
   const [message, setMessage] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
-  const cameraFacing = useUiPrefs((state) => state.cameraFacing);
-  const setCameraFacing = useUiPrefs((state) => state.setCameraFacing);
-  const rearCamera = cameraFacing === "environment";
-
-  const toggleCamera = () => {
-    const next = !rearCamera;
-    setCameraFacing(next ? "environment" : "user");
-    setMessage(next ? "Rear camera will be used." : "Front camera will be used.");
-    setError("");
-  };
-
-  const confirmDeleteAccount = async () => {
-    if (deleting || deleteConfirm.trim().toUpperCase() !== "DELETE") return;
-    setDeleting(true);
-    setError("");
-    try {
-      await deleteAccount();
-      router.replace("/auth");
-      router.refresh();
-    } catch (cause) {
-      setError(getApiErrorMessage(cause, "Your account could not be deleted."));
-      setDeleting(false);
-    }
-  };
 
   useEffect(() => {
     let active = true;
-
     fetchTelegramStatus()
-      .then((isConnected) => {
-        if (active) setTelegramConnected(isConnected);
-      })
-      .catch(() => {
-        if (active) setError("Telegram status could not be checked.");
-      })
-      .finally(() => {
-        if (active) setLoadingTelegram(false);
-      });
-
+      .then((isConnected) => active && setTelegramConnected(isConnected))
+      .catch(() => active && setError("Telegram status could not be checked."))
+      .finally(() => active && setLoadingTelegram(false));
+    fetchUser()
+      .then((user) => active && setNudgeOn(user.nudge ?? false))
+      .catch(() => {});
     return () => {
       active = false;
     };
@@ -118,6 +80,23 @@ export function SettingsExperience({
     }
   };
 
+  const toggleNudge = async () => {
+    if (nudgeSaving || !telegramConnected) return;
+    const next = !nudgeOn;
+    setNudgeOn(next);
+    setNudgeSaving(true);
+    try {
+      const saved = await saveUserNudge(next);
+      const current = useUserStore.getState().user;
+      if (current) useUserStore.getState().setUser({ ...current, nudge: saved.nudge ?? next });
+    } catch (cause) {
+      setNudgeOn(!next);
+      setError(getApiErrorMessage(cause, "The nudge setting could not be saved."));
+    } finally {
+      setNudgeSaving(false);
+    }
+  };
+
   const refreshTelegram = async () => {
     if (telegramPending) return;
     setTelegramPending(true);
@@ -126,11 +105,7 @@ export function SettingsExperience({
       const isConnected = await fetchTelegramStatus();
       setTelegramConnected(isConnected);
       if (isConnected) setTelegramLink("");
-      setMessage(
-        isConnected
-          ? "Telegram is connected."
-          : "Not connected yet Ã¢â‚¬â€ finish linking in Telegram first.",
-      );
+      setMessage(isConnected ? "Telegram connected." : "Link pending — finish in Telegram.");
     } catch {
       setError("Telegram status could not be checked.");
     } finally {
@@ -141,7 +116,6 @@ export function SettingsExperience({
   const refreshSessions = async () => {
     if (refreshingSessions) return;
     setRefreshingSessions(true);
-    setError("");
     try {
       setSessions(await fetchSessions());
     } catch {
@@ -164,343 +138,245 @@ export function SettingsExperience({
       await refreshSessions();
       setMessage("Session revoked.");
     } catch {
-      setError("We could not revoke that session. Please try again.");
+      setError("Could not revoke that session.");
     } finally {
       setPendingSession("");
     }
   };
 
-  const signOut = async () => {
+  const confirmDeleteAccount = async () => {
+    if (deleting || deleteConfirm.trim().toUpperCase() !== "DELETE") return;
+    setDeleting(true);
     try {
-      await logout();
-    } finally {
+      await deleteAccount();
       router.replace("/auth");
       router.refresh();
+    } catch (cause) {
+      setError(getApiErrorMessage(cause, "Your account could not be deleted."));
+      setDeleting(false);
     }
   };
 
-  const sessionRevokeButton = (session: AuthSession) => (
-    <button
-      aria-label={`Revoke ${session.device} session`}
-      className="grid size-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
-      disabled={pendingSession === session.id}
-      onClick={() => void revokeSessionForAccount(session)}
-      type="button"
-    >
-      {pendingSession === session.id ? (
-        <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-      ) : (
-        <X aria-hidden="true" className="size-4" />
-      )}
-    </button>
-  );
 
   return (
-    <div className="w-full">
-      <div className="mb-6 items-end border-b border-border/60 pb-3">
-        <h1 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
-          Settings
-        </h1>
-        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{email}</p>
-      </div>
+    <main className="min-h-full w-full bg-white px-4 pb-20 pt-5 sm:px-6 sm:pt-8">
+      <div className="mx-auto w-full max-w-2xl md:max-w-3xl">
+        {/* Header */}
+        <header className="border-b border-border/60 pb-4">
+          <h1 className="type-title text-foreground">
+            Settings
+          </h1>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">{email}</p>
+        </header>
 
-      <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
-        <div className="grid gap-6">
-        {/* Profile gateway Ã¢â‚¬â€ this page is for operations; the person lives at /profile. */}
-        <section aria-label="Profile">
-          <div className="mb-1.5 flex items-center justify-between gap-3 px-0.5">
-            <h2 className="type-eyebrow">Profile</h2>
-          </div>
+        {/* Notifications — Telegram */}
+        <section aria-label="Notifications" className="mt-6">
+          <h2 className="type-eyebrow mb-1 px-0.5">
+            Notifications
+          </h2>
           <div className="border-y border-border/60">
-            <Link
-              aria-label="Open your profile"
-              className="flex items-center gap-3 px-1 py-3 outline-none transition hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
-              href="/profile"
-            >
-              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
-                <UserRound aria-hidden="true" className="size-4" strokeWidth={1.8} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-xs font-semibold leading-5 text-foreground">
-                  Your profile
-                </span>
-                <span className="mt-0.5 block text-[10px] leading-4 text-muted-foreground">
-                  Photo, name, and training history
-                </span>
-              </span>
-              <ChevronRight
-                aria-hidden="true"
-                className="size-4 shrink-0 text-muted-foreground"
-                strokeWidth={1.8}
-              />
-            </Link>
-          </div>
-        </section>
-
-        <Section title="Notifications">
-          <Row
-            action={
-              <Button
+            <div className="flex items-center gap-3 py-3">
+              <Send aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.8} />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold leading-4 text-foreground">Telegram</p>
+                <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
+                  {loadingTelegram
+                    ? "Checking…"
+                    : telegramConnected
+                      ? "Connected — pushes when something happens."
+                      : "Not connected"}
+                </p>
+              </div>
+              <button
+                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-border px-3.5 text-xs font-semibold text-foreground outline-none transition hover:bg-muted disabled:opacity-40"
                 disabled={telegramPending || loadingTelegram}
                 onClick={() => void toggleTelegram()}
-                size="sm"
                 type="button"
-                variant={telegramConnected ? "outline" : "default"}
               >
-                {telegramPending ? (
-                  <LoaderCircle aria-hidden="true" className="animate-spin" />
-                ) : telegramConnected ? (
+                {telegramPending && (
+                  <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+                )}
+                {telegramConnected ? (
                   <>
-                    <Unlink aria-hidden="true" />
+                    <Unlink aria-hidden="true" className="size-3.5" strokeWidth={2} />
                     Disconnect
                   </>
                 ) : (
                   "Connect"
                 )}
-              </Button>
-            }
-            description={
-              loadingTelegram
-                ? "Checking connection..."
-                : telegramConnected
-                  ? "Connected Ã¢â‚¬â€ you get a private message when something happens."
-                  : "Not connected"
-            }
-            icon={Send}
-            title="Telegram"
-          />
-          {telegramLink && (
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 px-1 py-3">
-              <a
-                className="inline-flex items-center gap-1 text-xs font-medium text-primary underline underline-offset-4 hover:opacity-80"
-                href={telegramLink}
-                rel="noreferrer"
-                target="_blank"
-              >
-                Open Telegram to finish linking
-                <ChevronRight aria-hidden="true" className="size-3.5" />
-              </a>
-              <Button
-                className="text-muted-foreground"
-                disabled={telegramPending}
-                onClick={() => void refreshTelegram()}
-                size="xs"
-                type="button"
-                variant="ghost"
-              >
-                Check connection
-              </Button>
+              </button>
             </div>
-          )}
-        </Section>
-
-        <Section title="Camera">
-          <Row
-            action={
+            {telegramLink && (
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 py-2.5">
+                <a
+                  className="text-xs font-medium text-primary underline underline-offset-4 hover:opacity-80"
+                  href={telegramLink}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Open Telegram to finish linking
+                </a>
+                <button
+                  className="text-xs font-semibold text-muted-foreground transition hover:text-foreground"
+                  disabled={telegramPending}
+                  onClick={() => void refreshTelegram()}
+                  type="button"
+                >
+                  Refresh status
+                </button>
+              </div>
+            )}
+            {/* Evening nudge — only useful with Telegram connected */}
+            <div className="flex items-center gap-3 border-t border-border/60 py-3">
+              <BellRing
+                aria-hidden="true"
+                className="size-4 shrink-0 text-muted-foreground"
+                strokeWidth={1.8}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold leading-4 text-foreground">
+                  Evening nudge
+                </p>
+                <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
+                  {telegramConnected
+                    ? "8pm UTC — only if you haven’t written that day."
+                    : "Connect Telegram first."}
+                </p>
+              </div>
               <button
-                aria-checked={rearCamera}
-                aria-label={rearCamera ? "Use front camera" : "Use rear camera"}
-                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                  rearCamera ? "bg-primary" : "bg-muted"
+                aria-busy={nudgeSaving}
+                aria-checked={nudgeOn}
+                aria-label="Evening nudge"
+                className={`relative h-6 w-10 shrink-0 rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 ${
+                  nudgeOn ? "bg-foreground" : "bg-muted-foreground/25"
                 }`}
-                onClick={toggleCamera}
+                disabled={!telegramConnected || nudgeSaving}
+                onClick={() => void toggleNudge()}
                 role="switch"
                 type="button"
               >
                 <span
                   aria-hidden="true"
-                  className={`inline-block size-5 transform rounded-full bg-white shadow transition-transform ${
-                    rearCamera ? "translate-x-6" : "translate-x-1"
+                  className={`absolute left-0.5 top-0.5 size-5 rounded-full bg-background shadow transition-transform ${
+                    nudgeOn ? "translate-x-4" : "translate-x-0"
                   }`}
                 />
               </button>
-            }
-            description="Rear (world-facing) cameras work better when you prop the phone up and step back."
-            icon={Camera}
-            title="Rear camera"
-          />
-        </Section>
+            </div>
+          </div>
+        </section>
 
-        </div>
-
-        <div className="grid gap-6">
-        <Section
-          action={
+        {/* Sessions */}
+        <section aria-label="Sessions" className="mt-6">
+          <div className="mb-1 flex items-center justify-between gap-3 px-0.5">
+            <h2 className="type-eyebrow">
+              Sessions
+            </h2>
             <button
               aria-label="Refresh sessions"
-              className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+              className="grid size-6 place-items-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50"
               disabled={refreshingSessions}
               onClick={() => void refreshSessions()}
               type="button"
             >
               <RefreshCw
                 aria-hidden="true"
-                className={`size-4 ${refreshingSessions ? "animate-spin" : ""}`}
+                className={`size-3.5 ${refreshingSessions ? "animate-spin" : ""}`}
               />
             </button>
-          }
-          title="Sessions"
-        >
+          </div>
           {sessions.length === 0 ? (
-            <EmptyState
-              description="Devices signed in to this account appear here."
-              icon={MonitorSmartphone}
-              title="No active sessions"
-            />
+            <p className="border-y border-border/60 py-3 text-xs text-muted-foreground">
+              No active sessions.
+            </p>
           ) : (
-            <ul className="divide-y divide-border/60">
+            <ul className="divide-y divide-border/60 border-y border-border/60">
               {sessions.map((session) => (
-                <li className="flex items-center gap-3 px-1 py-2.5" key={session.id}>
-                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
-                    <MonitorSmartphone
-                      aria-hidden="true"
-                      className="size-4"
-                      strokeWidth={1.8}
-                    />
-                  </span>
+                <li className="flex items-center gap-3 py-2" key={session.id}>
+                  <MonitorSmartphone
+                    aria-hidden="true"
+                    className="size-4 shrink-0 text-muted-foreground"
+                    strokeWidth={1.8}
+                  />
                   <div className="min-w-0 flex-1">
-                    <p className="flex items-center gap-2 text-xs font-semibold leading-5">
+                    <p className="flex items-center gap-1.5 text-xs font-semibold leading-4 text-foreground">
                       <span className="truncate">{session.device}</span>
                       {session.current && (
-                        <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          This device
+                        <span className="type-eyebrow shrink-0 rounded-full bg-muted px-1.5 py-0.5">
+                          this device
                         </span>
                       )}
                     </p>
                     <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
-                      {session.operatingSystem ? `${session.operatingSystem} Ã¢â‚¬â€ ` : ""}
+                      {session.operatingSystem ? `${session.operatingSystem} · ` : ""}
                       <LocalDateTime value={session.createdAt} />
                     </p>
                   </div>
-                  {!session.current && sessionRevokeButton(session)}
+                  {!session.current && (
+                    <button
+                      aria-label={`Revoke ${session.device} session`}
+                      className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-destructive disabled:opacity-50"
+                      disabled={pendingSession === session.id}
+                      onClick={() => void revokeSessionForAccount(session)}
+                      type="button"
+                    >
+                      {pendingSession === session.id ? (
+                        <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+                      ) : (
+                        <X aria-hidden="true" className="size-4" />
+                      )}
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
           )}
-        </Section>
+        </section>
 
-        {/* Sign out lives in the sidebar / account dropdown; mobile has neither. */}
-        <div className="lg:hidden">
-          <Section title="Session">
-            <Row
-              action={
-                <Button
-                  onClick={() => void signOut()}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  Sign out
-                </Button>
-              }
-              description="End this session on this device."
-              icon={LogOut}
-              title="Sign out"
-            />
-          </Section>
-        </div>
-
-        <Section title="Danger zone">
-          <div className="py-4">
-            <p className="text-xs font-semibold text-foreground">Delete account</p>
-            <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
-              Permanently erases your workouts, badges and sessions, and
-              closes your Mono account. This cannot be undone.
+        {/* Danger zone */}
+        <section aria-label="Delete account" className="mt-6">
+          <h2 className="type-eyebrow mb-1 px-0.5 text-destructive">
+            Delete account
+          </h2>
+          <div className="border-y border-destructive/20 py-3">
+            <p className="text-xs leading-5 text-muted-foreground">
+              Erases your account and all data linked to it. This cannot be undone.
             </p>
-            <label className="mt-3 block">
-              <span className="type-eyebrow mb-1.5 block">Type DELETE to confirm</span>
+            <div className="mt-2 flex items-center gap-2">
               <input
                 aria-label="Type DELETE to confirm account deletion"
                 autoComplete="off"
-                className="h-11 w-full rounded-lg border border-destructive/40 bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-destructive"
+                className="type-eyebrow h-9 w-32 rounded-md border border-destructive/30 bg-transparent px-2 text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-destructive"
                 onChange={(event) => setDeleteConfirm(event.target.value)}
                 placeholder="DELETE"
                 value={deleteConfirm}
               />
-            </label>
-            <Button
-              className="mt-3 h-11 w-full rounded-xl"
-              disabled={deleting || deleteConfirm.trim().toUpperCase() !== "DELETE"}
-              onClick={() => void confirmDeleteAccount()}
-              type="button"
-              variant="destructive"
-            >
-              {deleting ? (
-                <>
-                  <LoaderCircle aria-hidden="true" className="animate-spin" />
-                  Deleting accountÃ¢â‚¬Â¦
-                </>
-              ) : (
-                <>
-                  <Trash2 aria-hidden="true" />
-                  Delete my account
-                </>
-              )}
-            </Button>
+              <button
+                className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-destructive px-4 text-xs font-semibold text-white outline-none transition hover:opacity-90 disabled:opacity-30"
+                disabled={deleting || deleteConfirm.trim().toUpperCase() !== "DELETE"}
+                onClick={() => void confirmDeleteAccount()}
+                type="button"
+              >
+                {deleting ? (
+                  <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+                ) : (
+                  <Trash2 aria-hidden="true" className="size-4" strokeWidth={2} />
+                )}
+                Delete
+              </button>
+            </div>
           </div>
-        </Section>
-        </div>
-      </div>
+        </section>
 
-      {(error || message) && (
-        <p
-          className={`mt-4 px-1 text-xs leading-5 ${error ? "text-destructive" : "text-muted-foreground"}`}
-          role={error ? "alert" : "status"}
-        >
-          {error || message}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function Section({
-  title,
-  action,
-  children,
-}: {
-  title: string;
-  action?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <section aria-label={title}>
-      <div className="mb-1.5 flex items-center justify-between gap-3 px-0.5">
-        <h2 className="type-eyebrow">{title}</h2>
-        {action}
-      </div>
-      <div className="divide-y divide-border/60 border-y border-border/60">
-        {children}
-      </div>
-    </section>
-  );
-}
-
-function Row({
-  icon: Icon,
-  title,
-  description,
-  action,
-}: {
-  icon: typeof Send;
-  title: string;
-  description?: string;
-  action?: ReactNode;
-}) {
-  return (
-    <div className="flex items-center gap-3 px-1 py-3 sm:gap-4">
-      <span className="grid size-8 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground sm:size-9">
-        <Icon aria-hidden="true" className="size-4" strokeWidth={1.8} />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-semibold leading-5 text-foreground">{title}</p>
-        {description && (
-          <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
-            {description}
+        {(error || message) && (
+          <p
+            className={`mt-4 px-0.5 text-xs leading-5 ${error ? "text-destructive" : "text-muted-foreground"}`}
+            role={error ? "alert" : "status"}
+          >
+            {error || message}
           </p>
         )}
       </div>
-      {action && <div className="shrink-0">{action}</div>}
-    </div>
+    </main>
   );
 }

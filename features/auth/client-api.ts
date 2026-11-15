@@ -1,11 +1,5 @@
 import { apiClient } from "@/lib/api-client";
 
-export type AuthUser = {
-  id: string;
-  email: string;
-  name: string;
-};
-
 export type AuthSession = {
   id: string;
   createdAt: string;
@@ -27,11 +21,6 @@ export async function verifyEmailCode(
   secret: string,
 ): Promise<void> {
   await apiClient.post("/auth/verify-token", { userId, secret });
-}
-
-export async function fetchCurrentUser(): Promise<AuthUser | null> {
-  const { data } = await apiClient.get<{ user: AuthUser | null }>("/auth/me");
-  return data.user;
 }
 
 export async function logout(): Promise<void> {

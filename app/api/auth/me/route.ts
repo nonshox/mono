@@ -30,7 +30,7 @@ export async function GET() {
     );
   } catch (error) {
     if (error instanceof AppwriteException && error.code === 401) {
-      return Response.json({ user: null });
+      return Response.json({ user: null }, { headers });
     }
 
     console.error(

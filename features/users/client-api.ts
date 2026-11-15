@@ -4,6 +4,7 @@ export type UserProfile = {
   email: string;
   name: string;
   avatar?: string;
+  nudge?: boolean;
 };
 
 export async function fetchUser(): Promise<UserProfile> {
@@ -16,21 +17,11 @@ export async function saveUserName(name: string): Promise<UserProfile> {
   return data;
 }
 
+export async function saveUserNudge(nudge: boolean): Promise<UserProfile> {
+  const { data } = await apiClient.patch<UserProfile>("/users", { nudge });
+  return data;
+}
+
 export async function deleteAccount(): Promise<void> {
   await apiClient.delete("/account");
-}
-
-export async function saveAvatar(image: File): Promise<string> {
-  const form = new FormData();
-  form.append("image", image);
-  const { data } = await apiClient.post<{ avatar: string }>(
-    "/users/avatar",
-    form,
-    { headers: { "Content-Type": "multipart/form-data" } },
-  );
-  return data.avatar;
-}
-
-export async function clearAvatar(): Promise<void> {
-  await apiClient.delete("/users/avatar");
 }

@@ -1,19 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { updateUserNameSchema } from "./schemas";
+import { updateUserSchema } from "./schemas";
 
-describe("user name input", () => {
+describe("user update input", () => {
   it("trims whitespace and accepts reasonable names", () => {
-    expect(updateUserNameSchema.parse({ name: "  Sam Rivera " })).toEqual({
+    expect(updateUserSchema.parse({ name: "  Sam Rivera " })).toEqual({
       name: "Sam Rivera",
     });
-    expect(updateUserNameSchema.parse({ name: "" }).name).toBe("");
+    expect(updateUserSchema.parse({ name: "" }).name).toBe("");
   });
 
-  it("rejects oversized names and unexpected fields", () => {
-    expect(updateUserNameSchema.safeParse({ name: "x".repeat(51) }).success)
-      .toBe(false);
+  it("accepts a nudge-only update", () => {
+    expect(updateUserSchema.parse({ nudge: true })).toEqual({ nudge: true });
     expect(
-      updateUserNameSchema.safeParse({ name: "Sam", email: "a@b.c" }).success,
+      updateUserSchema.parse({ name: "Sam", nudge: false }),
+    ).toEqual({ name: "Sam", nudge: false });
+  });
+
+  it("rejects empty payloads and unexpected fields", () => {
+    expect(updateUserSchema.safeParse({}).success).toBe(false);
+    expect(
+      updateUserSchema.safeParse({ name: "x".repeat(51) }).success,
+    ).toBe(false);
+    expect(
+      updateUserSchema.safeParse({ name: "Sam", email: "a@b.c" }).success,
     ).toBe(false);
   });
 });

@@ -6,16 +6,19 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Mono Performance",
-    template: "%s | Mono Performance",
+    default: "Mono",
+    template: "%s | Mono",
   },
-  description: "Camera-verified push-ups, one global leaderboard, prestige only.",
+  description: "Mono — a minimal app base.",
   manifest: "/manifest.webmanifest",
-  applicationName: "Mono Performance",
+  applicationName: "Mono",
   appleWebApp: {
     capable: true,
     title: "Mono",
     statusBarStyle: "default",
+  },
+  icons: {
+    apple: [{ url: "/logotype/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
 };
 

@@ -1,7 +1,11 @@
 import { z } from "zod";
 
-export const updateUserNameSchema = z
+export const updateUserSchema = z
   .object({
-    name: z.string().trim().max(50),
+    name: z.string().trim().max(50).optional(),
+    nudge: z.boolean().optional(),
   })
-  .strict();
+  .strict()
+  .refine((value) => value.name !== undefined || value.nudge !== undefined, {
+    message: "Nothing to update.",
+  });

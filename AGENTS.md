@@ -1,6 +1,6 @@
 # Mono — agent notes
 
-Minimal private app base: Next.js 16 (App Router) + Appwrite. TypeScript strict, zod everywhere, no `any`.
+Minimal app base: Next.js 16 (App Router) + Appwrite. TypeScript strict, zod everywhere, no `any`.
 
 ## Verify
 
@@ -11,27 +11,29 @@ npm test            # vitest run
 npm run build       # next build (needs .env present; Appwrite is not called at build time)
 ```
 
-`npm run check` runs all four. `npm run setup` creates/verifies the Appwrite tables (idempotent). `npm run telegram:webhook <origin>` registers the bot's webhook (read-only check: `info`). `npm run telegram:menu <origin>` sets the Mini App menu button (read-only check: `info`).
+`npm run check` runs all four.
 
 Toasts: `import { toast } from "sonner"` — `<Toaster />` is mounted in the root layout. Vercel Analytics is mounted too (no config needed).
 
 ## Hard rules
 
-- Imports use `@/*` (repo root). **`@/src/` and `@/app/components/` do not exist** — they were the old layout and all such imports were removed.
+- Imports use `@/*` (repo root).
 - `components/interface/*` = composed client experiences; `components/ui/*` = primitives; pages in `app/(app)/` are server components wrapped in `<Suspense>` (the app uses `cacheComponents`).
-- `features/<name>/{service,store,schemas,client-api,data,types}.ts` — services are server-only (`import "server-only"`), take explicit ids, never read cookies. Client state lives in `store.ts` (zustand) and talks to `/api/*` via `client-api.ts`.
+- `features/<name>/{service,store,schemas,client-api,types}.ts` — services are server-only (`import "server-only"`), take explicit ids, never read cookies. Client state lives in `store.ts` (zustand) and talks to `/api/*` via `client-api.ts`.
 - **Table/attribute names: one lowercase word.** Never add snake_case or camelCase columns. Appwrite system fields (`$id`, `$createdAt`) excepted.
 - API route shape: `isSameOrigin` (mutations) → `getAuthAccount` → zod `safeParse` (`.strict()`) → service → `NextResponse`. Errors: `logFailure(...)` + `jsonError(status, CODE, msg)`.
-- `notify(recipient, actor, type, ref?)` in `features/notifications/service.ts` is the one-call public API every app feature uses to notify. It skips self-notifications and best-effort forwards to Telegram.
+- `notify(recipient, actor, type, ref?)` in `features/notifications/service.ts` is the one-call API to notify. It skips self-notifications and best-effort forwards to Telegram.
 - Notifications `type` is a past-tense verb phrase ("followed you"); render as `${actorName} ${type}`.
 - Auth = Appwrite email token (6-digit code). Session cookie name is `a_session_<APPWRITE_PROJECT_ID>`; `proxy.ts` redirects unauthenticated page views to `/auth`.
 
 ## Gotchas
 
-- `app/(app)/` route group holds the authenticated chrome — sticky full-width top bar on desktop (back · Mono · Train CTA · bell · account dropdown), slim top bar (Mono · bell) + floating bottom pill on mobile (Home · raised Train · Settings). `/auth` intentionally renders without it — do not move `auth` into the group. Keep links non-duplicated between the two chromes.
+- One chrome, everywhere: a sticky white navbar (Mono logo = home · Home/Notifications pill links on `md+` with unread badge · bell on mobile · avatar dropdown with Profile/Settings/Sign out). `/auth` intentionally renders without chrome.
 - Base UI dropdown: `DropdownMenuLabel` renders `Menu.GroupLabel` and **must** sit inside `<DropdownMenuGroup>`, or the app throws `MenuGroupContext is missing` when the menu opens.
 - Settings page edits `users.name` (rowId = account id), not the Appwrite auth name. `/api/auth/me` still returns the auth account as-is.
-- Telegram tables are `telegram` (connections) and `codes` (one-time link codes, sha256 hashed). Renaming either breaks the link flow.
-- Every file upload goes through `features/files/service.ts` — no direct `Storage` calls elsewhere; routes under `/api/files` and `/api/users/avatar` are the only file endpoints.
-- Challenges use `challenges` + `entries` tables; progress/leaderboard derive from `workouts` rows within the challenge window. Joined state is `entries` row `${challengeId}_${userId}`.
-- `features/instants` was removed; anything referencing it is stale.
+- Telegram tables are `telegram` (connections) and `codes` (one-time link codes, sha256 hashed). Deleting either breaks the link flow.
+- The `days` table holds the year-in-dots journal: one row per `user` per `day` (`YYYY-MM-DD`), deterministic row id = sha256(`user:day`).slice(0,32), so upserts are id-based. Delete the `days` table and the journal is gone.
+- `/api/cron/nudge` (Vercel cron, 20:00 UTC, `Authorization: Bearer $CRON_SECRET`) sends the evening Telegram nudge to users with `nudge=true` on the `users` row who haven't written today (UTC date).
+- The Telegram BotFather webhook + menu button are registered once per deployment on the deployed URL. No npm scripts manage that here — if you need to re-register, use the Telegram API directly.
+- Notifications are delivered in-app + forwarded to Telegram (best-effort, inside `notify()` via `after()`). Nothing else pushes.
+- Users have no avatar storage — `UserAvatar` renders initials. Re-adding photo upload means restoring storage + an `avatar` column on `users`.

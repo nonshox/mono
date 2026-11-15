@@ -17,10 +17,10 @@ export function PageLoader({ label = "Loading Mono" }: { label?: string }) {
           className="animate-pulse opacity-90"
           height={36}
           priority
-          src="/logotype/logotype.png"
+          src="/logotype/android-chrome-192x192.png"
           width={36}
         />
-        <span className="text-[9px] font-bold uppercase tracking-[0.32em] text-muted-foreground/70">
+        <span className="type-brand text-muted-foreground/70">
           Mono
         </span>
       </div>

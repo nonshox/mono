@@ -8,9 +8,10 @@ import {
 import {
   ensureUserForAccount,
   getUserRow,
+  setUserNudge,
   updateUserName,
 } from "@/features/users/service";
-import { updateUserNameSchema } from "@/features/users/schemas";
+import { updateUserSchema } from "@/features/users/schemas";
 
 export async function GET() {
   const auth = await getAuthAccount("User lookup");
@@ -31,6 +32,7 @@ export async function GET() {
         email: row.email,
         name: row.name,
         avatar: row.avatar ?? "",
+        nudge: row.nudge ?? false,
       },
       { headers: { "Cache-Control": "private, no-store" } },
     );
@@ -60,7 +62,7 @@ export async function PATCH(request: Request) {
     return jsonError(400, "INVALID_JSON", "Request body must be valid JSON.");
   }
 
-  const parsed = updateUserNameSchema.safeParse(body);
+  const parsed = updateUserSchema.safeParse(body);
   if (!parsed.success) {
     return jsonError(400, "INVALID_INPUT", "Check what you sent and try again.");
   }
@@ -70,11 +72,15 @@ export async function PATCH(request: Request) {
     if (parsed.data.name !== undefined) {
       await updateUserName(auth.account.$id, parsed.data.name);
     }
+    if (parsed.data.nudge !== undefined) {
+      await setUserNudge(auth.account.$id, parsed.data.nudge);
+    }
     const row = await getUserRow(auth.account.$id);
     return NextResponse.json({
       email: row?.email ?? auth.account.email,
       name: row?.name ?? "",
       avatar: row?.avatar ?? "",
+      nudge: row?.nudge ?? false,
     });
   } catch (error) {
     logFailure("User update", error);

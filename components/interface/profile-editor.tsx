@@ -7,29 +7,21 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import {
-  clearAvatar,
-  saveAvatar,
-  saveUserName,
-} from "@/features/users/client-api";
+import { useEffect, useState, type FormEvent } from "react";
+import { saveUserName } from "@/features/users/client-api";
 import { useUserStore } from "@/features/users/store";
-import { UserAvatar } from "@/components/interface/user-avatar";
 import { getApiErrorMessage } from "@/lib/api-client";
 import Link from "next/link";
 
-/** Ultra-minimal editor — avatar, name, nothing else. */
+/** Ultra-minimal editor — name, nothing else. */
 export function ProfileEditor() {
   const router = useRouter();
-  const fileRef = useRef<HTMLInputElement>(null);
   const loadUser = useUserStore((state) => state.load);
   const setUser = useUserStore((state) => state.setUser);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [avatar, setAvatar] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [avatarPending, setAvatarPending] = useState(false);
   const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
@@ -41,7 +33,6 @@ export function ProfileEditor() {
         if (current) {
           setName(current.name);
           setEmail(current.email);
-          setAvatar(current.avatar ?? "");
         }
       })
       .catch(() => {
@@ -54,44 +45,6 @@ export function ProfileEditor() {
       active = false;
     };
   }, [loadUser]);
-
-  const handlePick = async (event: ChangeEvent<HTMLInputElement>) => {
-    const image = event.target.files?.[0];
-    if (!image || avatarPending) return;
-    setAvatarPending(true);
-    try {
-      const avatarId = await saveAvatar(image);
-      setAvatar(avatarId);
-      const current = useUserStore.getState().user;
-      if (current) setUser({ ...current, avatar: avatarId });
-      toast.success("Photo updated.");
-    } catch (cause) {
-      toast.error(
-        getApiErrorMessage(cause, "Your photo could not be saved."),
-      );
-    } finally {
-      setAvatarPending(false);
-      event.target.value = "";
-    }
-  };
-
-  const removeAvatar = async () => {
-    if (avatarPending || !avatar) return;
-    setAvatarPending(true);
-    try {
-      await clearAvatar();
-      setAvatar("");
-      const current = useUserStore.getState().user;
-      if (current) setUser({ ...current, avatar: "" });
-      toast.success("Photo removed.");
-    } catch (cause) {
-      toast.error(
-        getApiErrorMessage(cause, "Your photo could not be removed."),
-      );
-    } finally {
-      setAvatarPending(false);
-    }
-  };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -123,74 +76,20 @@ export function ProfileEditor() {
           >
             <ArrowLeft aria-hidden="true" className="size-4" strokeWidth={1.8} />
           </Link>
-          <h1 className="text-base font-semibold tracking-tight text-foreground">
+          <h1 className="type-title text-foreground">
             Edit profile
           </h1>
         </header>
 
         <form onSubmit={(event) => void submit(event)}>
-          {/* Photo */}
-          <div className="flex items-center gap-4 border-b border-border/60 py-4">
-            <input
-              accept="image/jpeg,image/png,image/webp"
-              aria-label="Choose a photo"
-              className="sr-only"
-              disabled={loading}
-              onChange={(event) => void handlePick(event)}
-              ref={fileRef}
-              type="file"
-            />
-            <button
-              aria-label={avatar ? "Change photo" : "Add photo"}
-              className="relative shrink-0 rounded-full outline-none transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-              disabled={loading || avatarPending}
-              onClick={() => fileRef.current?.click()}
-              type="button"
-            >
-              {avatarPending ? (
-                <span className="grid size-16 place-items-center rounded-full bg-muted">
-                  <LoaderCircle aria-hidden="true" className="size-5 animate-spin text-muted-foreground" />
-                </span>
-              ) : (
-                <UserAvatar avatar={avatar} name={name || email} size={64} />
-              )}
-            </button>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium text-foreground">Photo</p>
-              <p className="mt-0.5 text-[10px] text-muted-foreground">
-                JPEG, PNG or WebP
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-3">
-              <button
-                className="text-xs sm:text-sm font-semibold text-primary outline-none transition hover:underline focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
-                disabled={loading || avatarPending}
-                onClick={() => fileRef.current?.click()}
-                type="button"
-              >
-                {avatar ? "Change" : "Add"}
-              </button>
-              {avatar && (
-                <button
-                  className="text-xs sm:text-sm font-semibold text-muted-foreground outline-none transition hover:text-destructive hover:underline focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
-                  disabled={loading || avatarPending}
-                  onClick={() => void removeAvatar()}
-                  type="button"
-                >
-                  Remove
-                </button>
-              )}
-            </div>
-          </div>
-
           {/* Name */}
           <label className="block border-b border-border/60 py-4">
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            <span className="type-eyebrow">
               Name
             </span>
             <input
               autoFocus
-              className="mt-1 h-9 w-full border-0 bg-transparent p-0 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/50"
+              className="mt-1 h-10 w-full border-0 bg-transparent p-0 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/50"
               disabled={loading}
               maxLength={50}
               onChange={(event) => {
@@ -204,14 +103,14 @@ export function ProfileEditor() {
 
           {/* Email */}
           <div className="border-b border-border/60 py-4">
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            <span className="type-eyebrow">
               Email
             </span>
             <div className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
               <Lock aria-hidden="true" className="size-3.5 shrink-0" strokeWidth={1.8} />
               <span className="min-w-0 flex-1 truncate">{email}</span>
             </div>
-            <p className="mt-1 text-[10px] text-muted-foreground/70">
+            <p className="mt-1 text-xs text-muted-foreground/70">
               Tied to your sign-in — can&apos;t be changed here.
             </p>
           </div>
