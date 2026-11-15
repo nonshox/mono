@@ -376,7 +376,8 @@ export function DayDots({
                   ? "border-foreground bg-foreground hover:scale-110"
                   : "border-foreground/30 bg-transparent hover:scale-110 hover:border-foreground/70",
                 isFuture && "cursor-default border-foreground/10 hover:scale-100 hover:border-foreground/10",
-                isToday && "ring-2 ring-foreground ring-offset-2 ring-offset-background",
+                isToday &&
+                "ring-2 ring-[color:var(--editorial)] ring-offset-2 ring-offset-background",
               )}
               disabled={isFuture}
               key={day}

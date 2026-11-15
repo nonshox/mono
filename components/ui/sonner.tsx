@@ -2,12 +2,26 @@
 
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
+import { useEffect, useState } from "react"
 
-/** Mono is light-only; drop in next-themes here if that changes. */
+/** Resolves the theme from the html.dark class (set pre-paint by the root script). */
 const Toaster = ({ ...props }: ToasterProps) => {
+  const [dark, setDark] = useState(false)
+
+  useEffect(() => {
+    const update = () => setDark(document.documentElement.classList.contains("dark"))
+    update()
+    const observer = new MutationObserver(update)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    })
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <Sonner
-      theme="light"
+      theme={dark ? "dark" : "light"}
       className="toaster group"
       icons={{
         success: (

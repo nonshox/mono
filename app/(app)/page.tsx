@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+﻿import { Suspense } from "react";
 import { getCurrentAccount } from "@/features/auth/session";
 import { getUserRow } from "@/features/users/service";
 import { listYearEntries, listYearsWithEntries } from "@/features/days/service";
@@ -36,7 +36,7 @@ async function AuthenticatedHome() {
   }).format(new Date());
 
   return (
-    <main className="min-h-full w-full bg-white px-4 pb-20 pt-6 sm:px-6 sm:pt-10">
+    <main className="min-h-full w-full bg-background px-4 pb-20 pt-6 sm:px-6 sm:pt-10">
       <div className="mx-auto w-full max-w-2xl md:max-w-3xl">
         <header>
           <p className="type-eyebrow">{dateLong}</p>
@@ -50,3 +50,4 @@ async function AuthenticatedHome() {
     </main>
   );
 }
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   Download,
@@ -157,7 +157,7 @@ export function SettingsExperience({
       const isConnected = await fetchTelegramStatus();
       setTelegramConnected(isConnected);
       if (isConnected) setTelegramLink("");
-      setMessage(isConnected ? "Telegram connected." : "Link pending — finish in Telegram.");
+      setMessage(isConnected ? "Telegram connected." : "Link pending â€” finish in Telegram.");
     } catch {
       setError("Telegram status could not be checked.");
     } finally {
@@ -211,7 +211,7 @@ export function SettingsExperience({
 
 
   return (
-    <main className="min-h-full w-full bg-white px-4 pb-20 pt-5 sm:px-6 sm:pt-8">
+    <main className="min-h-full w-full bg-background px-4 pb-20 pt-5 sm:px-6 sm:pt-8">
       <div className="mx-auto w-full max-w-2xl md:max-w-3xl">
         {/* Header */}
         <header className="border-b border-border/60 pb-4">
@@ -221,7 +221,7 @@ export function SettingsExperience({
           <p className="mt-0.5 truncate text-xs text-muted-foreground">{email}</p>
         </header>
 
-        {/* Notifications — Telegram */}
+        {/* Notifications â€” Telegram */}
         <section aria-label="Notifications" className="mt-6">
           <h2 className="type-eyebrow mb-1 px-0.5">
             Notifications
@@ -233,9 +233,9 @@ export function SettingsExperience({
                 <p className="text-xs font-semibold leading-4 text-foreground">Telegram</p>
                 <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
                   {loadingTelegram
-                    ? "Checking…"
+                    ? "Checkingâ€¦"
                     : telegramConnected
-                      ? "Connected — pushes when something happens."
+                      ? "Connected â€” pushes when something happens."
                       : "Not connected"}
                 </p>
               </div>
@@ -278,7 +278,7 @@ export function SettingsExperience({
                 </button>
               </div>
             )}
-            {/* Evening nudge — only useful with Telegram connected */}
+            {/* Evening nudge â€” only useful with Telegram connected */}
             <div className="flex items-center gap-3 border-t border-border/60 py-3">
               <BellRing
                 aria-hidden="true"
@@ -291,7 +291,7 @@ export function SettingsExperience({
                 </p>
                 <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
                   {telegramConnected
-                    ? "8pm UTC — only if you haven’t written that day."
+                    ? "8pm UTC â€” only if you havenâ€™t written that day."
                     : "Connect Telegram first."}
                 </p>
               </div>
@@ -315,7 +315,7 @@ export function SettingsExperience({
                 />
               </button>
             </div>
-            {/* Mono AI — opt-in; entries go to Google Gemini when on */}
+            {/* Mono AI â€” opt-in; entries go to Google Gemini when on */}
             <div className="flex items-center gap-3 border-t border-border/60 py-3">
               <Sparkles
                 aria-hidden="true"
@@ -327,7 +327,7 @@ export function SettingsExperience({
                   Mono AI
                 </p>
                 <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
-                  Weekly letter · smarter nudge · year review — your entries go
+                  Weekly letter Â· smarter nudge Â· year review â€” your entries go
                   to Google Gemini. Off means nothing leaves.
                 </p>
               </div>
@@ -396,7 +396,7 @@ export function SettingsExperience({
                       )}
                     </p>
                     <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
-                      {session.operatingSystem ? `${session.operatingSystem} · ` : ""}
+                      {session.operatingSystem ? `${session.operatingSystem} Â· ` : ""}
                       <LocalDateTime value={session.createdAt} />
                     </p>
                   </div>
@@ -421,14 +421,14 @@ export function SettingsExperience({
           )}
         </section>
 
-        {/* Year in review — Mono AI compiles the year into a letter */}
+        {/* Year in review â€” Mono AI compiles the year into a letter */}
         <section aria-label="Year in review" className="mt-6">
           <h2 className="type-eyebrow mb-1 px-0.5">
             {new Date().getUTCFullYear()} in review
           </h2>
           <div className="border-y border-border/60 py-3">
             <p className="text-xs leading-5 text-muted-foreground">
-              A letter compiling everything you wrote this year — the shape,
+              A letter compiling everything you wrote this year â€” the shape,
               what recurred, one line to keep.
             </p>
             {aiOn ? (
@@ -444,7 +444,7 @@ export function SettingsExperience({
                 ) : (
                   <Sparkles aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
                 )}
-                {reviewLoading ? "Reading your year…" : "Generate review"}
+                {reviewLoading ? "Reading your yearâ€¦" : "Generate review"}
               </button>
             ) : (
               <p className="mt-2 text-xs text-muted-foreground/70">
@@ -518,3 +518,4 @@ export function SettingsExperience({
     </main>
   );
 }
+

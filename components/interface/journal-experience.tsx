@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { BookOpen, Check, Eraser, LoaderCircle, PenLine, Search, X } from "lucide-react";
 import { toast } from "sonner";
@@ -118,14 +118,14 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
 
   if (items.length === 0) {
     return (
-      <main className="min-h-full w-full bg-white px-4 pb-20 pt-6 sm:px-6 sm:pt-10">
+      <main className="min-h-full w-full bg-background px-4 pb-20 pt-6 sm:px-6 sm:pt-10">
         <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-3 pt-16 text-center md:max-w-3xl">
           <span className="grid size-14 place-items-center rounded-full bg-muted text-muted-foreground">
             <BookOpen aria-hidden="true" className="size-6" strokeWidth={1.5} />
           </span>
           <p className="text-sm font-semibold text-foreground">Nothing written yet</p>
           <p className="max-w-xs text-xs leading-relaxed text-muted-foreground">
-            Your days gather here in order — write your first dot on the home page.
+            Your days gather here in order â€” write your first dot on the home page.
           </p>
           <Link
             className="mt-1 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
@@ -139,9 +139,9 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
   }
 
   return (
-    <main className="min-h-full w-full bg-white px-4 pb-20 pt-6 sm:px-6 sm:pt-10">
+    <main className="journal-ledger min-h-full w-full bg-background px-4 pb-20 pt-6 sm:px-6 sm:pt-10">
       <div className="mx-auto w-full max-w-2xl md:max-w-3xl">
-        {/* Search-within — the only chrome on the page */}
+        {/* Search-within â€” the only chrome on the page */}
         <div className="flex items-center gap-2 pb-2 pt-1">
           <Search
             aria-hidden="true"
@@ -155,7 +155,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
             onKeyDown={(event) => {
               if (event.key === "Escape") setQuery("");
             }}
-            placeholder="Search your journal…"
+            placeholder="Search your journalâ€¦"
             spellCheck={false}
             value={query}
           />
@@ -192,7 +192,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                 </button>
                 {index < themes.length - 1 && (
                   <span aria-hidden="true" className="type-eyebrow text-muted-foreground/40">
-                    ·
+                    Â·
                   </span>
                 )}
               </span>
@@ -202,7 +202,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
 
         {groups.length === 0 && (
           <p className="px-0.5 py-10 text-center text-sm text-muted-foreground">
-            No days match “{trimmedQuery}”.
+            No days match â€œ{trimmedQuery}â€.
           </p>
         )}
 
@@ -215,13 +215,15 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
             </div>
 
             <ul className="mt-1.5 space-y-1.5">
-              {months.flatMap((month) => month.entries).map((entry) => {
+              {months.flatMap((month) => month.entries).map((entry, index) => {
                 const isExpanded = expandedDay === entry.day;
                 const isEditing = editingDay === entry.day;
+                // Drop cap on the first entry of each year, book style.
+                const isDropcap = index === 0 && !trimmedQuery;
                 return (
                   <li key={entry.day}>
                     {!isExpanded ? (
-                      /* Collapsed — nothing but the words; tap to open */
+                      /* Collapsed â€” nothing but the words; tap to open */
                       <button
                         aria-expanded={false}
                         aria-label={`Open ${entry.day}`}
@@ -229,7 +231,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                         onClick={() => toggleExpand(entry.day)}
                         type="button"
                       >
-                        <p className="whitespace-pre-wrap break-words text-sm leading-6 text-foreground">
+                        <p className={`whitespace-pre-wrap break-words font-serif text-[15px] leading-7 text-foreground ${isDropcap ? "dropcap" : ""}`}>
                           {trimmedQuery
                             ? highlightParts(entry.text, trimmedQuery).map((part, index) =>
                                 part.match ? (
@@ -247,7 +249,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                         </p>
                       </button>
                     ) : (
-                      /* Expanded — separate solid card in place: date, words, actions */
+                      /* Expanded â€” separate solid card in place: date, words, actions */
                       <div className="min-w-0 overflow-hidden rounded-2xl border border-border/70 bg-popover shadow-md shadow-foreground/5">
                             <div className="flex items-center justify-between gap-3 border-b border-border/50 py-1.5 pl-3.5 pr-1.5">
                               <p className="type-eyebrow">{fullLabel(entry.day)}</p>
@@ -266,7 +268,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                               {isEditing ? (
                                 <textarea
                                   autoFocus
-                                  className="block w-full resize-none bg-transparent text-sm leading-6 text-foreground outline-none"
+                                  className="block w-full resize-none bg-transparent font-serif text-[15px] leading-7 text-foreground outline-none"
                                   maxLength={1000}
                                   onChange={(event) => setDraft(event.target.value)}
                                   onKeyDown={(event) => {
@@ -282,7 +284,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                                   value={draft}
                                 />
                               ) : (
-                                <p className="whitespace-pre-wrap break-words text-sm leading-6 text-foreground">
+                                <p className="whitespace-pre-wrap break-words font-serif text-[15px] leading-7 text-foreground">
                                   {entry.text}
                                 </p>
                               )}
@@ -351,3 +353,4 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
     </main>
   );
 }
+

@@ -28,7 +28,7 @@ Toasts: `import { toast } from "sonner"` — `<Toaster />` is mounted in the roo
 
 ## Gotchas
 
-- One chrome, everywhere: a sticky white navbar (Mono logo = home · Home/Notifications pill links on `md+` with unread badge · bell on mobile · avatar dropdown with Profile/Settings/Sign out). `/auth` intentionally renders without chrome.
+- One chrome, everywhere: a sticky white-ish navbar (Mono logo = home · centered Home/Journal pill on `md+` · bell with unread badge · avatar dropdown with Profile/Journal/Dark mode/Settings/Sign out). `/auth` intentionally renders without chrome.
 - Base UI dropdown: `DropdownMenuLabel` renders `Menu.GroupLabel` and **must** sit inside `<DropdownMenuGroup>`, or the app throws `MenuGroupContext is missing` when the menu opens.
 - Settings page edits `users.name` (rowId = account id), not the Appwrite auth name. `/api/auth/me` still returns the auth account as-is.
 - Telegram tables are `telegram` (connections) and `codes` (one-time link codes, sha256 hashed). Deleting either breaks the link flow.

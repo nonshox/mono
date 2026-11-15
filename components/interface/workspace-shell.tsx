@@ -7,12 +7,14 @@ import {
   ChevronRight,
   House,
   LogOut,
+  Moon,
   Settings,
+  Sun,
   UserRound,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   DropdownMenu,
@@ -54,6 +56,30 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const email = user?.email ?? "";
   const name = user?.name ?? "";
   const breadcrumb = breadcrumbs[pathname] ?? null;
+
+  // Mirror the html.dark class the pre-paint script set (live subscription).
+  const dark = useSyncExternalStore(
+    (callback) => {
+      const observer = new MutationObserver(callback);
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["class"],
+      });
+      return () => observer.disconnect();
+    },
+    () => document.documentElement.classList.contains("dark"),
+    () => false,
+  );
+
+  const toggleTheme = () => {
+    const next = !document.documentElement.classList.contains("dark");
+    document.documentElement.classList.toggle("dark", next);
+    try {
+      localStorage.setItem("mono-theme", next ? "dark" : "light");
+    } catch {
+      // Private mode / storage disabled — theme simply doesn't persist.
+    }
+  };
 
   useEffect(() => {
     void loadUser();
@@ -102,6 +128,32 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
               Mono
             </span>
           </Link>
+
+          {/* Center pill — desktop primary nav */}
+          <nav aria-label="Primary" className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-full border border-border/60 bg-muted/60 p-1 md:flex">
+            {([
+              { href: "/", icon: House, label: "Home" },
+              { href: "/journal", icon: BookOpenText, label: "Journal" },
+            ]).map(({ href, icon: Icon, label }) => {
+              const active =
+                href === "/" ? pathname === "/" : pathname.startsWith(href);
+              return (
+                <Link
+                  aria-current={active ? "page" : undefined}
+                  className={`flex h-6 items-center gap-1.5 rounded-full px-3 text-xs font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-ring ${
+                    active
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  href={href}
+                  key={href}
+                >
+                  <Icon aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+                  {label}
+                </Link>
+              );
+            })}
+          </nav>
 
           {/* Right icons */}
           <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
@@ -208,6 +260,14 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                   <UserRound aria-hidden="true" className="size-4" strokeWidth={1.75} />
                   Profile
                 </DropdownMenuItem>
+                <DropdownMenuItem className="rounded-lg px-2 py-2 text-xs" onClick={toggleTheme}>
+                  {dark ? (
+                    <Sun aria-hidden="true" className="size-4" strokeWidth={1.75} />
+                  ) : (
+                    <Moon aria-hidden="true" className="size-4" strokeWidth={1.75} />
+                  )}
+                  {dark ? "Light mode" : "Dark mode"}
+                </DropdownMenuItem>
                 <DropdownMenuItem className="rounded-lg px-2 py-2 text-xs" onClick={() => router.push("/journal")}>
                   <BookOpenText aria-hidden="true" className="size-4" strokeWidth={1.75} />
                   Journal
@@ -218,7 +278,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="rounded-lg px-2 py-2 text-xs hover:bg-[#faf0ee] focus:bg-[#faf0ee] data-[variant=destructive]:focus:bg-[#f7e6e3] data-[variant=destructive]:text-destructive"
+                  className="rounded-lg px-2 py-2 text-xs hover:bg-destructive/10 focus:bg-destructive/10 data-[variant=destructive]:focus:bg-destructive/15 data-[variant=destructive]:text-destructive"
                   onClick={() => void signOut()}
                   variant="destructive"
                 >

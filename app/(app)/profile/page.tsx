@@ -1,4 +1,4 @@
-import { Pencil, Mail, CalendarDays } from "lucide-react";
+﻿import { Pencil, Mail, CalendarDays } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { getCurrentAccount } from "@/features/auth/session";
@@ -36,7 +36,7 @@ async function AuthenticatedProfile() {
     : null;
 
   return (
-    <main className="min-h-full w-full bg-white px-4 pb-20 pt-6 sm:px-6 sm:pt-8">
+    <main className="min-h-full w-full bg-background px-4 pb-20 pt-6 sm:px-6 sm:pt-8">
       <div className="mx-auto w-full max-w-2xl md:max-w-3xl">
         {/* Identity */}
         <header className="flex items-center gap-4 border-b border-border/60 pb-5">
@@ -86,9 +86,10 @@ async function AuthenticatedProfile() {
         </dl>
 
         <p className="mt-6 text-xs leading-5 text-muted-foreground/80">
-          This is the generic base profile. Wire your product’s data in here when you build the next thing.
+          This is the generic base profile. Wire your productâ€™s data in here when you build the next thing.
         </p>
       </div>
     </main>
   );
 }
+

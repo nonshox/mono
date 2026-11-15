@@ -1,4 +1,4 @@
-import Image from "next/image";
+﻿import Image from "next/image";
 
 /**
  * The one page loader Mono uses everywhere. Branded, quiet, black-on-white.
@@ -7,7 +7,7 @@ export function PageLoader({ label = "Loading Mono" }: { label?: string }) {
   return (
     <div
       aria-label={label}
-      className="grid min-h-[60svh] w-full place-items-center bg-white"
+      className="grid min-h-[60svh] w-full place-items-center bg-background"
       role="status"
     >
       <div className="grid justify-items-center gap-2.5">
@@ -27,3 +27,4 @@ export function PageLoader({ label = "Loading Mono" }: { label?: string }) {
     </div>
   );
 }
+
