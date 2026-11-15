@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Bell,
   BookOpenText,
+  Brain as BrainIcon,
   ChevronRight,
   House,
   LogOut,
@@ -37,6 +38,7 @@ const breadcrumbs: Record<string, string> = {
   "/profile": "Profile",
   "/profile/edit": "Edit profile",
   "/journal": "Journal",
+  "/brain": "Brain",
 };
 
 export function WorkspaceShell({ children }: { children: ReactNode }) {
@@ -134,6 +136,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             {([
               { href: "/", icon: House, label: "Home" },
               { href: "/journal", icon: BookOpenText, label: "Journal" },
+              { href: "/brain", icon: BrainIcon, label: "Brain" },
             ]).map(({ href, icon: Icon, label }) => {
               const active =
                 href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -260,6 +263,10 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                   <UserRound aria-hidden="true" className="size-4" strokeWidth={1.75} />
                   Profile
                 </DropdownMenuItem>
+                <DropdownMenuItem className="rounded-lg px-2 py-2 text-xs" onClick={() => router.push("/brain")}>
+                  <BrainIcon aria-hidden="true" className="size-4" strokeWidth={1.75} />
+                  Brain
+                </DropdownMenuItem>
                 <DropdownMenuItem className="rounded-lg px-2 py-2 text-xs" onClick={toggleTheme}>
                   {dark ? (
                     <Sun aria-hidden="true" className="size-4" strokeWidth={1.75} />
@@ -328,6 +335,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           {([
             { href: "/", icon: House, label: "Home" },
             { href: "/journal", icon: BookOpenText, label: "Journal" },
+            { href: "/brain", icon: BrainIcon, label: "Brain" },
             { href: "/profile", icon: UserRound, label: "Profile" },
           ]).map(({ href, icon: Icon, label }) => {
             const active = pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));

@@ -207,6 +207,7 @@ export async function deleteUserEverywhere(userId: string): Promise<void> {
     wipe("telegram", "user"),
     wipe("codes", "user"),
     wipe("days", "user"),
+    wipe("tasks", "user"),
   ]);
   await tables
     .deleteRow({ databaseId, tableId, rowId: userId })

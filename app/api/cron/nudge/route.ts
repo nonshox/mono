@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { jsonError, logFailure } from "@/lib/http";
 import { listAiTargets, listNudgeTargets } from "@/features/users/service";
 import { hasDayEntry, listRecentEntries } from "@/features/days/service";
+import { countOpenBrainTasks } from "@/features/brain/service";
 import { sendTelegramNotification } from "@/features/telegram/service";
 import { generateNudgeQuestion } from "@/features/ai/generate";
 
@@ -64,6 +65,9 @@ export async function GET(request: Request) {
       }
 
       let message = FALLBACK_MESSAGE;
+      const openCount = aiTargets.has(userId)
+        ? await countOpenBrainTasks(userId).catch(() => 0)
+        : 0;
       if (aiTargets.has(userId)) {
         try {
           const question = await generateNudgeQuestion(
@@ -75,6 +79,9 @@ export async function GET(request: Request) {
         } catch (error) {
           // AI is best-effort — fall back to the generic line.
           logFailure("Nudge prompt", error);
+        }
+        if (openCount > 0) {
+          message += ` · ${openCount} open in Brain`;
         }
       }
 

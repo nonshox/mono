@@ -50,6 +50,24 @@ if (await tableExists("days")) {
   console.log("days: created (user, day, text + key on user)");
 }
 
+if (await tableExists("tasks")) {
+  console.log("tasks: already exists — keeping it");
+} else {
+  await db.createTable({
+    databaseId,
+    tableId: "tasks",
+    name: "tasks",
+    permissions: [],
+    columns: [
+      { key: "user", type: "string", size: 36, required: true },
+      { key: "text", type: "string", size: 300, required: true },
+      { key: "done", type: "boolean", required: true },
+    ],
+    indexes: [{ key: "user", type: "key", attributes: ["user"], orders: ["ASC"] }],
+  });
+  console.log("tasks: created (user, text, done + key on user)");
+}
+
 const columns = await db.listColumns({ databaseId, tableId: "users" });
 const ensureBooleanColumn = async (key) => {
   if (columns.columns.some((column) => column.key === key)) {

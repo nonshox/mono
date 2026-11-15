@@ -33,6 +33,8 @@ Toasts: `import { toast } from "sonner"` — `<Toaster />` is mounted in the roo
 - Settings page edits `users.name` (rowId = account id), not the Appwrite auth name. `/api/auth/me` still returns the auth account as-is.
 - Telegram tables are `telegram` (connections) and `codes` (one-time link codes, sha256 hashed). Deleting either breaks the link flow.
 - The `days` table holds the year-in-dots journal: one row per `user` per `day` (`YYYY-MM-DD`), deterministic row id = sha256(`user:day`).slice(0,32), so upserts are id-based. Delete the `days` table and the journal is gone.
+- The `tasks` table holds Brain: one row per task (`user`, `text`, `done`). Delete the `tasks` table and your brain dumps itself.
+- `/api/brain/tidy` + AI capture-split (`/api/brain` POST) are the only AI calls outside `/api/ai/*` — both gated behind the user's `ai` flag.
 - `/api/cron/nudge` (Vercel cron, 20:00 UTC, `Authorization: Bearer $CRON_SECRET`) sends the evening Telegram nudge to users with `nudge=true` on the `users` row who haven't written today (UTC date). With `ai=true`, the nudge text is a Gemini-generated question grounded in their recent entries (`GEMINI_API_KEY` required; falls back to a generic line on error).
 - `/api/cron/letter` (Sunday 09:00 UTC) sends opted-in `ai=true` users a ~130-word weekly letter compiled by Gemini from their last 7 days, via Telegram.
 - Mono AI = one opt-in flag (`ai` on `users`) covering letter + smarter nudge + year review — everything that uploads entries to Google Gemini. `/journal` themes are local-only (frequency count minus stopwords, bigrams included) — no key, no network.

@@ -89,6 +89,23 @@ export async function generateNudgeQuestion(
   return question.replace(/^[\s"']+|[\s"'.]+$/g, "").trim();
 }
 
+/** Raw dictation → clean prose, preserving the writer's voice. */
+export async function polishEntry(text: string): Promise<string> {
+  return geminiGenerate(
+    [
+      "Rewrite the following raw speech-to-text dictation into clean prose.",
+      "Keep the writer's exact meaning, voice, mood and language — casual and personal is intentional.",
+      "Remove filler words and false starts, fix punctuation and capitalization, merge run-ons.",
+      "Do NOT add, infer, embellish, summarize, or include any sentence that wasn't dictated.",
+      "Keep roughly the same length and every fact intact.",
+      "Output ONLY the rewritten text — no preamble, no quotes.",
+      "",
+      text,
+    ].join("\n"),
+    1200,
+  );
+}
+
 /** The year, compiled into one letter. */
 export async function generateYearReview(
   entries: Array<{ day: string; text: string }>,

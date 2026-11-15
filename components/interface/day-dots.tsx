@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { Popover } from "@base-ui/react/popover";
 import {
@@ -21,6 +21,8 @@ import {
 } from "@/features/days/client-api";
 import { useDaysStore } from "@/features/days/store";
 import { getApiErrorMessage } from "@/lib/api-client";
+import { MicButton } from "@/components/interface/mic-button";
+import { PolishButton } from "@/components/interface/polish-button";
 
 const MAX_LENGTH = 1000;
 const COUNTER_AT = 800;
@@ -442,7 +444,11 @@ export function DayDots({
                       placeholder="What happened today?"
                       value={draft}
                     />
-                    <div className="mt-2 flex items-center justify-between border-t border-border/50 pt-2">
+                    <div className="mt-2 flex items-center justify-between gap-2 border-t border-border/50 pt-2">
+                      <div className="flex items-center gap-1">
+                        <MicButton onChange={setDraft} value={draft} />
+                        <PolishButton onChange={setDraft} value={draft} />
+                      </div>
                       <span
                         className={cn(
                           "text-xs tabular-nums",

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { BookOpen, Check, Eraser, LoaderCircle, PenLine, Search, X } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +11,8 @@ import {
 } from "@/features/days/group";
 import { extractThemes } from "@/features/days/themes";
 import { getApiErrorMessage } from "@/lib/api-client";
+import { MicButton } from "@/components/interface/mic-button";
+import { PolishButton } from "@/components/interface/polish-button";
 import Link from "next/link";
 
 function fullLabel(day: string): string {
@@ -291,6 +293,11 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                             <div className="border-t border-border/50 px-2 py-1.5 flex items-center gap-1">
                               {isEditing ? (
                                 <>
+                                  <div className="flex items-center gap-1">
+                                    <MicButton onChange={setDraft} value={draft} />
+                                    <PolishButton onChange={setDraft} value={draft} />
+                                  </div>
+                                  <span className="flex-1" />
                                   <button
                                     className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                                     onClick={() => setEditingDay(null)}

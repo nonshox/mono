@@ -5,33 +5,33 @@
 
 :root {
   color-scheme: light;
-  /* Paper & ink — warm paper, deep ink, one editorial accent. */
-  --background: #faf9f6;
-  --foreground: #1a1a18;
+  /* Crisp white Mono — professional, neutral, clean. */
+  --background: #ffffff;
+  --foreground: #111111;
   --card: #ffffff;
-  --card-foreground: #1a1a18;
+  --card-foreground: #111111;
   --popover: #ffffff;
-  --popover-foreground: #1a1a18;
-  --primary: #1a1a18;
+  --popover-foreground: #111111;
+  --primary: #111111;
   --primary-foreground: #ffffff;
-  --secondary: #f4f2ec;
-  --secondary-foreground: #1a1a18;
-  --muted: #f6f5ef;
-  --muted-foreground: #57544b;
-  --accent: #f4f2ec;
-  --accent-foreground: #1a1a18;
+  --secondary: #f6f6f7;
+  --secondary-foreground: #111111;
+  --muted: #f6f6f7;
+  --muted-foreground: #555760;
+  --accent: #f0f0f1;
+  --accent-foreground: #111111;
   --destructive: #d92d20;
-  --border: #e9e7de;
-  --input: #e9e7de;
-  --ring: #1a1a18;
-  --editorial: #c1440e;
-  --chart-1: #1a1a18;
-  --chart-2: #55534d;
-  --chart-3: #8a877e;
-  --chart-4: #bdb9ad;
-  --chart-5: #e4e2da;
+  --border: #e9e9ea;
+  --input: #e9e9ea;
+  --ring: #111111;
+  --editorial: #e6392b;
+  --chart-1: #111111;
+  --chart-2: #555760;
+  --chart-3: #8f919a;
+  --chart-4: #c4c4c7;
+  --chart-5: #e8e8e9;
   --radius: 0.625rem;
-  --badge: #c1440e;
+  --badge: #e6392b;
   --sidebar: #faf9f6;
   --sidebar-foreground: #1a1a18;
   --sidebar-primary: #1a1a18;
@@ -41,47 +41,49 @@
   --sidebar-border: #e9e7de;
   --sidebar-ring: #1a1a18;
   --font-system:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, system-ui, sans-serif;
+  --font-system-mono:
     ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
     "Liberation Mono", "Courier New", monospace;
-  --font-system-mono: var(--font-system);
 }
 
 .dark {
   color-scheme: dark;
-  /* Night ink — warm black, cream text, lumen accent. */
-  --background: #171410;
-  --foreground: #e8e4da;
-  --card: #1f1b17;
-  --card-foreground: #e8e4da;
-  --popover: #1f1b17;
-  --popover-foreground: #e8e4da;
-  --primary: #e8e4da;
-  --primary-foreground: #1a1714;
-  --secondary: #201c18;
-  --secondary-foreground: #e8e4da;
-  --muted: #1f1b17;
-  --muted-foreground: #b8b4a7;
-  --accent: #26211b;
-  --accent-foreground: #e8e4da;
-  --destructive: #f06c60;
-  --border: #2a251f;
-  --input: #2a251f;
-  --ring: #e8e4da;
-  --editorial: #e08a5c;
-  --chart-1: #e8e4da;
-  --chart-2: #bdb9ae;
-  --chart-3: #8a877e;
-  --chart-4: #55534d;
-  --chart-5: #2a251f;
-  --badge: #e08a5c;
-  --sidebar: #171410;
-  --sidebar-foreground: #e8e4da;
-  --sidebar-primary: #e8e4da;
-  --sidebar-primary-foreground: #1a1714;
-  --sidebar-accent: #201c18;
-  --sidebar-accent-foreground: #e8e4da;
-  --sidebar-border: #2a251f;
-  --sidebar-ring: #e8e4da;
+  /* Night black — true OLED black, neutral greys, zero warm tones. */
+  --background: #000000;
+  --foreground: #f5f5f5;
+  --card: #0f0f0f;
+  --card-foreground: #f5f5f5;
+  --popover: #0f0f0f;
+  --popover-foreground: #f5f5f5;
+  --primary: #f5f5f5;
+  --primary-foreground: #0a0a0a;
+  --secondary: #141414;
+  --secondary-foreground: #f5f5f5;
+  --muted: #161616;
+  --muted-foreground: #a3a3a3;
+  --accent: #1c1c1c;
+  --accent-foreground: #f5f5f5;
+  --destructive: #f2685d;
+  --border: #262626;
+  --input: #262626;
+  --ring: #f5f5f5;
+  --editorial: #ff6b4a;
+  --chart-1: #f5f5f5;
+  --chart-2: #c4c4c4;
+  --chart-3: #8f8f8f;
+  --chart-4: #4a4a4a;
+  --chart-5: #1c1c1c;
+  --badge: #ff6b4a;
+  --sidebar: #000000;
+  --sidebar-foreground: #f5f5f5;
+  --sidebar-primary: #f5f5f5;
+  --sidebar-primary-foreground: #0a0a0a;
+  --sidebar-accent: #141414;
+  --sidebar-accent-foreground: #f5f5f5;
+  --sidebar-border: #262626;
+  --sidebar-ring: #f5f5f5;
 }
 
 @theme inline {
@@ -215,21 +217,21 @@ input {
   }
 }
 /* Mono design language — one type scale everywhere.
-   brand   wordmarks            11px / 700 / uppercase / 0.4em
-   title   page titles          24px / 800 / -0.02em
-   eyebrow labels & captions    11px / 700 / uppercase / 0.2em
+   brand   wordmarks            11px / 800 / uppercase / 0.3em
+   title   page titles          24px / 800 / -0.03em
+   label   sentence-case labels  12px / 700 / 0.02em
    body    copy  = text-sm · captions = text-xs  (Tailwind, as-is) */
 .type-brand {
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.4em;
+  font-weight: 800;
+  letter-spacing: 0.3em;
   line-height: 1;
   text-transform: uppercase;
 }
 .type-title {
   font-size: 1.5rem;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   line-height: 1.15;
   text-wrap: balance;
 }
