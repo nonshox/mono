@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowLeft, LoaderCircle } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ const RESEND_COOLDOWN_SECONDS = 30;
 
 export function AuthExperience() {
   const router = useRouter();
+  const next = useSearchParams().get("next");
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
   const [userId, setUserId] = useState("");
@@ -63,7 +64,8 @@ export function AuthExperience() {
       await verifyEmailCode(userId, value);
       useNotificationStore.getState().reset();
       useUserStore.getState().reset();
-      router.replace("/");
+      const target = next && next.startsWith("/") ? next : "/";
+      router.replace(target);
     } catch (cause) {
       setCode("");
       setError(getApiErrorMessage(cause, "That code could not be verified."));

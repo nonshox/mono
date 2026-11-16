@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { Mic, Square } from "lucide-react";
 import { useDictation } from "@/features/dictation/use-dictation";

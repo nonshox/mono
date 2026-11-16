@@ -1,4 +1,4 @@
-﻿import Image from "next/image";
+import Image from "next/image";
 
 /**
  * The one page loader Mono uses everywhere. Branded, quiet, black-on-white.

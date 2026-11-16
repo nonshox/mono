@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { Popover } from "@base-ui/react/popover";
 import {
@@ -248,7 +248,7 @@ export function DayDots({
   const showResults = searchOpen && trimmedQuery.length >= 2;
 
   return (
-    <section aria-label={`${year} â€” the year in dots`} className="mt-8">
+    <section aria-label={`${year} — the year in dots`} className="mt-8">
       <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-2">
         <h2 className="type-eyebrow">{year} dots</h2>
         <div className="flex shrink-0 items-center gap-0.5">
@@ -310,7 +310,7 @@ export function DayDots({
                 else toggleSearch();
               }
             }}
-            placeholder="Search your days, all yearsâ€¦"
+            placeholder="Search your days, all years…"
             spellCheck={false}
             value={query}
           />
@@ -333,10 +333,10 @@ export function DayDots({
           className="mt-2 max-h-64 divide-y divide-border/50 overflow-y-auto rounded-xl border-2 border-border"
         >
           {searching ? (
-            <p className="px-3 py-3 text-xs text-foreground">Searchingâ€¦</p>
+            <p className="px-3 py-3 text-xs text-foreground">Searching…</p>
           ) : results.length === 0 ? (
             <p className="px-3 py-3 text-xs text-foreground">
-              No days match â€œ{trimmedQuery}â€.
+              No days match “{trimmedQuery}”.
             </p>
           ) : (
             results.map((entry) => (
@@ -370,7 +370,7 @@ export function DayDots({
           const isToday = day === today;
           return (
             <button
-              aria-label={`${longLabel(day)} â€” ${isFilled ? "written" : isFuture ? "upcoming" : "empty"}`}
+              aria-label={`${longLabel(day)} — ${isFilled ? "written" : isFuture ? "upcoming" : "empty"}`}
               aria-pressed={isFilled}
               className={cn(
                 "size-[1.05rem] rounded-full border-2 border-foreground/35 bg-transparent outline-none transition-all duration-150 focus-visible:ring-2 focus-visible:ring-ring sm:size-[1.2rem]",

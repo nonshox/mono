@@ -1,4 +1,4 @@
-﻿import { Suspense } from "react";
+import { Suspense } from "react";
 import { getCurrentAccount } from "@/features/auth/session";
 import { getUserRow } from "@/features/users/service";
 import { listYearEntries, listYearsWithEntries } from "@/features/days/service";
