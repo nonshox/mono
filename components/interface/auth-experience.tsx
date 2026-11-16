@@ -47,7 +47,7 @@ export function AuthExperience() {
       setCooldown(RESEND_COOLDOWN_SECONDS);
     } catch (cause) {
       setError(
-        getApiErrorMessage(cause, "We could not send a sign-in code."),
+        getApiErrorMessage(cause, "Code not sent"),
       );
     } finally {
       setPending(false);
@@ -68,7 +68,7 @@ export function AuthExperience() {
       router.replace(target);
     } catch (cause) {
       setCode("");
-      setError(getApiErrorMessage(cause, "That code could not be verified."));
+      setError(getApiErrorMessage(cause, "Code not verified"));
       verifying.current = false;
       setPending(false);
     }
@@ -93,7 +93,7 @@ export function AuthExperience() {
           </h1>
           <p className="mt-1.5 text-sm text-foreground">
             {step === "email" ? (
-              "No password — we\u2019ll email you a one-time code."
+              "No password. We'll email you a code."
             ) : (
               <>
                 Code sent to{" "}

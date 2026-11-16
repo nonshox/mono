@@ -36,7 +36,7 @@ export function ProfileEditor() {
         }
       })
       .catch(() => {
-        if (active) toast.error("Your profile could not be loaded.");
+        if (active) toast.error("Profile unavailable");
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -53,11 +53,11 @@ export function ProfileEditor() {
     try {
       const saved = await saveUserName(name.trim());
       setUser(saved);
-      toast.success("Profile saved.");
+      toast.success("Saved");
       router.push("/profile");
     } catch (cause) {
       toast.error(
-        getApiErrorMessage(cause, "Your profile could not be saved."),
+        getApiErrorMessage(cause, "Profile not saved"),
       );
     } finally {
       setSaving(false);

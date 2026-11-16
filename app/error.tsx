@@ -32,7 +32,7 @@ export default function GlobalError({
             </Button>
           </div>
         }
-        description="Something went wrong on our end. Your session and data are safe — try again."
+        description="Something broke. Your data is safe."
         icon={TriangleAlert}
         title="Something went wrong"
       />

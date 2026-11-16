@@ -1,3 +1,4 @@
+@import "@fontsource-variable/inter";
 @import "tailwindcss";
 @import "shadcn/tailwind.css";
 
@@ -24,7 +25,7 @@
   --border: rgb(10 10 10 / 0.09);
   --input: rgb(10 10 10 / 0.09);
   --ring: #0a0a0a;
-  --editorial: #e6392b;
+  --editorial: #096876;
   --radius: 0.875rem;
   --chart-1: #111111;
   --chart-2: #555760;
@@ -42,8 +43,8 @@
   --sidebar-border: #e9e7de;
   --sidebar-ring: #1a1a18;
   --font-system:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, system-ui, sans-serif;
+    "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, system-ui, sans-serif;
   --font-system-mono:
     ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
     "Liberation Mono", "Courier New", monospace;
@@ -92,8 +93,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-system);
   --font-mono: var(--font-system-mono);
-  --font-serif:
-    "Iowan Old Style", Charter, "Palatino Linotype", Palatino, Georgia, serif;
   --font-heading: var(--font-sans);
   --color-editorial: var(--editorial);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -160,9 +159,13 @@ body {
   min-height: 100%;
   margin: 0;
   font-family: var(--font-system);
-  font-weight: 500;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  font-feature-settings: "cv11", "ss01", "ss03";
 }
 
 * {
@@ -218,39 +221,46 @@ input {
     transition-duration: 0.01ms !important;
   }
 }
-/* Mono design language — one type scale everywhere.
-   brand   wordmarks            11px / 800 / uppercase / 0.3em
-   title   page titles          24px / 800 / -0.03em
-   label   sentence-case labels  12px / 700 / 0.02em
-   body    copy  = text-sm · captions = text-xs  (Tailwind, as-is) */
+/* Mono type scale — Inter, tuned for comfort.
+   brand   wordmarks            11px / 600 / uppercase / 0.14em
+   title   page titles          26–30px / 700 / -0.02em
+   section section headings     18–20px / 600 / -0.01em
+   eyebrow small caps            11px / 500 / 0.08em
+   label   sentence-case label   13px / 500 / 0.01em
+   body    15px regular */
 .type-brand {
   font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.3em;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   line-height: 1;
   text-transform: uppercase;
 }
 .type-title {
-  font-size: 1.5rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
+  font-size: clamp(1.625rem, 1.35rem + 1.2vw, 1.875rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.18;
   text-wrap: balance;
 }
+.type-section {
+  font-size: clamp(1.125rem, 1rem + 0.6vw, 1.25rem);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.3;
+}
 .type-eyebrow {
-  color: var(--foreground);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   line-height: 1.35;
   text-transform: uppercase;
 }
-/* Journal labels — same voice, no shouting. */
 .type-label {
-  color: var(--foreground);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  line-height: 1.35;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.4;
   text-transform: none;
 }

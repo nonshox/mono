@@ -28,19 +28,19 @@ export function PolishButton({
   const polish = async () => {
     if (loading) return;
     if (!aiOn) {
-      toast.message("Enable Mono AI in Settings to polish your words.");
+      toast.message("Enable Mono AI to polish");
       return;
     }
     setLoading(true);
     const original = value;
     try {
       onChange(await polishEntry(original));
-      toast.success("Polished — your voice kept.", {
+      toast.success("Polished", {
         action: { label: "Undo", onClick: () => onChange(original) },
       });
     } catch (cause) {
       onChange(original);
-      toast.error(getApiErrorMessage(cause, "Polish could not run right now."));
+      toast.error(getApiErrorMessage(cause, "Polish failed"));
     } finally {
       setLoading(false);
     }

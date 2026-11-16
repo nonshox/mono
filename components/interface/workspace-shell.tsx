@@ -126,18 +126,19 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
               src="/logotype/apple-touch-icon.png"
               width={18}
             />
-            <span className="type-brand text-foreground">
-              Mono
-            </span>
+            <span className="type-brand text-foreground">Mono</span>
           </Link>
 
           {/* Center pill — desktop primary nav */}
-          <nav aria-label="Primary" className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-full border-2 border-border bg-muted/60 p-1 md:flex">
-            {([
+          <nav
+            aria-label="Primary"
+            className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-full border-2 border-border bg-muted/60 p-1 md:flex"
+          >
+            {[
               { href: "/", icon: House, label: "Home" },
               { href: "/journal", icon: BookOpenText, label: "Journal" },
               { href: "/brain", icon: BrainIcon, label: "Brain" },
-            ]).map(({ href, icon: Icon, label }) => {
+            ].map(({ href, icon: Icon, label }) => {
               const active =
                 href === "/" ? pathname === "/" : pathname.startsWith(href);
               return (
@@ -151,7 +152,11 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                   href={href}
                   key={href}
                 >
-                  <Icon aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+                  <Icon
+                    aria-hidden="true"
+                    className="size-3.5"
+                    strokeWidth={1.8}
+                  />
                   {label}
                 </Link>
               );
@@ -163,10 +168,18 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             {/* Notifications — icon button with dropdown panel */}
             <DropdownMenu>
               <DropdownMenuTrigger
-                aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
+                aria-label={
+                  unread > 0
+                    ? `Notifications, ${unread} unread`
+                    : "Notifications"
+                }
                 className="relative grid size-9 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <Bell aria-hidden="true" className="size-[17px]" strokeWidth={1.8} />
+                <Bell
+                  aria-hidden="true"
+                  className="size-[17px]"
+                  strokeWidth={1.8}
+                />
                 {unread > 0 && (
                   <span
                     aria-hidden="true"
@@ -180,9 +193,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                 sideOffset={8}
               >
                 <div className="flex items-center justify-between border-b border-border/60 px-4 py-2.5">
-                  <p className="type-eyebrow">
-                    Notifications
-                  </p>
+                  <p className="type-eyebrow">Notifications</p>
                   {unread > 0 && (
                     <button
                       className="text-xs font-semibold text-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
@@ -200,7 +211,9 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                     </div>
                   ) : latest.length === 0 ? (
                     <div className="px-4 py-8 text-center">
-                      <p className="text-xs font-semibold text-foreground">All quiet</p>
+                      <p className="text-xs font-semibold text-foreground">
+                        All quiet
+                      </p>
                       <p className="mt-1 text-xs text-foreground">
                         Nothing new right now.
                       </p>
@@ -213,14 +226,20 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                         onClick={() => openNotification(item)}
                         type="button"
                       >
-                        <UserAvatar avatar={item.actorAvatar} name={item.actorName} size={26} />
+                        <UserAvatar
+                          avatar={item.actorAvatar}
+                          name={item.actorName}
+                          size={26}
+                        />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-xs leading-5 text-foreground">
                             <span className="font-semibold">
                               {item.self ? "You" : item.actorName}
                             </span>{" "}
                             <span className="text-foreground">
-                              {item.count > 1 ? `${item.type} ×${item.count}` : item.type}
+                              {item.count > 1
+                                ? `${item.type} ×${item.count}`
+                                : item.type}
                             </span>
                           </span>
                           <time
@@ -254,33 +273,54 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
               <DropdownMenuContent align="end" className="w-56" sideOffset={8}>
                 <DropdownMenuGroup>
                   <DropdownMenuLabel className="px-2 py-2">
-                    <span className="block text-xs font-semibold">{name || "Account"}</span>
-                    <span className="block truncate text-xs text-foreground">{email}</span>
+                    <span className="block text-xs font-semibold">
+                      {name || "Account"}
+                    </span>
+                    <span className="block truncate text-xs text-foreground">
+                      {email}
+                    </span>
                   </DropdownMenuLabel>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="rounded-lg px-2 py-2 text-xs" onClick={() => router.push("/profile")}>
-                  <UserRound aria-hidden="true" className="size-4" strokeWidth={1.75} />
+                <DropdownMenuItem
+                  className="rounded-lg px-2 py-2 text-xs"
+                  onClick={() => router.push("/profile")}
+                >
+                  <UserRound
+                    aria-hidden="true"
+                    className="size-4"
+                    strokeWidth={1.75}
+                  />
                   Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem className="rounded-lg px-2 py-2 text-xs" onClick={() => router.push("/brain")}>
-                  <BrainIcon aria-hidden="true" className="size-4" strokeWidth={1.75} />
-                  Brain
-                </DropdownMenuItem>
-                <DropdownMenuItem className="rounded-lg px-2 py-2 text-xs" onClick={toggleTheme}>
+                <DropdownMenuItem
+                  className="rounded-lg px-2 py-2 text-xs"
+                  onClick={toggleTheme}
+                >
                   {dark ? (
-                    <Sun aria-hidden="true" className="size-4" strokeWidth={1.75} />
+                    <Sun
+                      aria-hidden="true"
+                      className="size-4"
+                      strokeWidth={1.75}
+                    />
                   ) : (
-                    <Moon aria-hidden="true" className="size-4" strokeWidth={1.75} />
+                    <Moon
+                      aria-hidden="true"
+                      className="size-4"
+                      strokeWidth={1.75}
+                    />
                   )}
                   {dark ? "Light mode" : "Dark mode"}
                 </DropdownMenuItem>
-                <DropdownMenuItem className="rounded-lg px-2 py-2 text-xs" onClick={() => router.push("/journal")}>
-                  <BookOpenText aria-hidden="true" className="size-4" strokeWidth={1.75} />
-                  Journal
-                </DropdownMenuItem>
-                <DropdownMenuItem className="rounded-lg px-2 py-2 text-xs" onClick={() => router.push("/settings")}>
-                  <Settings aria-hidden="true" className="size-4" strokeWidth={1.75} />
+                <DropdownMenuItem
+                  className="rounded-lg px-2 py-2 text-xs"
+                  onClick={() => router.push("/settings")}
+                >
+                  <Settings
+                    aria-hidden="true"
+                    className="size-4"
+                    strokeWidth={1.75}
+                  />
                   Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -289,7 +329,11 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                   onClick={() => void signOut()}
                   variant="destructive"
                 >
-                  <LogOut aria-hidden="true" className="size-4" strokeWidth={1.75} />
+                  <LogOut
+                    aria-hidden="true"
+                    className="size-4"
+                    strokeWidth={1.75}
+                  />
                   Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -306,17 +350,32 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                 className="grid size-6 place-items-center rounded-md outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                 href="/"
               >
-                <ArrowLeft aria-hidden="true" className="size-3.5" strokeWidth={2} />
+                <ArrowLeft
+                  aria-hidden="true"
+                  className="size-3.5"
+                  strokeWidth={2}
+                />
               </Link>
               <Link
                 aria-label="Home"
                 className="grid size-6 place-items-center rounded-md text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                 href="/"
               >
-                <House aria-hidden="true" className="size-3" strokeWidth={1.8} />
+                <House
+                  aria-hidden="true"
+                  className="size-3"
+                  strokeWidth={1.8}
+                />
               </Link>
-              <ChevronRight aria-hidden="true" className="size-3 text-foreground" strokeWidth={2} />
-              <span aria-current="page" className="type-eyebrow text-foreground">
+              <ChevronRight
+                aria-hidden="true"
+                className="size-3 text-foreground"
+                strokeWidth={2}
+              />
+              <span
+                aria-current="page"
+                className="type-eyebrow text-foreground"
+              >
                 {breadcrumb}
               </span>
             </div>
@@ -332,13 +391,14 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           aria-label="Primary"
           className="pointer-events-auto flex h-12 items-stretch gap-0.5 rounded-full border-2 border-border bg-background/75 px-1 backdrop-blur-xl"
         >
-          {([
+          {[
             { href: "/", icon: House, label: "Home" },
             { href: "/journal", icon: BookOpenText, label: "Journal" },
             { href: "/brain", icon: BrainIcon, label: "Brain" },
-            { href: "/profile", icon: UserRound, label: "Profile" },
-          ]).map(({ href, icon: Icon, label }) => {
-            const active = pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
+          ].map(({ href, icon: Icon, label }) => {
+            const active =
+              pathname === href ||
+              (href !== "/" && pathname.startsWith(`${href}/`));
             return (
               <Link
                 aria-label={label}
@@ -362,6 +422,3 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     </>
   );
 }
-
-
-

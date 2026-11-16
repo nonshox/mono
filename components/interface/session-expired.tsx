@@ -15,7 +15,7 @@ export function SessionExpired() {
             Sign in
           </Link>
         }
-        description="Your session ended. Sign in again to keep going."
+        description="Session expired. Sign in again."
         icon={History}
         title="Session expired"
       />

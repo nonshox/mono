@@ -55,7 +55,7 @@ export function SettingsExperience({
     let active = true;
     fetchTelegramStatus()
       .then((isConnected) => active && setTelegramConnected(isConnected))
-      .catch(() => active && setError("Telegram status could not be checked."))
+      .catch(() => active && setError("Status failed"))
       .finally(() => active && setLoadingTelegram(false));
     fetchUser()
       .then((user) => {
@@ -101,7 +101,7 @@ export function SettingsExperience({
       if (current) useUserStore.getState().setUser({ ...current, nudge: saved.nudge ?? next });
     } catch (cause) {
       setNudgeOn(!next);
-      setError(getApiErrorMessage(cause, "The nudge setting could not be saved."));
+      setError(getApiErrorMessage(cause, "Save failed"));
     } finally {
       setNudgeSaving(false);
     }
@@ -118,7 +118,7 @@ export function SettingsExperience({
       if (current) useUserStore.getState().setUser({ ...current, ai: saved.ai ?? next });
     } catch (cause) {
       setAiOn(!next);
-      setError(getApiErrorMessage(cause, "The Mono AI setting could not be saved."));
+      setError(getApiErrorMessage(cause, "Save failed"));
     } finally {
       setAiSaving(false);
     }
@@ -132,7 +132,7 @@ export function SettingsExperience({
       const { data } = await apiClient.post<{ review: string }>("/ai/review");
       setReview(data.review);
     } catch (cause) {
-      setError(getApiErrorMessage(cause, "Your year could not be compiled right now."));
+      setError(getApiErrorMessage(cause, "Compilation failed"));
     } finally {
       setReviewLoading(false);
     }
@@ -171,7 +171,7 @@ export function SettingsExperience({
     try {
       setSessions(await fetchSessions());
     } catch {
-      setError("Active sessions could not be loaded.");
+      setError("Sessions unavailable");
     } finally {
       setRefreshingSessions(false);
     }
@@ -190,7 +190,7 @@ export function SettingsExperience({
       await refreshSessions();
       setMessage("Session revoked.");
     } catch {
-      setError("Could not revoke that session.");
+      setError("Session not revoked");
     } finally {
       setPendingSession("");
     }
@@ -204,7 +204,7 @@ export function SettingsExperience({
       router.replace("/auth");
       router.refresh();
     } catch (cause) {
-      setError(getApiErrorMessage(cause, "Your account could not be deleted."));
+      setError(getApiErrorMessage(cause, "Deletion failed"));
       setDeleting(false);
     }
   };
@@ -235,7 +235,7 @@ export function SettingsExperience({
                   {loadingTelegram
                     ? "Checking…"
                     : telegramConnected
-                      ? "Connected — pushes when something happens."
+                      ? "Pushes on activity"
                       : "Not connected"}
                 </p>
               </div>
@@ -291,7 +291,7 @@ export function SettingsExperience({
                 </p>
                 <p className="mt-0.5 text-xs leading-4 text-foreground">
                   {telegramConnected
-                    ? "8pm UTC — only if you haven’t written that day."
+                    ? "8pm if no entry that day."
                     : "Connect Telegram first."}
                 </p>
               </div>

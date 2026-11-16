@@ -2,11 +2,9 @@
 
 import { Popover } from "@base-ui/react/popover";
 import {
-  Check,
   ChevronLeft,
   ChevronRight,
   Eraser,
-  LoaderCircle,
   PenLine,
   Search,
   X,
@@ -30,9 +28,8 @@ const COUNTER_AT = 800;
 function longLabel(day: string): string {
   return new Intl.DateTimeFormat(undefined, {
     weekday: "long",
-    month: "long",
+    month: "short",
     day: "numeric",
-    year: "numeric",
     timeZone: "UTC",
   }).format(new Date(`${day}T00:00:00.000Z`));
 }
@@ -103,7 +100,7 @@ export function DayDots({
 
   useEffect(() => {
     load(year).catch(() =>
-      toast.error("That year could not be loaded."),
+      toast.error("Year unavailable"),
     );
   }, [year, load]);
 
@@ -113,10 +110,11 @@ export function DayDots({
       return;
     }
     setAnchor(element);
-    setEditing(false);
-    setDraft(useDaysStore.getState().entries[day] ?? "");
-    setFlashback([]);
     setOpenDay(day);
+    const existing = useDaysStore.getState().entries[day];
+    setDraft(existing ?? "");
+    setEditing(existing === undefined);
+    setFlashback([]);
   };
 
   const days = useMemo(() => {
@@ -216,19 +214,36 @@ export function DayDots({
     if (element) openFor(entry.day, element);
   };
 
-  const commit = async () => {
-    if (!openDay) return;
-    const text = draft.trim();
-    try {
-      if (!text) {
-        await remove(openDay);
-      } else {
-        await save(openDay, text);
-      }
-      setEditing(false);
-    } catch (cause) {
-      toast.error(getApiErrorMessage(cause, "That day could not be saved."));
+  // Instant close with optimistic background save — UI never waits.
+  const closeAndSave = () => {
+    if (!openDay) {
+      setOpenDay(null);
+      return;
     }
+    const day = openDay;
+    const text = draft.trim();
+    const previous = useDaysStore.getState().entries[day];
+    const unchanged = text === (previous ?? "");
+
+    // Close now — save in background; toast only on failure.
+    setEditing(false);
+    setOpenDay(null);
+
+    if (!editing || unchanged) return;
+
+    void (async () => {
+      try {
+        if (!text) {
+          await remove(day);
+          if (previous !== undefined) toast.success("Day cleared");
+        } else {
+          await save(day, text);
+          toast.success("Saved");
+        }
+      } catch (cause) {
+        toast.error(getApiErrorMessage(cause, "Day not saved"));
+      }
+    })();
   };
 
   const erase = async () => {
@@ -238,7 +253,7 @@ export function DayDots({
       setDraft("");
       setEditing(false);
     } catch (cause) {
-      toast.error(getApiErrorMessage(cause, "That day could not be erased."));
+      toast.error(getApiErrorMessage(cause, "Day not erased"));
     }
   };
 
@@ -373,13 +388,13 @@ export function DayDots({
               aria-label={`${longLabel(day)} — ${isFilled ? "written" : isFuture ? "upcoming" : "empty"}`}
               aria-pressed={isFilled}
               className={cn(
-                "size-[1.05rem] rounded-full border-2 border-foreground/35 bg-transparent outline-none transition-all duration-150 focus-visible:ring-2 focus-visible:ring-ring sm:size-[1.2rem]",
+                "grid aspect-square size-[1.05rem] place-items-center rounded-full border-2 border-foreground/35 bg-transparent outline-none transition-all duration-150 focus-visible:ring-2 focus-visible:ring-ring sm:size-[1.2rem]",
                 isFilled
                   ? "border-foreground bg-foreground hover:scale-110"
                   : "border-foreground/30 bg-transparent hover:scale-110 hover:border-foreground/70",
                 isFuture && "cursor-default border-foreground/10 hover:scale-100 hover:border-foreground/10",
                 isToday &&
-                "ring-2 ring-[color:var(--editorial)] ring-offset-2 ring-offset-background",
+                "ring-2 ring-(--editorial)/50 ring-offset-2 ring-offset-background",
               )}
               disabled={isFuture}
               key={day}
@@ -399,7 +414,8 @@ export function DayDots({
 
       <Popover.Root
         onOpenChange={(open) => {
-          if (!open) setOpenDay(null);
+          if (open) return;
+          void closeAndSave();
         }}
         open={openDay !== null}
       >
@@ -407,145 +423,107 @@ export function DayDots({
           <Popover.Positioner
             align="center"
             anchor={anchor}
-            collisionPadding={12}
+            collisionPadding={8}
             side="bottom"
-            sideOffset={10}
+            sideOffset={6}
           >
             <Popover.Popup
               aria-label={openDay ? longLabel(openDay) : undefined}
-              className="z-50 w-72 max-w-[calc(100vw-2rem)] rounded-2xl border-2 border-border/80 bg-popover/90 p-3.5 outline-none backdrop-blur-xl"
+              className="z-50 w-56 max-w-[calc(100vw-1rem)] rounded-xl border-2 border-border/80 bg-popover p-2.5 outline-none backdrop-blur-xl sm:w-64 sm:p-3"
             >
-              <div className="flex items-start justify-between gap-3">
-                <Popover.Title className="text-sm font-semibold leading-5 text-foreground">
+              <div className="flex items-start justify-between gap-2">
+                <Popover.Title className="type-label leading-4 text-foreground">
                   {openDay ? longLabel(openDay) : ""}
                 </Popover.Title>
-                <Popover.Close
-                  aria-label="Close"
-                  className="-mr-1 grid size-6 shrink-0 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <X aria-hidden="true" className="size-3.5" strokeWidth={2} />
-                </Popover.Close>
+                <div className="-mr-1 flex items-center gap-1">
+                  <MicButton onChange={setDraft} value={draft} />
+                  <PolishButton onChange={setDraft} value={draft} />
+                  {activeText && !editing && (
+                    <>
+                      <button
+                        aria-label="Edit"
+                        className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                        onClick={() => {
+                          setDraft(activeText);
+                          setEditing(true);
+                        }}
+                        type="button"
+                      >
+                        <PenLine aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+                      </button>
+                      <button
+                        aria-busy={saving}
+                        aria-label="Erase"
+                        className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-foreground outline-none transition hover:bg-muted hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring"
+                        onClick={() => void erase()}
+                        type="button"
+                      >
+                        <Eraser aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
 
-              <div className="mt-2 min-h-20">
+              <div className="mt-1.5 min-h-16 overflow-y-auto sm:max-h-48 sm:overflow-visible">
                 {editing ? (
                   <div>
                     <textarea
                       autoFocus
-                      className="block h-24 w-full resize-none bg-transparent text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground"
+                      className="block h-18 w-full resize-none bg-transparent text-xs leading-5 text-foreground outline-none placeholder:text-foreground/50 sm:h-20 sm:text-sm sm:leading-6"
                       maxLength={MAX_LENGTH}
                       onChange={(event) => setDraft(event.target.value)}
                       onKeyDown={(event) => {
                         if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-                          void commit();
+                          void closeAndSave();
                         }
                         if (event.key === "Escape") setEditing(false);
                       }}
                       placeholder="What happened today?"
                       value={draft}
                     />
-                    <div className="mt-2 flex items-center justify-between gap-2 border-t border-border/50 pt-2">
-                      <div className="flex items-center gap-1">
-                        <MicButton onChange={setDraft} value={draft} />
-                        <PolishButton onChange={setDraft} value={draft} />
-                      </div>
+                    <div className="mt-1.5 flex items-center justify-between gap-1.5">
                       <span
-                        className={cn(
-                          "text-xs tabular-nums",
-                          draft.length >= MAX_LENGTH
-                            ? "text-destructive"
-                            : "text-foreground",
-                        )}
+                        className="ml-auto text-[10px] tabular-nums text-foreground sm:text-[11px]"
                       >
                         {showCounter ? `${draft.length} / ${MAX_LENGTH}` : ""}
                       </span>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                          onClick={() => {
-                            setDraft(activeText ?? "");
-                            setEditing(false);
-                          }}
-                          type="button"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          aria-busy={saving}
-                          className="inline-flex items-center gap-1 rounded-lg bg-foreground px-2.5 py-1.5 text-xs font-semibold text-background outline-none transition hover:opacity-85 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
-                          disabled={saving}
-                          onClick={() => void commit()}
-                          type="button"
-                        >
-                          {saving ? (
-                            <LoaderCircle aria-hidden="true" className="size-3 animate-spin" />
-                          ) : (
-                            <Check aria-hidden="true" className="size-3" strokeWidth={2.5} />
-                          )}
-                          Save
-                        </button>
-                      </div>
                     </div>
                   </div>
                 ) : (
                   <div>
                     {activeText ? (
                       <div>
-                        <p className="max-h-40 overflow-y-auto whitespace-pre-wrap break-words text-sm leading-6 text-foreground">
+                        <p className="max-h-32 overflow-y-auto whitespace-pre-wrap break-words text-xs leading-5 text-foreground sm:text-sm sm:leading-6">
                           {activeText}
                         </p>
-                        <div className="mt-2.5 flex items-center gap-1 border-t border-border/50 pt-2">
-                          <button
-                            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                            onClick={() => {
-                              setDraft(activeText);
-                              setEditing(true);
-                            }}
-                            type="button"
-                          >
-                            <PenLine aria-hidden="true" className="size-3" strokeWidth={2} />
-                            Edit
-                          </button>
-                          <button
-                            aria-busy={saving}
-                            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:bg-muted hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring"
-                            onClick={() => void erase()}
-                            type="button"
-                          >
-                            <Eraser aria-hidden="true" className="size-3" strokeWidth={2} />
-                            Erase
-                          </button>
-                        </div>
                       </div>
                     ) : (
-                      <div className="py-1">
-                        <p className="text-sm font-semibold text-foreground">
-                          Nothing written yet.
-                        </p>
-                        <p className="mt-0.5 text-xs leading-5 text-foreground">
-                          Two or three words is plenty for a day like this.
+                      <div className="py-0.5">
+                        <p className="type-label text-muted-foreground/70">
+                          Nothing yet.
                         </p>
                         <button
-                          className="mt-2 inline-flex items-center gap-1.5 rounded-full border-2 border-border px-3.5 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                          className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-foreground/70 outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring sm:text-xs"
                           onClick={() => setEditing(true)}
                           type="button"
                         >
                           <PenLine aria-hidden="true" className="size-3" strokeWidth={2} />
-                          Fill this day
+                          Write this day
                         </button>
                       </div>
                     )}
 
                     {flashback.length > 0 && (
-                      <div className="mt-2.5 border-t border-border/50 pt-2">
-                        <p className="type-eyebrow">On this day</p>
-                        <ul className="mt-1.5 grid gap-1.5">
+                      <div className="mt-1.5">
+                        <p className="type-label text-[11px]">On this day</p>
+                        <ul className="mt-1 grid gap-1">
                           {flashback.map((entry) => (
                             <li className="min-w-0" key={entry.day}>
-                              <span className="text-xs font-bold tabular-nums text-foreground">
+                              <span className="text-[11px] font-bold tabular-nums text-foreground">
                                 {shortYear(entry.day)}
                               </span>
-                              <p className="line-clamp-2 text-xs leading-5 text-foreground">
+                              <p className="line-clamp-2 text-[11px] leading-4 text-foreground">
                                 {entry.text}
                               </p>
                             </li>

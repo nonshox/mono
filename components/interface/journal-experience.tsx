@@ -15,12 +15,11 @@ import { MicButton } from "@/components/interface/mic-button";
 import { PolishButton } from "@/components/interface/polish-button";
 import Link from "next/link";
 
-function fullLabel(day: string): string {
+function shortLabel(day: string): string {
   return new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-    month: "long",
+    weekday: "short",
+    month: "short",
     day: "numeric",
-    year: "numeric",
     timeZone: "UTC",
   }).format(new Date(`${day}T00:00:00.000Z`));
 }
@@ -57,6 +56,8 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
   }, [items]);
 
   const toggleExpand = (day: string) => {
+    // Auto-save on close — collapse persists dirty drafts.
+    if (editingDay) void commit();
     setExpandedDay((prev) => (prev === day ? null : day));
     setEditingDay(null);
     setEraseArmed(false);
@@ -92,7 +93,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
       );
       setEditingDay(null);
     } catch (cause) {
-      toast.error(getApiErrorMessage(cause, "That day could not be saved."));
+      toast.error(getApiErrorMessage(cause, "Day not saved"));
     } finally {
       setSaving(false);
     }
@@ -112,7 +113,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
       setEditingDay(null);
       setEraseArmed(false);
     } catch (cause) {
-      toast.error(getApiErrorMessage(cause, "That day could not be erased."));
+      toast.error(getApiErrorMessage(cause, "Day not erased"));
     } finally {
       setSaving(false);
     }
@@ -231,7 +232,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                         onClick={() => toggleExpand(entry.day)}
                         type="button"
                       >
-                        <p className="whitespace-pre-wrap break-words font-serif text-[15px] leading-7 text-foreground">
+                        <p className="whitespace-pre-wrap break-words text-[15px] leading-7 text-foreground">
                           {trimmedQuery
                             ? highlightParts(entry.text, trimmedQuery).map((part, index) =>
                                 part.match ? (
@@ -249,104 +250,116 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                         </p>
                       </button>
                     ) : (
-                      /* Expanded — separate solid card in place: date, words, actions */
-                      <div className="min-w-0 overflow-hidden rounded-2xl border-2 border-border/80 bg-popover">
-                            <div className="flex items-center justify-between gap-3 border-b border-border/50 py-1.5 pl-3.5 pr-1.5">
-                              <p className="type-label">{fullLabel(entry.day)}</p>
-                              <button
-                                aria-label="Close"
-                                aria-expanded={true}
-                                className="grid size-6 shrink-0 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                                onClick={() => toggleExpand(entry.day)}
-                                type="button"
-                              >
-                                <X aria-hidden="true" className="size-3.5" strokeWidth={2} />
-                              </button>
-                            </div>
-
-                            <div className="px-3.5 py-2.5">
-                              {isEditing ? (
-                                <textarea
-                                  autoFocus
-                                  className="block w-full resize-none bg-transparent font-serif text-[15px] leading-7 text-foreground outline-none"
-                                  maxLength={1000}
-                                  onChange={(event) => setDraft(event.target.value)}
-                                  onKeyDown={(event) => {
-                                    if (
-                                      event.key === "Enter" &&
-                                      (event.metaKey || event.ctrlKey)
-                                    ) {
-                                      void commit();
-                                    }
-                                    if (event.key === "Escape") setEditingDay(null);
-                                  }}
-                                  rows={Math.max(3, entry.text.split("\n").length + 1)}
-                                  value={draft}
-                                />
-                              ) : (
-                                <p className="whitespace-pre-wrap break-words font-serif text-[15px] leading-7 text-foreground">
-                                  {entry.text}
-                                </p>
-                              )}
-                            </div>
-
-                            <div className="border-t border-border/50 px-2 py-1.5 flex items-center gap-1">
-                              {isEditing ? (
-                                <>
-                                  <div className="flex items-center gap-1">
-                                    <MicButton onChange={setDraft} value={draft} />
-                                    <PolishButton onChange={setDraft} value={draft} />
-                                  </div>
-                                  <span className="flex-1" />
-                                  <button
-                                    className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                                    onClick={() => setEditingDay(null)}
-                                    type="button"
-                                  >
-                                    Cancel
-                                  </button>
-                                  <button
-                                    aria-busy={saving}
-                                    className="inline-flex items-center gap-1 rounded-lg bg-foreground px-2.5 py-1.5 text-xs font-semibold text-background outline-none transition hover:opacity-85 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
-                                    disabled={saving || !draft.trim()}
-                                    onClick={() => void commit()}
-                                    type="button"
-                                  >
-                                    {saving ? (
-                                      <LoaderCircle aria-hidden="true" className="size-3 animate-spin" />
-                                    ) : (
-                                      <Check aria-hidden="true" className="size-3" strokeWidth={2.5} />
-                                    )}
-                                    Save
-                                  </button>
-                                </>
-                              ) : (
-                                <>
-                                  <button
-                                    className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                                    onClick={() => startEdit(entry)}
-                                    type="button"
-                                  >
-                                    <PenLine aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
-                                    Edit
-                                  </button>
-                                  <button
-                                    aria-busy={saving}
-                                    className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-ring ${
-                                      eraseArmed
-                                        ? "bg-destructive/10 text-destructive"
-                                        : "text-foreground hover:bg-muted hover:text-destructive"
-                                    }`}
-                                    onClick={() => void erase()}
-                                    type="button"
-                                  >
-                                    <Eraser aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
-                                    {eraseArmed ? "Confirm erase" : "Erase"}
-                                  </button>
-                                </>
-                              )}
-                            </div>
+                      /* Expanded — solid card in place: date, words, actions */
+                      <div className="min-w-0 overflow-hidden rounded-xl border-2 border-border/80 bg-popover">
+                        <div className="flex items-center justify-between gap-2 py-1.5 pl-3 pr-1">
+                          <p className="type-label leading-4 text-foreground">
+                            {shortLabel(entry.day)}
+                          </p>
+                          <div className="flex items-center gap-1">
+                            {isEditing && (
+                              <>
+                                <MicButton onChange={setDraft} value={draft} />
+                                <PolishButton onChange={setDraft} value={draft} />
+                                <button
+                                  aria-label="Discard changes"
+                                  className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-foreground outline-none transition hover:bg-muted hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring"
+                                  onClick={() => setEditingDay(null)}
+                                  type="button"
+                                >
+                                  <X aria-hidden="true" className="size-3.5" strokeWidth={2} />
+                                </button>
+                                <button
+                                  aria-busy={saving}
+                                  aria-label="Save"
+                                  className="grid size-7 shrink-0 place-items-center rounded-full border border-border outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                                  disabled={saving || !draft.trim()}
+                                  onClick={() => void commit()}
+                                  type="button"
+                                >
+                                  {saving ? (
+                                    <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+                                  ) : (
+                                    <Check aria-hidden="true" className="size-4" strokeWidth={2.5} />
+                                  )}
+                                </button>
+                              </>
+                            )}
+                            {!isEditing && (
+                              <>
+                                <button
+                                  aria-label="Edit"
+                                  className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                                  onClick={() => startEdit(entry)}
+                                  type="button"
+                                >
+                                  <PenLine aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+                                </button>
+                                <button
+                                  aria-busy={saving}
+                                  aria-label={eraseArmed ? "Confirm erase" : "Erase"}
+                                  className={`grid size-7 shrink-0 place-items-center rounded-full border transition outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 ${
+                                    eraseArmed
+                                      ? "border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20"
+                                      : "border-border text-foreground hover:bg-muted hover:text-destructive"
+                                  }`}
+                                  onClick={() => void erase()}
+                                  type="button"
+                                >
+                                  <Eraser aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+                                </button>
+                              </>
+                            )}
+                            <button
+                              aria-label="Close"
+                              className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                              onClick={() => toggleExpand(entry.day)}
+                              type="button"
+                            >
+                              <X aria-hidden="true" className="size-3.5" strokeWidth={2} />
+                            </button>
                           </div>
+                        </div>
+
+                        <div className="px-3 py-2">
+                          {isEditing ? (
+                            <textarea
+                              autoFocus
+                              className="block w-full resize-none bg-transparent text-[15px] leading-7 text-foreground outline-none"
+                              maxLength={1000}
+                              onChange={(event) => setDraft(event.target.value)}
+                              onKeyDown={(event) => {
+                                if (
+                                  event.key === "Enter" &&
+                                  (event.metaKey || event.ctrlKey)
+                                ) {
+                                  void commit();
+                                }
+                                if (event.key === "Escape") {
+                                  setEditingDay(null);
+                                }
+                              }}
+                              rows={Math.max(3, Math.ceil(entry.text.length / 40) || 1)}
+                              value={draft}
+                            />
+                          ) : (
+                            <p className="whitespace-pre-wrap break-words text-[15px] leading-7 text-foreground">
+                              {entry.text}
+                            </p>
+                          )}
+                        </div>
+                        {isEditing && (
+                          <div className="flex items-center justify-end px-3 pb-1.5">
+                            <span
+                              className={`text-[10px] tabular-nums ${
+                                draft.length >= 800 ? "text-destructive" : "text-foreground"
+                              }`}
+                            >
+                              {draft.length} / 1000
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </li>
                 );

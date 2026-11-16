@@ -18,7 +18,7 @@ export default function NotFound() {
             Go home
           </Link>
         }
-        description="The page you're looking for doesn't exist or was moved."
+        description="This page doesn't exist."
         icon={Compass}
         title="Page not found"
       />
