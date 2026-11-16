@@ -1,7 +1,7 @@
-﻿import type { LucideIcon } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
-/** Canonical empty/error presentation â€” icon tile, title, hint, optional action. */
+/** Canonical empty/error presentation — icon tile, title, hint, optional action. */
 export function EmptyState({
   icon: Icon,
   title,

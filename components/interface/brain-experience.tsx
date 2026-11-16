@@ -109,7 +109,7 @@ export function BrainExperience({
           <button
             aria-busy={saving}
             aria-label="Tidy with Mono AI"
-            className="grid size-7 place-items-center rounded-full border border-border text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+            className="grid size-7 place-items-center rounded-full border-2 border-border text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
             disabled={saving || open.length < 2}
             onClick={() => void runTidy()}
             title={aiOn ? "Tidy — dedupe & tighten" : "Mono AI is off — enable it in Settings"}
@@ -239,7 +239,7 @@ function TaskRow({
         aria-pressed={done}
         aria-label={done ? "Mark not done" : "Mark done"}
         className={cn(
-          "mt-[3px] grid size-5 shrink-0 place-items-center rounded-full border border-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring",
+          "mt-[3px] grid size-5 shrink-0 place-items-center rounded-full border-2 border-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring",
           done ? "bg-foreground text-background" : "bg-transparent",
         )}
         onClick={onToggle}

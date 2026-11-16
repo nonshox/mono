@@ -127,7 +127,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
           </span>
           <p className="text-sm font-semibold text-foreground">Nothing written yet</p>
           <p className="max-w-xs text-xs leading-relaxed text-foreground">
-            Your days gather here in order â€” write your first dot on the home page.
+            Your days gather here in order — write your first dot on the home page.
           </p>
           <Link
             className="mt-1 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
@@ -143,7 +143,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
   return (
     <main className="min-h-full w-full bg-background px-4 pb-20 pt-6 sm:px-6 sm:pt-10">
       <div className="mx-auto w-full max-w-2xl md:max-w-3xl">
-        {/* Search-within â€” the only chrome on the page */}
+        {/* Search-within — the only chrome on the page */}
         <div className="flex items-center gap-2 pb-2 pt-1">
           <Search
             aria-hidden="true"
@@ -157,7 +157,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
             onKeyDown={(event) => {
               if (event.key === "Escape") setQuery("");
             }}
-            placeholder="Search your journalâ€¦"
+            placeholder="Search your journal…"
             spellCheck={false}
             value={query}
           />
@@ -194,7 +194,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                 </button>
                 {index < themes.length - 1 && (
                   <span aria-hidden="true" className="type-label text-foreground">
-                    Â·
+                    ·
                   </span>
                 )}
               </span>
@@ -204,7 +204,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
 
         {groups.length === 0 && (
           <p className="px-0.5 py-10 text-center text-sm text-foreground">
-            No days match â€œ{trimmedQuery}â€.
+            No days match “{trimmedQuery}”.
           </p>
         )}
 
@@ -223,7 +223,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                 return (
                   <li key={entry.day}>
                     {!isExpanded ? (
-                      /* Collapsed â€” nothing but the words; tap to open */
+                      /* Collapsed — nothing but the words; tap to open */
                       <button
                         aria-expanded={false}
                         aria-label={`Open ${entry.day}`}
@@ -249,8 +249,8 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                         </p>
                       </button>
                     ) : (
-                      /* Expanded â€” separate solid card in place: date, words, actions */
-                      <div className="min-w-0 overflow-hidden rounded-2xl border border-border/70 bg-popover shadow-md shadow-foreground/5">
+                      /* Expanded — separate solid card in place: date, words, actions */
+                      <div className="min-w-0 overflow-hidden rounded-2xl border-2 border-border/80 bg-popover">
                             <div className="flex items-center justify-between gap-3 border-b border-border/50 py-1.5 pl-3.5 pr-1.5">
                               <p className="type-label">{fullLabel(entry.day)}</p>
                               <button

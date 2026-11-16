@@ -1,8 +1,8 @@
-﻿type UserAvatarProps = {
+type UserAvatarProps = {
   name?: string;
   size?: number;
   className?: string;
-  /** Ignored in this base build â€” kept so avatar code can be re-added later. */
+  /** Ignored in this base build — kept so avatar code can be re-added later. */
   avatar?: string | null;
 };
 

@@ -1,4 +1,4 @@
-﻿import { Pencil, Mail, CalendarDays } from "lucide-react";
+import { Pencil, Mail, CalendarDays } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { getCurrentAccount } from "@/features/auth/session";
@@ -86,7 +86,7 @@ async function AuthenticatedProfile() {
         </dl>
 
         <p className="mt-6 text-xs leading-5 text-foreground">
-          This is the generic base profile. Wire your productâ€™s data in here when you build the next thing.
+          This is the generic base profile. Wire your product’s data in here when you build the next thing.
         </p>
       </div>
     </main>

@@ -5,26 +5,27 @@
 
 :root {
   color-scheme: light;
-  /* Crisp white Mono — professional, neutral, clean. */
-  --background: #ffffff;
-  --foreground: #111111;
+  /* Crisp mono — bold ink, precise hairlines, glass depth via alpha not shadow. */
+  --background: #f7f7f8;
+  --foreground: #0a0a0a;
   --card: #ffffff;
-  --card-foreground: #111111;
+  --card-foreground: #0a0a0a;
   --popover: #ffffff;
-  --popover-foreground: #111111;
-  --primary: #111111;
+  --popover-foreground: #0a0a0a;
+  --primary: #0a0a0a;
   --primary-foreground: #ffffff;
-  --secondary: #f6f6f7;
-  --secondary-foreground: #111111;
-  --muted: #f6f6f7;
-  --muted-foreground: #555760;
-  --accent: #f0f0f1;
-  --accent-foreground: #111111;
+  --secondary: #efeff1;
+  --secondary-foreground: #0a0a0a;
+  --muted: #f1f1f3;
+  --muted-foreground: #4b4b52;
+  --accent: #ececef;
+  --accent-foreground: #0a0a0a;
   --destructive: #d92d20;
-  --border: #e9e9ea;
-  --input: #e9e9ea;
-  --ring: #111111;
+  --border: rgb(10 10 10 / 0.09);
+  --input: rgb(10 10 10 / 0.09);
+  --ring: #0a0a0a;
   --editorial: #e6392b;
+  --radius: 0.875rem;
   --chart-1: #111111;
   --chart-2: #555760;
   --chart-3: #8f919a;
@@ -50,24 +51,24 @@
 
 .dark {
   color-scheme: dark;
-  /* Night black — true OLED black, neutral greys, zero warm tones. */
+  /* Night black — true OLED black, precise low-alpha glass lines, bold type. */
   --background: #000000;
   --foreground: #f5f5f5;
-  --card: #0f0f0f;
+  --card: #0d0d0d;
   --card-foreground: #f5f5f5;
-  --popover: #0f0f0f;
+  --popover: #0d0d0d;
   --popover-foreground: #f5f5f5;
   --primary: #f5f5f5;
-  --primary-foreground: #0a0a0a;
-  --secondary: #141414;
+  --primary-foreground: #050505;
+  --secondary: #131313;
   --secondary-foreground: #f5f5f5;
-  --muted: #161616;
+  --muted: #141414;
   --muted-foreground: #a3a3a3;
-  --accent: #1c1c1c;
+  --accent: #1b1b1b;
   --accent-foreground: #f5f5f5;
   --destructive: #f2685d;
-  --border: #262626;
-  --input: #262626;
+  --border: rgb(255 255 255 / 0.09);
+  --input: rgb(255 255 255 / 0.09);
   --ring: #f5f5f5;
   --editorial: #ff6b4a;
   --chart-1: #f5f5f5;
@@ -159,6 +160,7 @@ body {
   min-height: 100%;
   margin: 0;
   font-family: var(--font-system);
+  font-weight: 500;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }

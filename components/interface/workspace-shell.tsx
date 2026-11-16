@@ -132,7 +132,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           </Link>
 
           {/* Center pill â€” desktop primary nav */}
-          <nav aria-label="Primary" className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-full border border-border/60 bg-muted/60 p-1 md:flex">
+          <nav aria-label="Primary" className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-full border-2 border-border bg-muted/60 p-1 md:flex">
             {([
               { href: "/", icon: House, label: "Home" },
               { href: "/journal", icon: BookOpenText, label: "Journal" },
@@ -145,7 +145,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                   aria-current={active ? "page" : undefined}
                   className={`flex h-6 items-center gap-1.5 rounded-full px-3 text-xs font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-ring ${
                     active
-                      ? "bg-background text-foreground shadow-sm"
+                      ? "bg-foreground text-background"
                       : "text-foreground hover:text-foreground"
                   }`}
                   href={href}
@@ -330,7 +330,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       <div className="pointer-events-none sticky bottom-3 z-30 flex justify-center px-4 pb-[max(env(safe-area-inset-bottom),0.25rem)] lg:hidden">
         <nav
           aria-label="Primary"
-          className="pointer-events-auto flex h-12 items-stretch gap-0.5 rounded-full border border-border/70 bg-background/75 px-1 backdrop-blur-xl"
+          className="pointer-events-auto flex h-12 items-stretch gap-0.5 rounded-full border-2 border-border bg-background/75 px-1 backdrop-blur-xl"
         >
           {([
             { href: "/", icon: House, label: "Home" },
@@ -362,5 +362,6 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     </>
   );
 }
+
 
 

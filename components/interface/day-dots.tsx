@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Popover } from "@base-ui/react/popover";
 import {
@@ -330,7 +330,7 @@ export function DayDots({
       {showResults && (
         <div
           aria-live="polite"
-          className="mt-2 max-h-64 divide-y divide-border/50 overflow-y-auto rounded-xl border border-border/60"
+          className="mt-2 max-h-64 divide-y divide-border/50 overflow-y-auto rounded-xl border-2 border-border"
         >
           {searching ? (
             <p className="px-3 py-3 text-xs text-foreground">Searchingâ€¦</p>
@@ -373,7 +373,7 @@ export function DayDots({
               aria-label={`${longLabel(day)} â€” ${isFilled ? "written" : isFuture ? "upcoming" : "empty"}`}
               aria-pressed={isFilled}
               className={cn(
-                "size-[1.05rem] rounded-full border outline-none transition-all duration-150 focus-visible:ring-2 focus-visible:ring-ring sm:size-[1.15rem]",
+                "size-[1.05rem] rounded-full border-2 border-foreground/35 bg-transparent outline-none transition-all duration-150 focus-visible:ring-2 focus-visible:ring-ring sm:size-[1.2rem]",
                 isFilled
                   ? "border-foreground bg-foreground hover:scale-110"
                   : "border-foreground/30 bg-transparent hover:scale-110 hover:border-foreground/70",
@@ -413,7 +413,7 @@ export function DayDots({
           >
             <Popover.Popup
               aria-label={openDay ? longLabel(openDay) : undefined}
-              className="z-50 w-72 max-w-[calc(100vw-2rem)] rounded-2xl border border-border/70 bg-popover/80 p-3.5 shadow-xl shadow-foreground/10 outline-none backdrop-blur-xl"
+              className="z-50 w-72 max-w-[calc(100vw-2rem)] rounded-2xl border-2 border-border/80 bg-popover/90 p-3.5 outline-none backdrop-blur-xl"
             >
               <div className="flex items-start justify-between gap-3">
                 <Popover.Title className="text-sm font-semibold leading-5 text-foreground">
@@ -526,7 +526,7 @@ export function DayDots({
                           Two or three words is plenty for a day like this.
                         </p>
                         <button
-                          className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-border px-3.5 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                          className="mt-2 inline-flex items-center gap-1.5 rounded-full border-2 border-border px-3.5 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
                           onClick={() => setEditing(true)}
                           type="button"
                         >
@@ -563,6 +563,7 @@ export function DayDots({
     </section>
   );
 }
+
 
 
 

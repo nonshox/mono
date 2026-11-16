@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import {
   ArrowLeft,
@@ -13,7 +13,7 @@ import { useUserStore } from "@/features/users/store";
 import { getApiErrorMessage } from "@/lib/api-client";
 import Link from "next/link";
 
-/** Ultra-minimal editor â€” name, nothing else. */
+/** Ultra-minimal editor — name, nothing else. */
 export function ProfileEditor() {
   const router = useRouter();
   const loadUser = useUserStore((state) => state.load);
@@ -111,7 +111,7 @@ export function ProfileEditor() {
               <span className="min-w-0 flex-1 truncate">{email}</span>
             </div>
             <p className="mt-1 text-xs text-foreground">
-              Tied to your sign-in â€” can&apos;t be changed here.
+              Tied to your sign-in — can&apos;t be changed here.
             </p>
           </div>
 

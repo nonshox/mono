@@ -240,7 +240,7 @@ export function SettingsExperience({
                 </p>
               </div>
               <button
-                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-border px-3.5 text-xs font-semibold text-foreground outline-none transition hover:bg-muted disabled:opacity-40"
+                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border-2 border-border px-3.5 text-xs font-semibold text-foreground outline-none transition hover:bg-muted disabled:opacity-40"
                 disabled={telegramPending || loadingTelegram}
                 onClick={() => void toggleTelegram()}
                 type="button"
@@ -309,7 +309,7 @@ export function SettingsExperience({
               >
                 <span
                   aria-hidden="true"
-                  className={`absolute left-0.5 top-0.5 size-5 rounded-full bg-background shadow transition-transform ${
+                  className={`absolute left-0.5 top-0.5 size-5 rounded-full bg-secondary outline-none transition-transform ${
                     nudgeOn ? "translate-x-4" : "translate-x-0"
                   }`}
                 />
@@ -345,7 +345,7 @@ export function SettingsExperience({
               >
                 <span
                   aria-hidden="true"
-                  className={`absolute left-0.5 top-0.5 size-5 rounded-full bg-background shadow transition-transform ${
+                  className={`absolute left-0.5 top-0.5 size-5 rounded-full bg-secondary outline-none transition-transform ${
                     aiOn ? "translate-x-4" : "translate-x-0"
                   }`}
                 />
@@ -434,7 +434,7 @@ export function SettingsExperience({
             {aiOn ? (
               <button
                 aria-busy={reviewLoading}
-                className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-4 text-xs font-semibold text-foreground outline-none transition hover:bg-muted disabled:opacity-40"
+                className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-full border-2 border-border px-4 text-xs font-semibold text-foreground outline-none transition hover:bg-muted disabled:opacity-40"
                 disabled={reviewLoading}
                 onClick={() => void generateReview()}
                 type="button"
@@ -452,7 +452,7 @@ export function SettingsExperience({
               </p>
             )}
             {review && (
-              <div className="mt-3 rounded-2xl border border-border/70 bg-popover p-4 shadow-sm">
+              <div className="mt-3 rounded-2xl border-2 border-border bg-popover p-4">
                 <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">
                   {review}
                 </p>
@@ -518,6 +518,9 @@ export function SettingsExperience({
     </main>
   );
 }
+
+
+
 
 
 
