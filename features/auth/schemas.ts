@@ -25,3 +25,18 @@ export const revokeSessionSchema = z
   })
   .strict();
 
+export const signInEmailFormSchema = z
+  .object({
+    email: z.string().trim().pipe(z.email("Enter a valid email address.").max(254)),
+  })
+  .strict();
+
+export const signInCodeFormSchema = z
+  .object({
+    code: z.string().regex(/^\d{6}$/, "Enter the 6-digit code."),
+  })
+  .strict();
+
+export type SignInEmailForm = z.infer<typeof signInEmailFormSchema>;
+export type SignInCodeForm = z.infer<typeof signInCodeFormSchema>;
+

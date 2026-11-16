@@ -10,12 +10,36 @@ export type DayRow = Models.Row & {
   user: string;
   day: string;
   text: string;
+  satisfied?: number | null;
 };
 
 export type DayEntry = {
   day: string;
   text: string;
+  /** End-of-day satisfaction percent (0–100), null if not set for that day. */
+  satisfied?: number | null;
 };
+
+/** Read satisfied for a specific day; null if no row / no value set. */
+export async function getDaySatisfied(
+  userId: string,
+  day: string,
+): Promise<number | null> {
+  const rowId = dayRowId(userId, day);
+  try {
+    const row = await getTables().getRow<DayRow>({
+      databaseId: getDatabaseId(),
+      tableId,
+      rowId,
+    });
+    return row.satisfied ?? null;
+  } catch (error) {
+    if (isNotFound(error)) {
+      return null;
+    }
+    throw error;
+  }
+}
 
 /** Deterministic row id — one row per user per day, upsertable by id. */
 export function dayRowId(userId: string, day: string): string {
@@ -33,12 +57,12 @@ export async function listYearEntries(
       Query.equal("user", userId),
       Query.greaterThanEqual("day", `${year}-01-01`),
       Query.lessThanEqual("day", `${year}-12-31`),
-      Query.select(["day", "text"]),
+      Query.select(["day", "text", "satisfied"]),
       Query.limit(400),
     ],
     total: false,
   });
-  return result.rows.map((row) => ({ day: row.day, text: row.text }));
+  return result.rows.map((row) => ({ day: row.day, text: row.text, satisfied: row.satisfied ?? null }));
 }
 
 export async function upsertDayEntry(
@@ -138,13 +162,13 @@ export async function listAllEntries(
     tableId,
     queries: [
       Query.equal("user", userId),
-      Query.select(["day", "text"]),
+      Query.select(["day", "text", "satisfied"]),
       Query.limit(5000),
     ],
     total: false,
   });
   return result.rows
-    .map((row) => ({ day: row.day, text: row.text }))
+    .map((row) => ({ day: row.day, text: row.text, satisfied: row.satisfied ?? null }))
     .sort((a, b) => a.day.localeCompare(b.day));
 }
 
@@ -178,17 +202,70 @@ export async function searchDayEntries(
     queries: [
       Query.equal("user", userId),
       Query.contains("text", query),
-      Query.select(["day", "text"]),
+      Query.select(["day", "text", "satisfied"]),
       Query.limit(50),
     ],
     total: false,
   });
   return result.rows
-    .map((row) => ({ day: row.day, text: row.text }))
+    .map((row) => ({ day: row.day, text: row.text, satisfied: row.satisfied ?? null }))
     .sort((a, b) => b.day.localeCompare(a.day))
     .slice(0, 20);
 }
 
+/** Write end-of-day satisfaction percent onto the day row (creates it if absent). */
+export async function setDaySatisfied(
+  userId: string,
+  day: string,
+  satisfied: number,
+): Promise<void> {
+  const tables = getTables();
+  const databaseId = getDatabaseId();
+  const rowId = dayRowId(userId, day);
+
+  try {
+    await tables.getRow<DayRow>({ databaseId, tableId, rowId });
+    await tables.updateRow<DayRow>({
+      databaseId,
+      tableId,
+      rowId,
+      data: { satisfied },
+    });
+    return;
+  } catch (error) {
+    if (!isNotFound(error)) {
+      throw error;
+    }
+  }
+
+  await tables.createRow<DayRow>({
+    databaseId,
+    tableId,
+    rowId,
+    permissions: [],
+    data: { user: userId, day, text: "", satisfied },
+  });
+}
+
+/** Clear end-of-day satisfaction for a day (used when user says "no"). */
+export async function clearDaySatisfied(
+  userId: string,
+  day: string,
+): Promise<void> {
+  const rowId = dayRowId(userId, day);
+  try {
+    await getTables().updateRow({
+      databaseId: getDatabaseId(),
+      tableId,
+      rowId,
+      data: { satisfied: null },
+    });
+  } catch (error) {
+    if (!isNotFound(error)) {
+      throw error;
+    }
+  }
+}
 /**
  * Same month-day in earlier years, newest first. `excludeYear` keeps the
  * currently-viewed year out of the list. At most 3 entries.
@@ -204,13 +281,13 @@ export async function listFlashbackEntries(
     queries: [
       Query.equal("user", userId),
       Query.contains("day", `-${monthDay}`),
-      Query.select(["day", "text"]),
+      Query.select(["day", "text", "satisfied"]),
       Query.limit(25),
     ],
     total: false,
   });
   return result.rows
-    .map((row) => ({ day: row.day, text: row.text }))
+    .map((row) => ({ day: row.day, text: row.text, satisfied: row.satisfied ?? null }))
     .filter((entry) => Number(entry.day.slice(0, 4)) !== excludeYear)
     .sort((a, b) => b.day.localeCompare(a.day))
     .slice(0, 3);

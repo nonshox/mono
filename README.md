@@ -26,10 +26,10 @@ npm run dev
 | `notifications` | `recipient`, `actor`, `type` (strings), `ref` (string, optional), `read` (bool) | key on `recipient` |
 | `telegram` | `user`, `member`, `chat` (strings), `created` (datetime) | unique on `user`, `member` |
 | `codes` | `user`, `hash` (strings), `expires` (datetime), `used` (bool) | unique on `hash` |
-| `days` | `user`, `day` (`YYYY-MM-DD`), `text` (≤1000) | key on `user` |
-| `tasks` | `user`, `text` (≤300), `done` (bool) | key on `user` |
+| `days` | `user`, `day` (`YYYY-MM-DD`), `text` (≤1000), `satisfied` (int, optional) | key on `user` |
+| `timeline` | `user`, `bucket`, `text`, `order`, `done` (bool) | key on `user` |
 
-Both `days` and `tasks` are created by `scripts/setup-days.mjs` (idempotent — also creates the `users` `nudge` and `ai` bool columns).
+Both `days` and `timeline` are created by `scripts/setup-days.mjs` (idempotent — also creates `users.nudge` and `users.ai` bool columns and `days.satisfied` int).
 
 `users` also needs a `nudge` (bool, default false) attribute for the optional evening Telegram nudge (`/api/cron/nudge`, Vercel cron at 20:00 UTC, requires `CRON_SECRET`) and an `ai` (bool, default false) attribute for the opt-in Mono AI (weekly letter via `/api/cron/letter` at 09:00 UTC Sunday, smarter nudge, year review in Settings — requires `GEMINI_API_KEY`).
 
@@ -51,7 +51,7 @@ Scripts: `dev` — `build` — `start` — `lint` — `test` — `typecheck` —
 - bell icon (navbar) — inbox panel: grouping, unread badge, mark read/all-read
 - `/` — greeting + **year in dots** (365-day journal: hollow dot, tap to write/edit/erase, “on this day” flashback, `/api/days*`)
 - `/journal` — reading mode (every entry as one book, year dividers, search-within + last-30-days themes, tap to expand as a card)
-- `/brain` — capture-to-do organ: dump "I need to…" lines, mic capture, check off, AI tidy (dedupe + rewrite, Mono AI gate), open-count nudge with Telegram
+- `/today` — minimal timeline: three fixed buckets (Rise · Midday · Evening), tap to tick/untick, "End of day" stores % of ticks as `days.satisfied` (0–100) on YES, or clears all ticks for tomorrow on NO
 - `/profile` — identity card (initials avatar, name, email, member since) + edit
 - `/settings` — account (sessions w/ revoke, Telegram connect, delete account)
 - Navbar everywhere — logo + bell icon (notifications open as a dropdown panel), account menu

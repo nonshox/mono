@@ -2,7 +2,9 @@
 
 import { ArrowLeft, LoaderCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +12,13 @@ import {
   requestEmailCode,
   verifyEmailCode,
 } from "@/features/auth/client-api";
-import { useNotificationStore } from "@/features/notifications/store";
+import {
+  signInCodeFormSchema,
+  signInEmailFormSchema,
+  type SignInCodeForm,
+  type SignInEmailForm,
+} from "@/features/auth/schemas";
+import { useClearNotifications } from "@/features/notifications/use-notifications";
 import { useUserStore } from "@/features/users/store";
 import { getApiErrorMessage } from "@/lib/api-client";
 
@@ -20,13 +28,23 @@ export function AuthExperience() {
   const router = useRouter();
   const next = useSearchParams().get("next");
   const [step, setStep] = useState<"email" | "code">("email");
-  const [email, setEmail] = useState("");
   const [userId, setUserId] = useState("");
-  const [code, setCode] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [cooldown, setCooldown] = useState(0);
-  const verifying = useRef(false);
+  const clearNotifications = useClearNotifications();
+
+  const emailForm = useForm<SignInEmailForm>({
+    resolver: zodResolver(signInEmailFormSchema),
+    defaultValues: { email: "" },
+    mode: "onSubmit",
+  });
+  const codeForm = useForm<SignInCodeForm>({
+    resolver: zodResolver(signInCodeFormSchema),
+    defaultValues: { code: "" },
+    mode: "onChange",
+  });
+  const codeValue = useWatch({ control: codeForm.control, name: "code" });
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -34,52 +52,67 @@ export function AuthExperience() {
     return () => clearInterval(id);
   }, [cooldown]);
 
-  const sendCode = async (event?: FormEvent<HTMLFormElement>) => {
-    event?.preventDefault();
+  const sendCode = async (email: string) => {
     if (pending) return;
     setPending(true);
     setError("");
-
     try {
       setUserId(await requestEmailCode(email.trim()));
-      setCode("");
+      codeForm.reset({ code: "" });
       setStep("code");
       setCooldown(RESEND_COOLDOWN_SECONDS);
     } catch (cause) {
-      setError(
-        getApiErrorMessage(cause, "Code not sent"),
-      );
+      setError(getApiErrorMessage(cause, "Code not sent"));
     } finally {
       setPending(false);
     }
   };
 
+  const onEmailSubmit = emailForm.handleSubmit((values) =>
+    sendCode(values.email),
+  );
+
+  const resend = async () => {
+    if (pending || cooldown > 0) return;
+    const email = emailForm.getValues("email");
+    if (!email) {
+      setStep("email");
+      return;
+    }
+    await sendCode(email);
+  };
+
   const verify = async (value: string) => {
-    if (verifying.current) return;
-    verifying.current = true;
+    if (pending) return;
     setPending(true);
     setError("");
 
     try {
       await verifyEmailCode(userId, value);
-      useNotificationStore.getState().reset();
+      clearNotifications();
       useUserStore.getState().reset();
       const target = next && next.startsWith("/") ? next : "/";
       router.replace(target);
     } catch (cause) {
-      setCode("");
+      codeForm.setValue("code", "", { shouldValidate: false });
       setError(getApiErrorMessage(cause, "Code not verified"));
-      verifying.current = false;
       setPending(false);
     }
   };
 
+  const onCodeSubmit = codeForm.handleSubmit((values) =>
+    verify(values.code),
+  );
+
   const backToEmail = () => {
     setStep("email");
-    setCode("");
+    codeForm.reset({ code: "" });
     setError("");
     setCooldown(0);
   };
+
+  const emailError = emailForm.formState.errors.email?.message;
+  const codeError = codeForm.formState.errors.code?.message;
 
   return (
     <main className="flex min-h-svh flex-col items-center justify-center bg-background px-6 py-12">
@@ -97,28 +130,34 @@ export function AuthExperience() {
             ) : (
               <>
                 Code sent to{" "}
-                <span className="font-medium text-foreground">{email}</span>
+                <span className="font-medium text-foreground">
+                  {emailForm.getValues("email")}
+                </span>
               </>
             )}
           </p>
         </header>
 
         {step === "email" ? (
-          <form className="grid gap-4" onSubmit={(event) => void sendCode(event)}>
+          <form className="grid gap-4" onSubmit={(event) => void onEmailSubmit(event)}>
             <div className="grid gap-1.5">
               <Label htmlFor="email">Email</Label>
               <Input
                 autoComplete="email"
                 autoFocus
+                aria-invalid={emailError ? true : undefined}
+                aria-describedby={emailError ? "email-error" : undefined}
                 id="email"
                 inputMode="email"
-                name="email"
                 spellCheck={false}
                 type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
+                {...emailForm.register("email")}
               />
+              {emailError && (
+                <p id="email-error" className="text-sm text-destructive">
+                  {emailError}
+                </p>
+              )}
             </div>
             {error && (
               <p className="text-sm text-destructive" role="alert">
@@ -128,7 +167,7 @@ export function AuthExperience() {
             <Button
               aria-busy={pending}
               className="h-10 w-full"
-              disabled={pending || !email.trim()}
+              disabled={pending}
               type="submit"
             >
               {pending && <LoaderCircle aria-hidden="true" className="animate-spin" />}
@@ -137,35 +176,45 @@ export function AuthExperience() {
           </form>
         ) : (
           <div className="grid gap-4">
-            <form
-              className="grid gap-4"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void verify(code);
-              }}
-            >
+            <form className="grid gap-4" onSubmit={(event) => void onCodeSubmit(event)}>
               <div className="grid gap-1.5">
                 <Label htmlFor="code">Six-digit code</Label>
-                <Input
-                  autoComplete="one-time-code"
-                  autoFocus
-                  className="h-12 text-center text-lg font-semibold tracking-[0.5em]"
-                  disabled={pending}
-                  id="code"
-                  inputMode="numeric"
-                  maxLength={6}
+                <Controller
+                  control={codeForm.control}
                   name="code"
-                  pattern="[0-9]{6}"
-                  value={code}
-                  onChange={(event) => {
-                    const value = event.target.value
-                      .replace(/\D/g, "")
-                      .slice(0, 6);
-                    setCode(value);
-                    if (value.length === 6) void verify(value);
-                  }}
-                  required
+                  render={({ field }) => (
+                    <Input
+                      autoComplete="one-time-code"
+                      autoFocus
+                      aria-invalid={codeError ? true : undefined}
+                      aria-describedby={codeError ? "code-error" : undefined}
+                      className="h-12 text-center text-lg font-semibold tracking-[0.5em]"
+                      disabled={pending}
+                      id="code"
+                      inputMode="numeric"
+                      maxLength={6}
+                      name={field.name}
+                      onBlur={field.onBlur}
+                      onChange={(event) => {
+                        const value = event.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 6);
+                        field.onChange(value);
+                        if (value.length === 6 && !pending) {
+                          void verify(value);
+                        }
+                      }}
+                      pattern="[0-9]{6}"
+                      ref={field.ref}
+                      value={field.value}
+                    />
+                  )}
                 />
+                {codeError && (
+                  <p id="code-error" className="text-sm text-destructive">
+                    {codeError}
+                  </p>
+                )}
               </div>
               {error && (
                 <p className="text-sm text-destructive" role="alert">
@@ -175,7 +224,7 @@ export function AuthExperience() {
               <Button
                 aria-busy={pending}
                 className="h-10 w-full"
-                disabled={pending || code.length !== 6}
+                disabled={pending || codeValue.length !== 6}
                 type="submit"
               >
                 {pending && <LoaderCircle aria-hidden="true" className="animate-spin" />}
@@ -196,7 +245,7 @@ export function AuthExperience() {
               <button
                 className="text-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
                 disabled={pending || cooldown > 0}
-                onClick={() => void sendCode()}
+                onClick={() => void resend()}
                 type="button"
               >
                 {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}
@@ -212,5 +261,3 @@ export function AuthExperience() {
     </main>
   );
 }
-
-

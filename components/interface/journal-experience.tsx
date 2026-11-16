@@ -3,6 +3,7 @@
 import { BookOpen, Check, Eraser, LoaderCircle, PenLine, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { deleteDay, saveDay, type DayEntry } from "@/features/days/client-api";
 import {
   groupJournalEntries,
@@ -27,8 +28,35 @@ function shortLabel(day: string): string {
 
 
 export function JournalExperience({ entries }: { entries: DayEntry[] }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const urlQuery = searchParams.get("q") ?? "";
+
   const [items, setItems] = useState(entries);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(urlQuery);
+  const [lastUrlQuery, setLastUrlQuery] = useState(urlQuery);
+
+  // Back/forward (or an external ?q= link) re-syncs the input during render.
+  if (lastUrlQuery !== urlQuery) {
+    setLastUrlQuery(urlQuery);
+    setQuery(urlQuery);
+  }
+
+  // Debounce the query into the URL so refresh/share restores the filter.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      const next = query.trim();
+      if (next) params.set("q", next);
+      else params.delete("q");
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname);
+    }, 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
   const [expandedDay, setExpandedDay] = useState<string | null>(null);
   const [editingDay, setEditingDay] = useState<string | null>(null);
   const [draft, setDraft] = useState("");

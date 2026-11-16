@@ -50,23 +50,43 @@ if (await tableExists("days")) {
   console.log("days: created (user, day, text + key on user)");
 }
 
-if (await tableExists("tasks")) {
-  console.log("tasks: already exists — keeping it");
+if (await tableExists("timeline")) {
+  console.log("timeline: already exists — keeping it");
 } else {
   await db.createTable({
     databaseId,
-    tableId: "tasks",
-    name: "tasks",
+    tableId: "timeline",
+    name: "timeline",
     permissions: [],
     columns: [
       { key: "user", type: "string", size: 36, required: true },
-      { key: "text", type: "string", size: 300, required: true },
+      { key: "bucket", type: "string", size: 8, required: true },
+      { key: "text", type: "string", size: 160, required: true },
+      { key: "order", type: "integer", required: true },
       { key: "done", type: "boolean", required: true },
     ],
     indexes: [{ key: "user", type: "key", attributes: ["user"], orders: ["ASC"] }],
   });
-  console.log("tasks: created (user, text, done + key on user)");
+  console.log("timeline: created (user, bucket, text, order, done + key on user)");
 }
+
+const dayColumns = await db.listColumns({ databaseId, tableId: "days" });
+const ensureIntegerColumn = async (key) => {
+  if (dayColumns.columns.some((column) => column.key === key)) {
+    console.log(`days.${key}: already exists — keeping it`);
+    return;
+  }
+  await db.createIntegerColumn({
+    databaseId,
+    tableId: "days",
+    key,
+    required: false,
+    xdefault: null,
+  });
+  console.log(`days.${key}: created (default null)`);
+};
+
+await ensureIntegerColumn("satisfied");
 
 const columns = await db.listColumns({ databaseId, tableId: "users" });
 const ensureBooleanColumn = async (key) => {

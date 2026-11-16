@@ -7,8 +7,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { saveUserName } from "@/features/users/client-api";
+import {
+  profileNameFormSchema,
+  type ProfileNameForm,
+} from "@/features/users/schemas";
 import { useUserStore } from "@/features/users/store";
 import { getApiErrorMessage } from "@/lib/api-client";
 import Link from "next/link";
@@ -18,11 +24,16 @@ export function ProfileEditor() {
   const router = useRouter();
   const loadUser = useUserStore((state) => state.load);
   const setUser = useUserStore((state) => state.setUser);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const storedEmail = useUserStore((state) => state.user?.email ?? "");
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [dirty, setDirty] = useState(false);
+
+  const form = useForm<ProfileNameForm>({
+    resolver: zodResolver(profileNameFormSchema),
+    defaultValues: { name: "" },
+    mode: "onSubmit",
+  });
+  const { isDirty, isSubmitting } = form.formState;
+  const nameError = form.formState.errors.name?.message;
 
   useEffect(() => {
     let active = true;
@@ -30,10 +41,7 @@ export function ProfileEditor() {
       .then(() => {
         if (!active) return;
         const current = useUserStore.getState().user;
-        if (current) {
-          setName(current.name);
-          setEmail(current.email);
-        }
+        if (current) form.reset({ name: current.name });
       })
       .catch(() => {
         if (active) toast.error("Profile unavailable");
@@ -44,14 +52,12 @@ export function ProfileEditor() {
     return () => {
       active = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadUser]);
 
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (saving || loading) return;
-    setSaving(true);
+  const onSubmit = form.handleSubmit(async (values) => {
     try {
-      const saved = await saveUserName(name.trim());
+      const saved = await saveUserName(values.name);
       setUser(saved);
       toast.success("Saved");
       router.push("/profile");
@@ -59,10 +65,8 @@ export function ProfileEditor() {
       toast.error(
         getApiErrorMessage(cause, "Profile not saved"),
       );
-    } finally {
-      setSaving(false);
     }
-  };
+  });
 
   return (
     <main className="min-h-full w-full bg-background px-4 pb-20 pt-5 sm:px-6 sm:pt-8">
@@ -81,7 +85,7 @@ export function ProfileEditor() {
           </h1>
         </header>
 
-        <form onSubmit={(event) => void submit(event)}>
+        <form onSubmit={(event) => void onSubmit(event)}>
           {/* Name */}
           <label className="block border-b border-border/60 py-4">
             <span className="type-eyebrow">
@@ -89,16 +93,19 @@ export function ProfileEditor() {
             </span>
             <input
               autoFocus
+              aria-invalid={nameError ? true : undefined}
+              aria-describedby={nameError ? "name-error" : undefined}
               className="mt-1 h-10 w-full border-0 bg-transparent p-0 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground"
               disabled={loading}
               maxLength={50}
-              onChange={(event) => {
-                setName(event.target.value);
-                setDirty(true);
-              }}
               placeholder="Your name"
-              value={name}
+              {...form.register("name")}
             />
+            {nameError && (
+              <p id="name-error" className="mt-1 text-xs text-destructive">
+                {nameError}
+              </p>
+            )}
           </label>
 
           {/* Email */}
@@ -108,7 +115,7 @@ export function ProfileEditor() {
             </span>
             <div className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-foreground">
               <Lock aria-hidden="true" className="size-3.5 shrink-0" strokeWidth={1.8} />
-              <span className="min-w-0 flex-1 truncate">{email}</span>
+              <span className="min-w-0 flex-1 truncate">{storedEmail}</span>
             </div>
             <p className="mt-1 text-xs text-foreground">
               Tied to your sign-in — can&apos;t be changed here.
@@ -119,10 +126,10 @@ export function ProfileEditor() {
           <div className="mt-6 flex items-center gap-3">
             <button
               className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-foreground text-xs font-semibold text-background outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30 sm:flex-none sm:px-8"
-              disabled={loading || saving || !dirty}
+              disabled={loading || isSubmitting || !isDirty}
               type="submit"
             >
-              {saving ? (
+              {isSubmitting ? (
                 <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
               ) : (
                 "Save changes"
@@ -140,7 +147,3 @@ export function ProfileEditor() {
     </main>
   );
 }
-
-
-
-

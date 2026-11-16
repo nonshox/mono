@@ -4,13 +4,13 @@ import {
   ArrowLeft,
   Bell,
   BookOpenText,
-  Brain as BrainIcon,
   ChevronRight,
   House,
   LogOut,
   Moon,
   Settings,
   Sun,
+  Sunrise,
   UserRound,
 } from "lucide-react";
 import Image from "next/image";
@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { logout } from "@/features/auth/client-api";
 import { useUserStore } from "@/features/users/store";
-import { useNotificationStore } from "@/features/notifications/store";
+import { useNotifications, useClearNotifications } from "@/features/notifications/use-notifications";
 import { notificationHref, relativeTime } from "@/lib/notification-link";
 import type { NotificationItem } from "@/features/notifications/client-api";
 import { UserAvatar } from "@/components/interface/user-avatar";
@@ -38,19 +38,21 @@ const breadcrumbs: Record<string, string> = {
   "/profile": "Profile",
   "/profile/edit": "Edit profile",
   "/journal": "Journal",
-  "/brain": "Brain",
+  "/today": "Today",
 };
 
 export function WorkspaceShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const unread = useNotificationStore((state) => state.unreadCount);
-  const items = useNotificationStore((state) => state.items);
-  const loading = useNotificationStore((state) => state.loading);
-  const loaded = useNotificationStore((state) => state.loaded);
-  const load = useNotificationStore((state) => state.load);
-  const markRead = useNotificationStore((state) => state.markRead);
-  const markAllRead = useNotificationStore((state) => state.markAllRead);
+  const {
+    items,
+    unreadCount: unread,
+    loading,
+    loaded,
+    markRead,
+    markAllRead,
+  } = useNotifications();
+  const clearNotifications = useClearNotifications();
   const user = useUserStore((state) => state.user);
   const loadUser = useUserStore((state) => state.load);
   const resetUser = useUserStore((state) => state.reset);
@@ -85,15 +87,14 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void loadUser();
-    void load();
-  }, [loadUser, load]);
+  }, [loadUser]);
 
   const signOut = async () => {
     try {
       await logout();
     } finally {
       resetUser();
-      useNotificationStore.getState().reset();
+      clearNotifications();
       router.replace("/auth");
       router.refresh();
     }
@@ -137,7 +138,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             {[
               { href: "/", icon: House, label: "Home" },
               { href: "/journal", icon: BookOpenText, label: "Journal" },
-              { href: "/brain", icon: BrainIcon, label: "Brain" },
+              { href: "/today", icon: Sunrise, label: "Today" },
             ].map(({ href, icon: Icon, label }) => {
               const active =
                 href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -394,7 +395,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           {[
             { href: "/", icon: House, label: "Home" },
             { href: "/journal", icon: BookOpenText, label: "Journal" },
-            { href: "/brain", icon: BrainIcon, label: "Brain" },
+            { href: "/today", icon: Sunrise, label: "Today" },
           ].map(({ href, icon: Icon, label }) => {
             const active =
               pathname === href ||
