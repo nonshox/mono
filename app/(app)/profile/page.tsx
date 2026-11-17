@@ -47,62 +47,69 @@ async function AuthenticatedProfile() {
     : null;
 
   return (
-    <main className="min-h-full w-full bg-background px-4 pb-20 pt-6 sm:px-6 sm:pt-8">
-      <div className="mx-auto w-full max-w-2xl md:max-w-3xl">
-        {/* Identity */}
-        <header className="flex items-center gap-4 border-b border-border/60 pb-5">
-          <UserAvatar
-            avatar={user?.avatar || undefined}
-            name={name || email}
-            size={72}
-          />
-          <div className="min-w-0 flex-1">
-            <h1 className="type-title truncate text-foreground">
-              {name || "Your name"}
-            </h1>
-            <p className="mt-0.5 truncate text-sm text-foreground">
-              {email}
-            </p>
-          </div>
-          <Link
-            aria-label="Edit profile"
-            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-            href="/profile/edit"
-          >
-            <Pencil aria-hidden="true" className="size-4" strokeWidth={1.8} />
-          </Link>
+    <main className="min-h-full w-full bg-background px-3 pb-24 pt-5 sm:px-6 sm:pt-8">
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 md:max-w-3xl">
+        <header className="px-1">
+          <h1 className="type-title text-foreground">Profile</h1>
         </header>
 
-        {/* Details */}
-        <dl className="divide-y divide-border/60 border-b border-border/60">
-          <div className="flex items-center gap-3 py-3">
-            <Mail aria-hidden="true" className="size-4 shrink-0 text-foreground" strokeWidth={1.8} />
-            <div className="min-w-0">
-              <dt className="type-eyebrow">
-                Email
-              </dt>
-              <dd className="mt-0.5 truncate text-xs font-medium text-foreground">{email}</dd>
+        <section
+          aria-label="Profile"
+          className="rounded-2xl border-2 border-border/70 bg-popover"
+        >
+          {/* Identity */}
+          <div className="flex items-center gap-4 px-4 pt-4 sm:px-6 sm:pt-6">
+            <UserAvatar
+              avatar={user?.avatar || undefined}
+              name={name || email}
+              size={76}
+            />
+            <div className="min-w-0 flex-1">
+              <h2 className="type-section truncate text-foreground">
+                {name || "Your name"}
+              </h2>
             </div>
+            <Link
+              aria-label="Edit profile"
+              className="grid size-10 shrink-0 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+              href="/profile/edit"
+            >
+              <Pencil
+                aria-hidden="true"
+                className="size-[18px]"
+                strokeWidth={1.8}
+              />
+            </Link>
           </div>
+
+          {/* Email */}
+          <div className="my-4 flex items-center gap-3 border-t border-border/60 px-4 pt-3 sm:px-6 sm:pt-4">
+            <Mail
+              aria-hidden="true"
+              className="size-4 shrink-0 text-foreground"
+              strokeWidth={1.8}
+            />
+            <p className="min-w-0 break-all text-sm leading-5 text-foreground">{email}</p>
+          </div>
+
+          {/* Member since */}
           {joined && (
-            <div className="flex items-center gap-3 py-3">
-              <CalendarDays aria-hidden="true" className="size-4 shrink-0 text-foreground" strokeWidth={1.8} />
-              <div className="min-w-0">
-                <dt className="type-eyebrow">
-                  Member since
-                </dt>
-                <dd className="mt-0.5 text-xs font-medium text-foreground">{joined}</dd>
-              </div>
+            <div className="flex items-center gap-3 border-t border-border/60 px-4 py-3 sm:px-6 sm:py-4">
+              <CalendarDays
+                aria-hidden="true"
+                className="size-4 shrink-0 text-foreground"
+                strokeWidth={1.8}
+              />
+              <p className="text-sm leading-5 text-foreground">
+                Member since <span className="font-semibold">{joined}</span>
+              </p>
             </div>
           )}
-        </dl>
 
-        {/* Actions — what you're actively doing */}
-        <ActionsEditor initial={actions} />
+          {/* Actions */}
+          <ActionsEditor initial={actions} />
+        </section>
       </div>
     </main>
   );
 }
-
-
-

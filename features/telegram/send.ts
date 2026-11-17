@@ -42,6 +42,7 @@ async function callTelegramSendApi(
           body: JSON.stringify({
             chat_id: chatId,
             text,
+            parse_mode: "HTML",
             ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
           }),
           signal: AbortSignal.timeout(8_000),

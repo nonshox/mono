@@ -26,13 +26,12 @@
   --input: rgb(10 10 10 / 0.09);
   --ring: #0a0a0a;
   --editorial: #096876;
-  --radius: 0.875rem;
+  --radius: 0.625rem;
   --chart-1: #111111;
   --chart-2: #555760;
   --chart-3: #8f919a;
   --chart-4: #c4c4c7;
   --chart-5: #e8e8e9;
-  --radius: 0.625rem;
   --badge: #e6392b;
   --sidebar: #faf9f6;
   --sidebar-foreground: #1a1a18;

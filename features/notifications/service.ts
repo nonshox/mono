@@ -12,7 +12,6 @@ export type NotificationRow = Models.Row & {
   user: string;
   kind: NotificationKind;
   body: string;
-  ref: string | null;
   read: boolean;
 };
 
@@ -32,7 +31,6 @@ export async function listNotifications(
         id: row.$id,
         kind: row.kind,
         body: row.body,
-        ref: row.ref ?? null,
         createdAt: row.$createdAt,
         read: row.read,
       }))
@@ -152,13 +150,12 @@ export async function createNotification(
   userId: string,
   kind: NotificationKind,
   body: string,
-  ref?: string,
 ): Promise<void> {
-  await getTables().createRow<NotificationRow>({
+  await getTables().createRow({
     databaseId: getDatabaseId(),
     tableId: notificationsTableId,
     rowId: ID.unique(),
     permissions: [],
-    data: { user: userId, kind, body, ref: ref ?? "", read: false },
+    data: { user: userId, kind, body, read: false },
   });
 }

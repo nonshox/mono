@@ -1,8 +1,13 @@
 import type { NotificationItem } from "@/features/notifications/client-api";
 
-/** Where a notification should take you when tapped. */
+/** Where a notification should take you when tapped — derived from its kind. */
 export function notificationHref(item: NotificationItem): string {
-  return item.ref?.startsWith("/") ? item.ref : "/check";
+  switch (item.kind) {
+    case "letter_ready":
+      return "/journal";
+    default:
+      return "/";
+  }
 }
 
 export function relativeTime(value: string): string {

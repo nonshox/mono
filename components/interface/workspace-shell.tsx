@@ -264,7 +264,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             <div className="mx-auto flex h-8 max-w-7xl items-center gap-1 px-2 text-xs text-foreground sm:px-4">
               <Link
                 aria-label="Back to home"
-                className="grid size-6 place-items-center rounded-md outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                className="grid size-8 place-items-center rounded-md outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                 href="/"
               >
                 <ArrowLeft
@@ -275,7 +275,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
               </Link>
               <Link
                 aria-label="Home"
-                className="grid size-6 place-items-center rounded-md text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                className="grid size-8 place-items-center rounded-md text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                 href="/"
               >
                 <House

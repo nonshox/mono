@@ -19,8 +19,8 @@ describe("compileLetter", () => {
       entries(["Berlin trip booked", "Berlin coffee with Sam", "thinking Berlin again"]),
     );
     expect(letter).toContain("3 days");
-    expect(letter).toContain("Themes: berlin");
-    expect(letter.trimEnd().endsWith("Your week")).toBe(true);
+    expect(letter).toContain("themes · berlin");
+    expect(letter.trimEnd().endsWith("Your week</i>")).toBe(true);
   });
 
   it("handles an empty week without throwing", () => {
@@ -34,7 +34,7 @@ describe("compileYear", () => {
       entries(["Berlin trip booked", "Deep work all day"]),
     );
     expect(letter).toContain("2 days");
-    expect(letter.trimEnd().endsWith("Your year")).toBe(true);
+    expect(letter.trimEnd().endsWith("Your year</i>")).toBe(true);
   });
 
   it("handles an empty year without throwing", () => {

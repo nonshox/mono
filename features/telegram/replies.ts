@@ -5,6 +5,7 @@ import {
   listRecentEntries,
   appendToDay,
 } from "@/features/days/service";
+import { esc } from "@/lib/escape";
 import { listTimeline } from "@/features/check/service";
 import { userDay } from "@/lib/dates";
 import { getUserRow } from "@/features/users/service";
@@ -27,13 +28,16 @@ export function formatCheck(items: TimelineItem[]): string {
       .sort((a, b) => a.order - b.order);
     const done = bucketItems.filter((item) => item.done).length;
     doneTotal += done;
-    lines.push(`${BUCKET_HEADING[bucket]} — ${done}/${bucketItems.length}`);
-    for (const item of bucketItems) {
-      lines.push(`${item.done ? "✓" : "○"} ${item.text}`);
+    if (bucketItems.length > 0) {
+      lines.push(`<b>${BUCKET_HEADING[bucket]} · ${done}/${bucketItems.length}</b>`);
+      for (const item of bucketItems) {
+        lines.push(`${item.done ? "✓" : "○"} ${esc(item.text)}`);
+      }
+      if (bucket !== BUCKETS[BUCKETS.length - 1]) lines.push("");
     }
   }
   lines.push("");
-  lines.push(`${doneTotal}/${items.length} done`);
+  lines.push(`<i>${doneTotal}/${items.length} done</i>`);
   return lines.join("\n");
 }
 
@@ -83,12 +87,13 @@ export async function replyCapture(
   const today = userDay(user?.tz ?? null);
   try {
     await appendToDay(userId, today, text);
+    const preview = text.length > 80 ? `${text.slice(0, 80)}…` : text;
     await send(
       chatId,
-      `Saved today: “${text.length > 80 ? `${text.slice(0, 80)}…` : text}”`,
+      `<b>Saved</b> · ${esc(preview)}`,
       [{ text: "Open Mono", webApp: `${origin}/` }],
     );
   } catch {
-    await send(chatId, "Today's entry is full — open Mono to edit it.", []);
+    await send(chatId, "<b>Today is full</b>\n1000 characters — edit in the app.", []);
   }
 }

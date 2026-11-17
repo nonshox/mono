@@ -428,7 +428,7 @@ function TimelineRow({
         aria-pressed={item.done}
         aria-label={item.done ? "Mark not done" : "Mark done"}
         className={cn(
-          "mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border-2 border-foreground bg-background outline-none transition focus-visible:ring-1 focus-visible:ring-ring",
+          "mt-0.5 grid size-6 shrink-0 place-items-center rounded-full border-2 border-foreground bg-background outline-none transition focus-visible:ring-2 focus-visible:ring-ring",
           item.done && "bg-foreground text-background",
         )}
         onClick={onToggle}

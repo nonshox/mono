@@ -41,12 +41,7 @@ export async function POST(request: Request) {
     const day = todayDay(user?.tz ?? null);
     const previousSatisfied = await getDaySatisfied(auth.account.$id, day);
     await setDaySatisfied(auth.account.$id, day, parsed.data.satisfied);
-    notifyDayClosed(
-      auth.account.$id,
-      day,
-      parsed.data.satisfied,
-      previousSatisfied,
-    );
+    notifyDayClosed(auth.account.$id, parsed.data.satisfied, previousSatisfied);
     return NextResponse.json({ ok: true });
   } catch (error) {
     logFailure("Check satisfy", error);

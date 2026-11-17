@@ -53,7 +53,6 @@ const columnSpecs = [
   ["user", (id, t) => db.createStringColumn({ databaseId: id, tableId: t, key: "user", size: 36, required: true })],
   ["kind", (id, t) => db.createStringColumn({ databaseId: id, tableId: t, key: "kind", size: 32, required: true })],
   ["body", (id, t) => db.createStringColumn({ databaseId: id, tableId: t, key: "body", size: 280, required: true })],
-  ["ref", (id, t) => db.createStringColumn({ databaseId: id, tableId: t, key: "ref", size: 200, required: false })],
   ["read", (id, t) => db.createBooleanColumn({ databaseId: id, tableId: t, key: "read", required: true })],
 ];
 
@@ -131,4 +130,4 @@ for (const [key, columns] of missingIndexes) {
   await db.createIndex({ databaseId, tableId, key, type: "key", columns });
   console.log(`created index ${key} on [${columns.join(", ")}]`);
 }
-console.log("notifications rebuilt: user, kind, body, ref, read");
+console.log("notifications rebuilt: user, kind, body, read");

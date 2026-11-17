@@ -1,4 +1,5 @@
 import { extractThemes } from "@/features/days/themes";
+import { esc } from "@/lib/escape";
 
 export type DigestEntry = { day: string; text: string; satisfied?: number | null };
 
@@ -20,19 +21,23 @@ const fmtDay = (day: string) =>
   }).format(new Date(`${day}T00:00:00.000Z`));
 
 const themeLine = (themes: Array<{ label: string }>) =>
-  themes.length > 0 ? `Themes: ${themes.slice(0, 4).map((theme) => theme.label).join(" · ")}.` : null;
+  themes.length > 0
+    ? `themes · ${themes.slice(0, 4).map((theme) => esc(theme.label)).join(" · ")}`
+    : null;
 
-const satisfactionLine = (entries: DigestEntry[]) => {
-  const rated = entries.flatMap((entry) => (entry.satisfied != null ? [entry.satisfied] : []));
+const satisfactionLine = (entries: DigestEntry[], label = "satisfaction") => {
+  const rated = entries.flatMap((entry) =>
+    entry.satisfied != null ? [entry.satisfied] : [],
+  );
   if (rated.length === 0) return null;
   const avg = Math.round(rated.reduce((sum, value) => sum + value, 0) / rated.length);
-  return `Satisfaction averaged ${avg}% across ${rated.length} closed ${rated.length === 1 ? "day" : "days"}.`;
+  return `${label} · ${avg}% avg over ${rated.length} ${rated.length === 1 ? "day" : "days"}`;
 };
 
 /** Your week, compiled from what you actually wrote. Signed "Your week". */
 export function compileLetter(entries: DigestEntry[]): string {
   if (entries.length === 0) {
-    return "Your week — you didn't write a word. The dot will wait for you.\n\nYour week";
+    return "<b>Your week</b>\nempty — the dot will wait for you.\n\n<i>Your week</i>";
   }
   const totalWords = entries.reduce((sum, entry) => sum + wordsOf(entry.text), 0);
   const longest = [...entries].sort((a, b) => wordsOf(b.text) - wordsOf(a.text))[0];
@@ -44,13 +49,13 @@ export function compileLetter(entries: DigestEntry[]): string {
     .sort((a, b) => wordsOf(b) - wordsOf(a))[0];
 
   const lines = [
-    `Your week — ${entries.length} ${entries.length === 1 ? "day" : "days"} written, ${totalWords} words.`,
-    `Longest day: ${fmtDay(longest.day)} (${wordsOf(longest.text)} words).`,
+    `<b>Your week</b> · ${entries.length} ${entries.length === 1 ? "day" : "days"} · ${totalWords} words`,
+    `longest day · ${esc(fmtDay(longest.day))} · ${wordsOf(longest.text)} words`,
     themeLine(themes),
     satisfactionLine(entries),
-    bestLine ? `The line to keep: “${bestLine}”` : null,
+    bestLine ? `<i>“${esc(bestLine)}”</i>` : null,
     "",
-    "Your week",
+    "<i>Your week</i>",
   ].filter((line): line is string => line !== null);
   return lines.join("\n");
 }
@@ -58,7 +63,7 @@ export function compileLetter(entries: DigestEntry[]): string {
 /** Your year, compiled from what you actually wrote. Signed "Your year". */
 export function compileYear(entries: DigestEntry[]): string {
   if (entries.length === 0) {
-    return "Your year — nothing written yet. Every entry is a dot on the wall; start one.\n\nYour year";
+    return "<b>Your year</b>\nempty — every dot starts with a line.\n\n<i>Your year</i>";
   }
   const byMonth = new Map<string, DigestEntry[]>();
   for (const entry of entries) {
@@ -95,13 +100,13 @@ export function compileYear(entries: DigestEntry[]): string {
     .join(" · ");
 
   const lines = [
-    `Your year — ${entries.length} days written, ${totalWords} words.`,
-    best ? `Best stretch: ${monthLabel(best.month)} (${best.avg}%).` : null,
-    `Month by month: ${monthShape}.`,
+    `<b>Your year</b> · ${entries.length} days · ${totalWords} words`,
+    best ? `best stretch · ${monthLabel(best.month)} (${best.avg}%)` : null,
+    `months · ${monthShape}`,
     themeLine(themes),
     satisfactionLine(entries),
     "",
-    "Your year",
+    "<i>Your year</i>",
   ].filter((line): line is string => line !== null);
   return lines.join("\n");
 }
@@ -123,7 +128,7 @@ const NUDGE_BANK = [
 export function nudgeQuestionFor(entries: DigestEntry[], seed: number): string {
   const themes = extractThemes(entries, 1);
   if (themes[0]) {
-    return `${themes[0].label} keeps coming up for you — how did today go?`;
+    return `<i>${esc(themes[0].label)}</i> keeps coming up — how did today go?`;
   }
   return NUDGE_BANK[seed % NUDGE_BANK.length];
 }

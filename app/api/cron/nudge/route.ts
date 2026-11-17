@@ -106,7 +106,7 @@ export async function GET(request: Request) {
 
       // Bell goes regardless of Telegram outcome — a soft 10:00pm marker.
       try {
-        await createNotification(target.id, "day_ending", BELL_BODY, "/");
+        await createNotification(target.id, "day_ending", BELL_BODY);
       } catch (error) {
         logFailure("Nudge bell", error);
       }

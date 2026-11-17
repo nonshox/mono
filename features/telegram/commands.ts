@@ -45,16 +45,13 @@ export function classifyTelegramText(text: string): TelegramIntent {
 }
 
 export const TELEGRAM_HELP = [
-  "Mono bot.",
-  "",
-  "/check — your three buckets and tick counts",
-  "/week — your week, compiled",
-  "or just send me a line and I'll save it to today's dot.",
-  "",
-  "Not connected yet? In the app: Settings → Telegram → Connect, then use the link it gives you.",
+  "<b>Mono</b>",
+  "<i>/check</i> — your three blocks",
+  "<i>/week</i> — your week, your words",
+  "or just send a line → saves to today",
 ].join("\n");
 
 export const TELEGRAM_NOT_LINKED = [
-  "You're not connected to Mono yet.",
-  "In the app: Settings → Telegram → Connect, then tap the link it gives you — it jumps straight here.",
+  "<b>Not connected</b>",
+  "In the app: Settings → Telegram → Connect",
 ].join("\n");

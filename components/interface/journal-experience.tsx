@@ -185,7 +185,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
           />
           <input
             aria-label="Search your journal"
-            className="h-6 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            className="h-8 w-full bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground md:text-sm"
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Escape") setQuery("");
