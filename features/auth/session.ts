@@ -5,6 +5,31 @@ import {
   getSessionCookieName,
 } from "@/lib/appwrite/server";
 
+function isTransient(error: unknown): boolean {
+  // Appwrite network is down / unreachable — treat as "not signed in",
+  // never crash a page over an infrastructure hiccup.
+  if (error instanceof AppwriteException) {
+    return false; // 401 etc. are handled by the caller
+  }
+  if (error instanceof TypeError) return true; // Node fetch failure
+  if (error instanceof Error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    return (
+      [
+        "ECONNREFUSED",
+        "ECONNRESET",
+        "ENOTFOUND",
+        "ETIMEDOUT",
+        "EAI_AGAIN",
+        "ENETUNREACH",
+        "AbortError",
+      ].includes(String(code)) ||
+      /fetch\s+failed|network/i.test(error.message)
+    );
+  }
+  return false;
+}
+
 async function getCurrentAccountClient() {
   const cookieStore = await cookies();
   const sessionSecret = cookieStore.get(getSessionCookieName())?.value;
@@ -25,6 +50,9 @@ export async function getCurrentAccount() {
     return await account.get();
   } catch (error) {
     if (error instanceof AppwriteException && error.code === 401) {
+      return null;
+    }
+    if (isTransient(error)) {
       return null;
     }
 
@@ -57,6 +85,9 @@ export async function getCurrentAccountData() {
     };
   } catch (error) {
     if (error instanceof AppwriteException && error.code === 401) {
+      return null;
+    }
+    if (isTransient(error)) {
       return null;
     }
 

@@ -1,29 +1,29 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getCurrentAccount } from "@/features/auth/session";
-import { loadTodayBundle } from "@/features/today/service";
+import { loadCheckBundle } from "@/features/check/service";
 import { PageLoader } from "@/components/interface/page-loader";
 import { SessionExpired } from "@/components/interface/session-expired";
-import { TodayExperience } from "@/components/interface/today-experience";
+import { CheckExperience } from "@/components/interface/check-experience";
 
 export const metadata: Metadata = {
-  title: "Today",
+  title: "Check",
 };
 
-export default function TodayPage() {
+export default function CheckPage() {
   return (
     <Suspense fallback={<PageLoader />}>
-      <AuthenticatedToday />
+      <AuthenticatedCheck />
     </Suspense>
   );
 }
 
-async function AuthenticatedToday() {
+async function AuthenticatedCheck() {
   const account = await getCurrentAccount();
   if (!account) {
     return <SessionExpired />;
   }
 
-  const bundle = await loadTodayBundle(account.$id);
-  return <TodayExperience initial={bundle} />;
+  const bundle = await loadCheckBundle(account.$id);
+  return <CheckExperience initial={bundle} />;
 }

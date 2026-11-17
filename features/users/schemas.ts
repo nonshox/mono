@@ -17,6 +17,10 @@ export const updateUserSchema = z
     name: z.string().trim().max(50).optional(),
     nudge: z.boolean().optional(),
     ai: z.boolean().optional(),
+    actions: z
+      .array(z.string().trim().min(2).max(64))
+      .max(20)
+      .optional(),
     tz: z
       .string()
       .trim()
@@ -37,6 +41,7 @@ export const updateUserSchema = z
       value.name !== undefined ||
       value.nudge !== undefined ||
       value.ai !== undefined ||
-      value.tz !== undefined,
+      value.tz !== undefined ||
+      value.actions !== undefined,
     { message: "Nothing to update." },
   );

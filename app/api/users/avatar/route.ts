@@ -8,7 +8,6 @@ import {
 import {
   ensureUserForAccount,
   setUserAvatar,
-  getUserRow,
 } from "@/features/users/service";
 import {
   AVATAR_MAX_BYTES,
@@ -54,14 +53,14 @@ export async function POST(request: Request) {
     const fileId = await uploadAvatarFile(bytes, fileName);
     await ensureUserForAccount(auth.account.$id, auth.account.email);
     const row = await setUserAvatar(auth.account.$id, fileId);
-    const profile = await getUserRow(auth.account.$id);
     return NextResponse.json({
       email: row.email,
       name: row.name,
       avatar: row.avatar ?? "",
       nudge: row.nudge ?? false,
       ai: row.ai ?? false,
-      tz: profile?.tz ?? null,
+      tz: row.tz ?? null,
+      actions: row.actions ?? [],
     });
   } catch (error) {
     logFailure("Avatar upload", error);
@@ -85,14 +84,14 @@ export async function DELETE(request: Request) {
   try {
     await ensureUserForAccount(auth.account.$id, auth.account.email);
     const row = await setUserAvatar(auth.account.$id, null);
-    const profile = await getUserRow(auth.account.$id);
     return NextResponse.json({
       email: row.email,
       name: row.name,
       avatar: row.avatar ?? "",
       nudge: row.nudge ?? false,
       ai: row.ai ?? false,
-      tz: profile?.tz ?? null,
+      tz: row.tz ?? null,
+      actions: row.actions ?? [],
     });
   } catch (error) {
     logFailure("Avatar remove", error);

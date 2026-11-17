@@ -46,15 +46,17 @@ export async function listTimeline(userId: string): Promise<TimelineItem[]> {
 }
 
 const DEFAULT_ITEMS: Record<Bucket, string[]> = {
-  rise: ["Wake up and make the bed", "Shower", "Today's one line in the dot"],
+  rise: ["Wake up and make the bed", "Shower", "One line in the dot"],
   midday: ["Deep work block", "Lunch away from the screen", "A walk"],
   evening: ["Plan tomorrow — just 3 lines", "Phone away", "Wind down"],
 };
 
-/** Seeds the default three buckets for a brand-new user (idempotent). */
-export async function ensureTimelineSeed(userId: string): Promise<void> {
+/** Seeds the default three buckets for a brand-new user. Returns the post-seed items. */
+export async function ensureTimelineSeed(
+  userId: string,
+): Promise<TimelineItem[]> {
   const existing = await listTimeline(userId);
-  if (existing.length > 0) return;
+  if (existing.length > 0) return existing;
   const tables = getTables();
   // Deterministic ids make concurrent first-loads converge instead of duplicating.
   const seedId = (bucket: Bucket, index: number) =>
@@ -77,6 +79,7 @@ export async function ensureTimelineSeed(userId: string): Promise<void> {
       ),
     ),
   );
+  return listTimeline(userId); // freshly seeded state — one read, not two
 }
 
 export async function createTimelineItem(
@@ -85,18 +88,19 @@ export async function createTimelineItem(
   text: string,
 ): Promise<TimelineItem> {
   const tables = getTables();
-  const siblings = await tables.listRows<TimelineRow>({
+  const last = await tables.listRows<TimelineRow>({
     databaseId: getDatabaseId(),
     tableId,
     queries: [
       Query.equal("user", userId),
       Query.equal("bucket", bucket),
+      Query.orderDesc("order"),
       Query.select(["order"]),
-      Query.limit(100),
+      Query.limit(1),
     ],
     total: false,
   });
-  const nextOrder = siblings.rows.reduce((max, row) => Math.max(max, row.order), -1) + 1;
+  const nextOrder = (last.rows[0]?.order ?? -1) + 1;
   const row = await tables.createRow<TimelineRow>({
     databaseId: getDatabaseId(),
     tableId,
@@ -240,21 +244,29 @@ export async function deleteTimelineItem(
   }
 }
 
-/** Reset ticks for the day — called when the user says "no" to satisfaction at day end. */
-export async function clearTodayTicks(userId: string): Promise<void> {
-  const items = await listTimeline(userId);
+/** Reset ticks for the day — clears only the rows that need clearing. */
+export async function clearCheckTicks(userId: string): Promise<void> {
   const tables = getTables();
+  const doneRows = await tables.listRows<TimelineRow>({
+    databaseId: getDatabaseId(),
+    tableId,
+    queries: [
+      Query.equal("user", userId),
+      Query.equal("done", true),
+      Query.select(["$id"]),
+      Query.limit(200),
+    ],
+    total: false,
+  });
   await Promise.all(
-    items
-      .filter((item) => item.done)
-      .map((item) =>
-        tables.updateRow<TimelineRow>({
-          databaseId: getDatabaseId(),
-          tableId,
-          rowId: item.id,
-          data: { done: false },
-        }),
-      ),
+    doneRows.rows.map((row) =>
+      tables.updateRow<TimelineRow>({
+        databaseId: getDatabaseId(),
+        tableId,
+        rowId: row.$id,
+        data: { done: false },
+      }),
+    ),
   );
 }
 
@@ -264,18 +276,15 @@ export function todayDay(): string {
 }
 
 /** Fetch today's full state — items + satisfied percentage. Seeds on first visit. */
-export async function loadTodayBundle(
+export async function loadCheckBundle(
   userId: string,
 ): Promise<{
   items: TimelineItem[];
   satisfied: number | null;
   day: string;
 }> {
-  await ensureTimelineSeed(userId);
+  const currentItems = await ensureTimelineSeed(userId);
   const { getDaySatisfied } = await import("@/features/days/service");
-  const [items, satisfied] = await Promise.all([
-    listTimeline(userId),
-    getDaySatisfied(userId, todayDay()),
-  ]);
-  return { items, satisfied, day: todayDay() };
+  const satisfied = await getDaySatisfied(userId, todayDay());
+  return { items: currentItems, satisfied, day: todayDay() };
 }

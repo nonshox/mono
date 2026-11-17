@@ -1,10 +1,8 @@
 import type { NotificationItem } from "@/features/notifications/client-api";
 
 /** Where a notification should take you when tapped. */
-export function notificationHref(item: NotificationItem): string | null {
-  if (item.type.startsWith("followed")) return "/profile";
-  if (item.ref?.startsWith("achievement:")) return "/profile";
-  return null;
+export function notificationHref(item: NotificationItem): string {
+  return item.ref?.startsWith("/") ? item.ref : "/check";
 }
 
 export function relativeTime(value: string): string {

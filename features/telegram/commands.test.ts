@@ -10,10 +10,18 @@ describe("telegram intent classification", () => {
     });
   });
 
-  it("recognizes /today with or without mention", () => {
-    expect(classifyTelegramText("/today")).toEqual({ kind: "today" });
-    expect(classifyTelegramText("/Today")).toEqual({ kind: "today" });
-    expect(classifyTelegramText("/today@mono_bot")).toEqual({ kind: "today" });
+  it("recognizes /check with or without mention", () => {
+    expect(classifyTelegramText("/check")).toEqual({ kind: "check" });
+    expect(classifyTelegramText("/Check")).toEqual({ kind: "check" });
+    expect(classifyTelegramText("/check@mono_bot")).toEqual({ kind: "check" });
+  });
+
+  it("keeps /today and /checklist as legacy aliases", () => {
+    expect(classifyTelegramText("/today")).toEqual({ kind: "check" });
+    expect(classifyTelegramText("/today@mono_bot")).toEqual({ kind: "check" });
+    expect(classifyTelegramText("/Today")).toEqual({ kind: "check" });
+    expect(classifyTelegramText("/checklist")).toEqual({ kind: "check" });
+    expect(classifyTelegramText("/checklist@mono_bot")).toEqual({ kind: "check" });
   });
 
   it("recognizes /week", () => {

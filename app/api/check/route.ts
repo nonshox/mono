@@ -9,18 +9,18 @@ import {
   createItemSchema,
   deleteItemSchema,
   patchItemSchema,
-} from "@/features/today/schemas";
+} from "@/features/check/schemas";
 import {
   createTimelineItem,
   deleteTimelineItem,
-  loadTodayBundle,
+  loadCheckBundle,
   moveTimelineItem,
   setTimelineItemDone,
   updateTimelineItemText,
-} from "@/features/today/service";
+} from "@/features/check/service";
 
 export async function GET() {
-  const auth = await getAuthAccount("Today lookup");
+  const auth = await getAuthAccount("Check lookup");
   if ("response" in auth) {
     return auth.response;
   }
@@ -29,14 +29,14 @@ export async function GET() {
   }
 
   try {
-    const bundle = await loadTodayBundle(auth.account.$id);
+    const bundle = await loadCheckBundle(auth.account.$id);
     return NextResponse.json(
       bundle,
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {
-    logFailure("Today lookup", error);
-    return jsonError(502, "TODAY_UNAVAILABLE", "Today is unavailable right now.");
+    logFailure("Check lookup", error);
+    return jsonError(502, "CHECK_UNAVAILABLE", "Check is unavailable right now.");
   }
 }
 
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     return jsonError(403, "ORIGIN_REJECTED", "Request origin was rejected.");
   }
 
-  const auth = await getAuthAccount("Today create");
+  const auth = await getAuthAccount("Check create");
   if ("response" in auth) {
     return auth.response;
   }
@@ -73,8 +73,8 @@ export async function POST(request: Request) {
     );
     return NextResponse.json({ item }, { status: 201 });
   } catch (error) {
-    logFailure("Today create", error);
-    return jsonError(502, "TODAY_CREATE_FAILED", "That did not save.");
+    logFailure("Check create", error);
+    return jsonError(502, "CHECK_CREATE_FAILED", "That did not save.");
   }
 }
 
@@ -83,7 +83,7 @@ export async function PATCH(request: Request) {
     return jsonError(403, "ORIGIN_REJECTED", "Request origin was rejected.");
   }
 
-  const auth = await getAuthAccount("Today toggle");
+  const auth = await getAuthAccount("Check toggle");
   if ("response" in auth) {
     return auth.response;
   }
@@ -136,8 +136,8 @@ export async function PATCH(request: Request) {
     }
     return NextResponse.json({ ok: true });
   } catch (error) {
-    logFailure("Today patch", error);
-    return jsonError(502, "TODAY_PATCH_FAILED", "That could not be saved.");
+    logFailure("Check patch", error);
+    return jsonError(502, "CHECK_PATCH_FAILED", "That could not be saved.");
   }
 }
 
@@ -146,7 +146,7 @@ export async function DELETE(request: Request) {
     return jsonError(403, "ORIGIN_REJECTED", "Request origin was rejected.");
   }
 
-  const auth = await getAuthAccount("Today delete");
+  const auth = await getAuthAccount("Check delete");
   if ("response" in auth) {
     return auth.response;
   }
@@ -173,7 +173,7 @@ export async function DELETE(request: Request) {
     }
     return NextResponse.json({ ok: true });
   } catch (error) {
-    logFailure("Today delete", error);
-    return jsonError(502, "TODAY_DELETE_FAILED", "That could not be removed.");
+    logFailure("Check delete", error);
+    return jsonError(502, "CHECK_DELETE_FAILED", "That could not be removed.");
   }
 }

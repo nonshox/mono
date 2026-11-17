@@ -1,173 +1,155 @@
 import "server-only";
-import { ID } from "node-appwrite";
-import { after } from "next/server";
+import { ID, Query, type Models } from "node-appwrite";
+import { getDatabaseId, getTables, isNotFound } from "@/lib/appwrite/tables";
 import { logFailure } from "@/lib/http";
-import { getDatabaseId, getTables } from "@/lib/appwrite/tables";
-import { getUsersByIds } from "@/features/users/service";
-import { sendTelegramNotification } from "@/features/telegram/service";
-import {
-  getNotificationRows,
-  markNotificationsRead,
-  pruneReadNotifications,
-} from "./data";
-import type { NotificationItem, NotificationRow } from "./types";
 
-const tableId = "notifications";
+export const notificationsTableId = "notifications" as const;
 
-/**
- * Creates a notification for `recipient` and — when they connected Telegram —
- * forwards a one-line summary there. Self-notifications are skipped.
- *
- * `type` is a past-tense verb phrase written with the recipient as implied
- * subject ("followed you", "liked your post") so clients can render it as
- * `${actorName} ${type}` without special-casing.
- */
-export async function notify(
-  recipient: string,
-  actor: string,
-  type: string,
-  ref?: string,
-  allowSelf = false,
-): Promise<void> {
-  if (!allowSelf && recipient === actor) {
-    return;
-  }
+export type NotificationRow = Models.Row & {
+  user: string;
+  kind: NotificationKind;
+  body: string;
+  ref: string | null;
+  read: boolean;
+};
 
-  const actorName =
-    recipient === actor
-      ? "You"
-      : (
-          await getUsersByIds([actor]).catch(() => new Map())
-        ).get(actor)?.name?.trim() || "Someone";
-  const line = `${actorName} ${type}`;
-  const headline = line.charAt(0).toUpperCase() + line.slice(1);
+export type NotificationKind =
+  | "dot_closed"
+  | "letter_ready"
+  | "streak_7"
+  | "streak_30";
 
-  await getTables().createRow<NotificationRow>({
-    databaseId: getDatabaseId(),
-    tableId,
-    rowId: ID.unique(),
-    permissions: [],
-    data: {
-      recipient,
-      actor,
-      type,
-      ...(ref ? { ref } : {}),
-      read: false,
-    },
-  });
-
-  after(async () => {
-    try {
-      await sendTelegramNotification(recipient, headline);
-    } catch (error) {
-      logFailure("Telegram delivery", error);
-    }
-  });
-}
+export type NotificationItem = {
+  id: string;
+  kind: NotificationKind;
+  body: string;
+  ref: string | null;
+  createdAt: string;
+  read: boolean;
+};
 
 export async function listNotifications(
   userId: string,
-  cursor: string | null,
-): Promise<{
-  items: NotificationItem[];
-  nextCursor: string | null;
-  unreadCount: number;
-}> {
-  // Self-cleaning (first page only): drop read rows older than 30 days, in the background.
-  if (!cursor) {
-    after(async () => {
-      try {
-        await pruneReadNotifications(
-          userId,
-          new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-        );
-      } catch (error) {
-        logFailure("Notification prune", error);
-      }
+  limit = 50,
+): Promise<NotificationItem[]> {
+  try {
+    const result = await getTables().listRows<NotificationRow>({
+      databaseId: getDatabaseId(),
+      tableId: notificationsTableId,
+      queries: [Query.equal("user", userId), Query.limit(500)],
+      total: false,
     });
-  }
-
-  const rows = await getNotificationRows(userId, cursor);
-  const actors = await getUsersByIds([
-    ...new Set(rows.map((row) => row.actor)),
-  ]);
-
-  const items = rows.flatMap((row) => {
-    const actor = actors.get(row.actor);
-    if (!actor) {
-      return [];
-    }
-    return [
-      {
+    return result.rows
+      .map((row) => ({
         id: row.$id,
-        type: row.type,
-        actorId: row.actor,
-        actorName: actor.name || "Someone",
-        actorAvatar: actor.avatar ?? "",
+        kind: row.kind,
+        body: row.body,
         ref: row.ref ?? null,
         createdAt: row.$createdAt,
         read: row.read,
-        count: 1,
-        ids: [row.$id],
-        self: row.actor === userId,
-      },
-    ];
-  });
-
-  const grouped = collapseNotificationGroups(items);
-  const unreadCount = grouped
-    .filter((item) => !item.read)
-    .reduce((sum, item) => sum + item.count, 0);
-
-  return {
-    items: grouped,
-    nextCursor: rows.length === 50 ? rows[rows.length - 1].$id : null,
-    unreadCount,
-  };
-}
-
-export async function readNotifications(
-  userId: string,
-  notificationIds: string[],
-): Promise<void> {
-  await markNotificationsRead(userId, notificationIds);
-}
-
-const GROUP_WINDOW_MS = 24 * 60 * 60 * 1000;
-
-/**
- * Collapses consecutive same-actor, same-type rows within a 24h window into
- * a single grouped item. The latest row is the representative time; summed
- * ids let the client mark the whole group read.
- */
-function collapseNotificationGroups(
-  items: NotificationItem[],
-): NotificationItem[] {
-  const output: NotificationItem[] = [];
-
-  for (const item of items) {
-    const last = output[output.length - 1];
-    const withinWindow =
-      last &&
-      last.actorId === item.actorId &&
-      last.type === item.type &&
-      Math.abs(
-        new Date(item.createdAt).getTime() - new Date(last.createdAt).getTime(),
-      ) <= GROUP_WINDOW_MS;
-
-    if (withinWindow) {
-      output[output.length - 1] = {
-        ...last,
-        count: last.count + item.count,
-        ids: [...last.ids, ...item.ids],
-        read: last.read && item.read,
-        ref: last.ref ?? item.ref,
-      };
-      continue;
-    }
-
-    output.push(item);
+      }))
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+      .slice(0, limit);
+  } catch (error) {
+    logFailure("Notifications list", error);
+    return [];
   }
+}
 
-  return output;
+/** Mark one notification read — no-op unless the row belongs to `userId`. */
+export async function markNotificationRead(
+  userId: string,
+  notificationId: string,
+): Promise<void> {
+  let row: NotificationRow;
+  try {
+    row = await getTables().getRow<NotificationRow>({
+      databaseId: getDatabaseId(),
+      tableId: notificationsTableId,
+      rowId: notificationId,
+    });
+  } catch (error) {
+    if (isNotFound(error)) {
+      return;
+    }
+    throw error;
+  }
+  if (row.user !== userId) {
+    return;
+  }
+  await getTables().updateRow<NotificationRow>({
+    databaseId: getDatabaseId(),
+    tableId: notificationsTableId,
+    rowId: notificationId,
+    data: { read: true },
+  });
+}
+
+export async function markAllNotificationsRead(userId: string): Promise<void> {
+  const result = await getTables().listRows<NotificationRow>({
+    databaseId: getDatabaseId(),
+    tableId: notificationsTableId,
+    queries: [
+      Query.equal("user", userId),
+      Query.equal("read", false),
+      Query.select(["$id"]),
+      Query.limit(200),
+    ],
+    total: false,
+  });
+  await Promise.all(
+    result.rows.map((row) =>
+      getTables().updateRow<NotificationRow>({
+        databaseId: getDatabaseId(),
+        tableId: notificationsTableId,
+        rowId: row.$id,
+        data: { read: true },
+      }),
+    ),
+  );
+}
+
+export async function clearReadNotifications(userId: string): Promise<number> {
+  let deleted = 0;
+  for (;;) {
+    const result = await getTables().listRows<NotificationRow>({
+      databaseId: getDatabaseId(),
+      tableId: notificationsTableId,
+      queries: [
+        Query.equal("user", userId),
+        Query.equal("read", true),
+        Query.select(["$id"]),
+        Query.limit(100),
+      ],
+      total: false,
+    });
+    if (result.rows.length === 0) return deleted;
+    const outcomes = await Promise.allSettled(
+      result.rows.map((row) =>
+        getTables().deleteRow({
+          databaseId: getDatabaseId(),
+          tableId: notificationsTableId,
+          rowId: row.$id,
+        }),
+      ),
+    );
+    deleted += outcomes.filter((o) => o.status === "fulfilled").length;
+    if (result.rows.length < 100) return deleted;
+  }
+}
+
+/** Create one system event for a user. No recipient checks — the caller owns it. */
+export async function createNotification(
+  userId: string,
+  kind: NotificationKind,
+  body: string,
+  ref?: string,
+): Promise<void> {
+  await getTables().createRow<NotificationRow>({
+    databaseId: getDatabaseId(),
+    tableId: notificationsTableId,
+    rowId: ID.unique(),
+    permissions: [],
+    data: { user: userId, kind, body, ref: ref ?? "", read: false },
+  });
 }

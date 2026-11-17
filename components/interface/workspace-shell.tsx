@@ -7,13 +7,15 @@ import {
   BookOpen,
   ChevronRight,
   Eraser,
+  Flame,
   House,
-  LoaderCircle,
   LogOut,
+  Mail,
   Moon,
+  NotebookPen,
   Settings,
   Sun,
-  Sunrise,
+  ListChecks,
   UserRound,
 } from "lucide-react";
 import Image from "next/image";
@@ -32,9 +34,9 @@ import {
 import { logout } from "@/features/auth/client-api";
 import { saveUserTz } from "@/features/users/client-api";
 import { useUserStore } from "@/features/users/store";
-import { useNotifications, useClearNotifications } from "@/features/notifications/use-notifications";
-import { notificationHref, relativeTime } from "@/lib/notification-link";
+import { useNotifications } from "@/features/notifications/use-notifications";
 import type { NotificationItem } from "@/features/notifications/client-api";
+import { notificationHref, relativeTime } from "@/lib/notification-link";
 import { UserAvatar } from "@/components/interface/user-avatar";
 import {
   AlertDialog,
@@ -52,7 +54,7 @@ const breadcrumbs: Record<string, string> = {
   "/profile": "Profile",
   "/profile/edit": "Edit profile",
   "/journal": "Journal",
-  "/today": "Today",
+  "/check": "Check",
   "/library": "Library",
 };
 
@@ -63,16 +65,11 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     items,
     unreadCount: unread,
     loading,
-    loaded,
+    error,
     markRead,
     markAllRead,
     clearRead,
-    hasReadVisible,
-    loadMore,
-    hasMore,
-    loadingMore,
   } = useNotifications();
-  const clearNotifications = useClearNotifications();
   const user = useUserStore((state) => state.user);
   const loadUser = useUserStore((state) => state.load);
   const resetUser = useUserStore((state) => state.reset);
@@ -125,20 +122,30 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       await logout();
     } finally {
       resetUser();
-      clearNotifications();
       router.replace("/auth");
       router.refresh();
     }
   };
 
-  const openNotification = (item: NotificationItem) => {
-    if (!item.read) void markRead(item);
-    const href = notificationHref(item);
-    if (href) router.push(href);
+  const notificationIcon = (kind: NotificationItem["kind"]) => {
+    const className = "size-4 text-foreground";
+    switch (kind) {
+      case "letter_ready":
+        return <Mail aria-hidden="true" className={className} strokeWidth={1.8} />;
+      case "streak_7":
+      case "streak_30":
+        return <Flame aria-hidden="true" className={className} strokeWidth={1.8} />;
+      default:
+        return <NotebookPen aria-hidden="true" className={className} strokeWidth={1.8} />;
+    }
   };
 
-  const latest = items;
+  const openNotification = (item: NotificationItem) => {
+    if (!item.read) void markRead(item);
+    router.push(notificationHref(item));
+  };
 
+  
   return (
     <>
       {/* Navbar — glassy, sticky, the only top chrome */}
@@ -169,7 +176,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             {[
               { href: "/", icon: House, label: "Home" },
               { href: "/journal", icon: BookOpenText, label: "Journal" },
-              { href: "/today", icon: Sunrise, label: "Today" },
+              { href: "/check", icon: ListChecks, label: "Check" },
               { href: "/library", icon: BookOpen, label: "Library" },
             ].map(({ href, icon: Icon, label }) => {
               const active =
@@ -228,7 +235,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                 <div className="flex items-center justify-between border-b border-border/60 px-4 py-2.5">
                   <p className="type-eyebrow">Notifications</p>
                   <div className="flex items-center gap-3">
-                    {hasReadVisible && (
+                    {items.some((item) => item.read) && (
                       <AlertDialog>
                         <AlertDialogTrigger
                           aria-label="Clear read notifications"
@@ -263,11 +270,16 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                   </div>
                 </div>
                 <div className="max-h-[22rem] overflow-y-auto">
-                  {!loaded || (loading && latest.length === 0) ? (
+                  {loading ? (
                     <div className="type-eyebrow grid place-items-center px-4 py-8">
                       Loading
                     </div>
-                  ) : latest.length === 0 ? (
+                  ) : error ? (
+                    <div className="px-4 py-8 text-center">
+                      <p className="text-xs font-semibold text-foreground">Unavailable</p>
+                      <p className="mt-1 text-xs text-foreground">{error}</p>
+                    </div>
+                  ) : items.length === 0 ? (
                     <div className="px-4 py-8 text-center">
                       <p className="text-xs font-semibold text-foreground">
                         All quiet
@@ -278,62 +290,38 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                     </div>
                   ) : (
                     <>
-                      {latest.map((item) => (
-                        <button
-                          className="flex w-full items-center gap-2.5 border-b border-border/40 px-3 py-2.5 text-left outline-none transition last:border-b-0 hover:bg-muted/60 focus-visible:bg-muted/60"
-                          key={item.id}
-                          onClick={() => openNotification(item)}
-                          type="button"
+                      {items.map((item) => (
+                      <button
+                        className="flex w-full items-start gap-2 border-b border-border/40 px-3 py-2.5 text-left outline-none transition last:border-b-0 hover:bg-muted/60 focus-visible:bg-muted/60"
+                        key={item.id}
+                        onClick={() => openNotification(item)}
+                        type="button"
+                      >
+                        <span
+                          aria-hidden="true"
+                          className="mt-0.5 grid size-4 shrink-0 place-items-center"
                         >
-                          <UserAvatar
-                            avatar={item.actorAvatar}
-                            name={item.actorName}
-                            size={26}
-                          />
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-xs leading-5 text-foreground">
-                              <span className="font-semibold">
-                                {item.self ? "You" : item.actorName}
-                              </span>{" "}
-                              <span className="text-foreground">
-                                {item.count > 1
-                                  ? `${item.type} ×${item.count}`
-                                  : item.type}
-                              </span>
-                            </span>
-                            <time
-                              className="mt-0.5 block text-xs tabular-nums text-foreground"
-                              dateTime={item.createdAt}
-                            >
-                              {relativeTime(item.createdAt)}
-                            </time>
+                          {notificationIcon(item.kind)}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-xs leading-5 text-foreground">
+                            {item.body}
                           </span>
-                          {!item.read && (
-                            <span
-                              aria-hidden="true"
-                              className="size-1.5 shrink-0 rounded-full bg-badge"
-                            />
-                          )}
-                        </button>
-                      ))}
-                      {hasMore && (
-                        <div className="border-t border-border/60 px-3 py-1.5">
-                          <button
-                            className="inline-flex h-7 w-full items-center justify-center gap-1.5 rounded-full text-xs font-semibold text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-                            disabled={loadingMore}
-                            onClick={() => void loadMore()}
-                            type="button"
+                          <time
+                            className="mt-0.5 block text-[11px] tabular-nums text-foreground"
+                            dateTime={item.createdAt}
                           >
-                            {loadingMore && (
-                              <LoaderCircle
-                                aria-hidden="true"
-                                className="size-3.5 animate-spin"
-                              />
-                            )}
-                            {loadingMore ? "Loading" : "See more"}
-                          </button>
-                        </div>
-                      )}
+                            {relativeTime(item.createdAt)}
+                          </time>
+                        </span>
+                        {!item.read && (
+                          <span
+                            aria-hidden="true"
+                            className="mt-1 inline-block size-1.5 shrink-0 rounded-full bg-badge"
+                          />
+                        )}
+                      </button>
+                    ))}
                     </>
                   )}
                 </div>
@@ -485,7 +473,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           {[
             { href: "/", icon: House, label: "Home" },
             { href: "/journal", icon: BookOpenText, label: "Journal" },
-            { href: "/today", icon: Sunrise, label: "Today" },
+            { href: "/check", icon: ListChecks, label: "Check" },
             { href: "/library", icon: BookOpen, label: "Library" },
           ].map(({ href, icon: Icon, label }) => {
             const active =

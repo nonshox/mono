@@ -112,7 +112,6 @@ export async function upsertDayEntry(
   const rowId = dayRowId(userId, day);
 
   try {
-    await tables.getRow({ databaseId, tableId, rowId });
     await tables.updateRow<DayRow>({
       databaseId,
       tableId,
@@ -132,7 +131,6 @@ export async function upsertDayEntry(
         data: { user: userId, day, text },
       });
     } catch (createError) {
-      // Lost a race with a parallel upsert — treat as update.
       if (createError instanceof AppwriteException && createError.code === 409) {
         await tables.updateRow<DayRow>({
           databaseId,
@@ -178,6 +176,30 @@ export async function hasDayEntry(userId: string, day: string): Promise<boolean>
     }
     throw error;
   }
+}
+
+/** Only entries on or after `isoDay` (inclusive), ascending. Cheap. */
+export async function listRecentEntriesSince(
+  userId: string,
+  isoDay: string,
+): Promise<DayEntry[]> {
+  const result = await getTables().listRows<DayRow>({
+    databaseId: getDatabaseId(),
+    tableId,
+    queries: [
+      Query.equal("user", userId),
+      Query.greaterThanEqual("day", isoDay),
+      Query.select(["day", "text", "satisfied"]),
+      Query.orderAsc("day"),
+      Query.limit(1000),
+    ],
+    total: false,
+  });
+  return result.rows.map((row) => ({
+    day: row.day,
+    text: row.text,
+    satisfied: row.satisfied ?? null,
+  }));
 }
 
 /** The last `limit` entries of the current year, ascending by day. */
@@ -244,14 +266,16 @@ export async function searchDayEntries(
       Query.equal("user", userId),
       Query.contains("text", query),
       Query.select(["day", "text", "satisfied"]),
-      Query.limit(50),
+      Query.orderDesc("day"),
+      Query.limit(20),
     ],
     total: false,
   });
-  return result.rows
-    .map((row) => ({ day: row.day, text: row.text, satisfied: row.satisfied ?? null }))
-    .sort((a, b) => b.day.localeCompare(a.day))
-    .slice(0, 20);
+  return result.rows.map((row) => ({
+    day: row.day,
+    text: row.text,
+    satisfied: row.satisfied ?? null,
+  }));
 }
 
 /** Write end-of-day satisfaction percent onto the day row (creates it if absent). */
@@ -265,7 +289,6 @@ export async function setDaySatisfied(
   const rowId = dayRowId(userId, day);
 
   try {
-    await tables.getRow<DayRow>({ databaseId, tableId, rowId });
     await tables.updateRow<DayRow>({
       databaseId,
       tableId,

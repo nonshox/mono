@@ -5,17 +5,20 @@ import {
   jsonError,
   logFailure,
 } from "@/lib/http";
+import { z } from "zod";
 import {
+  clearReadNotifications as clearReadInDb,
   listNotifications,
-  readNotifications,
+  markAllNotificationsRead as markAllReadInDb,
+  markNotificationRead,
 } from "@/features/notifications/service";
-import { clearReadNotifications as clearReadInDb } from "@/features/notifications/data";
-import {
-  notificationCursorSchema,
-  readNotificationsSchema,
-} from "@/features/notifications/schemas";
 
-export async function GET(request: Request) {
+const patchSchema = z.union([
+  z.object({ id: z.string().min(1).max(64) }).strict(),
+  z.object({ id: z.literal("all") }).strict(),
+]);
+
+export async function GET() {
   const auth = await getAuthAccount("Notification list");
   if ("response" in auth) {
     return auth.response;
@@ -24,24 +27,57 @@ export async function GET(request: Request) {
     return jsonError(401, "UNAUTHENTICATED", "Sign in to view notifications.");
   }
 
-  const rawCursor = new URL(request.url).searchParams.get("cursor");
-  const parsedCursor = rawCursor
-    ? notificationCursorSchema.safeParse(rawCursor)
-    : { success: true as const, data: null };
-  if (!parsedCursor.success) {
-    return jsonError(400, "INVALID_CURSOR", "Notification cursor is invalid.");
+  try {
+    const items = await listNotifications(auth.account.$id, 50);
+    const unreadCount = items.filter((item) => !item.read).length;
+    return NextResponse.json(
+      { items, hasMore: false, unreadCount },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
+  } catch (error) {
+    logFailure("Notification list", error);
+    return jsonError(
+      502,
+      "NOTIFICATIONS_UNAVAILABLE",
+      "Notifications are unavailable.",
+    );
+  }
+}
+
+export async function PATCH(request: Request) {
+  if (!isSameOrigin(request)) {
+    return jsonError(403, "ORIGIN_REJECTED", "Request origin was rejected.");
+  }
+
+  const auth = await getAuthAccount("Notification update");
+  if ("response" in auth) {
+    return auth.response;
+  }
+  if (!auth.account) {
+    return jsonError(401, "UNAUTHENTICATED", "Sign in to update notifications.");
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError(400, "INVALID_JSON", "Request body must be valid JSON.");
+  }
+
+  const parsed = patchSchema.safeParse(body);
+  if (!parsed.success) {
+    return jsonError(400, "INVALID_INPUT", "Check the notification id.");
   }
 
   try {
-    const result = await listNotifications(
-      auth.account.$id,
-      parsedCursor.data,
-    );
-    return NextResponse.json(result, {
-      headers: { "Cache-Control": "private, no-store" },
-    });
+    if (parsed.data.id === "all") {
+      await markAllReadInDb(auth.account.$id);
+    } else {
+      await markNotificationRead(auth.account.$id, parsed.data.id);
+    }
+    return NextResponse.json({ ok: true });
   } catch (error) {
-    logFailure("Notification list", error);
+    logFailure("Notification update", error);
     return jsonError(
       502,
       "NOTIFICATIONS_UNAVAILABLE",
@@ -72,44 +108,6 @@ export async function DELETE(request: Request) {
       502,
       "NOTIFICATIONS_CLEAR_FAILED",
       "Read notifications could not be cleared.",
-    );
-  }
-}
-
-export async function PATCH(request: Request) {
-  if (!isSameOrigin(request)) {
-    return jsonError(403, "ORIGIN_REJECTED", "Request origin was rejected.");
-  }
-
-  const auth = await getAuthAccount("Notification update");
-  if ("response" in auth) {
-    return auth.response;
-  }
-  if (!auth.account) {
-    return jsonError(401, "UNAUTHENTICATED", "Sign in to update notifications.");
-  }
-
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return jsonError(400, "INVALID_JSON", "Request body must be valid JSON.");
-  }
-
-  const parsed = readNotificationsSchema.safeParse(body);
-  if (!parsed.success) {
-    return jsonError(400, "INVALID_INPUT", "Check the notification ids.");
-  }
-
-  try {
-    await readNotifications(auth.account.$id, parsed.data.ids);
-    return NextResponse.json({ updated: true });
-  } catch (error) {
-    logFailure("Notification update", error);
-    return jsonError(
-      502,
-      "NOTIFICATIONS_UNAVAILABLE",
-      "Notifications are unavailable.",
     );
   }
 }

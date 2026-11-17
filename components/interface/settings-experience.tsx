@@ -320,7 +320,7 @@ export function SettingsExperience({
                 />
               </button>
             </div>
-            {/* Weekly letter — compiled locally, delivered Sundays via Telegram */}
+            {/* Mono AI — day suggestions + Sunday letter (entries go to Google Gemini) */}
             <div className="flex items-center gap-3 py-3">
               <NotebookPen
                 aria-hidden="true"
@@ -329,17 +329,17 @@ export function SettingsExperience({
               />
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold leading-4 text-foreground">
-                  Weekly letter
+                  Mono AI
                 </p>
                 <p className="mt-0.5 text-xs leading-4 text-foreground">
-                  A Sunday letter compiling your week — compiled on this device,
-                  never leaves it.
+                  Day suggestions + Sunday letter, grounded in your writing.
+                  Your entries go to Google Gemini when this is on.
                 </p>
               </div>
               <button
                 aria-busy={letterSaving}
                 aria-checked={letterOn}
-                aria-label="Weekly letter"
+                aria-label="Mono AI"
                 className={`relative h-6 w-10 shrink-0 rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 ${
                   letterOn ? "bg-foreground" : "bg-muted-foreground/25"
                 }`}

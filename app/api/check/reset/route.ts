@@ -5,14 +5,14 @@ import {
   jsonError,
   logFailure,
 } from "@/lib/http";
-import { clearTodayTicks as clearTicks } from "@/features/today/service";
+import { clearCheckTicks as clearTicks } from "@/features/check/service";
 
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) {
     return jsonError(403, "ORIGIN_REJECTED", "Request origin was rejected.");
   }
 
-  const auth = await getAuthAccount("Today reset");
+  const auth = await getAuthAccount("Check reset");
   if ("response" in auth) {
     return auth.response;
   }
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     await clearTicks(auth.account.$id);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    logFailure("Today reset", error);
-    return jsonError(502, "TODAY_RESET_FAILED", "Reset failed.");
+    logFailure("Check reset", error);
+    return jsonError(502, "CHECK_RESET_FAILED", "Reset failed.");
   }
 }

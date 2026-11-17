@@ -5,7 +5,7 @@ import {
   logFailure,
 } from "@/lib/http";
 import { listAllEntries } from "@/features/days/service";
-import { listTimeline } from "@/features/today/service";
+import { listTimeline } from "@/features/check/service";
 import { getUserRow } from "@/features/users/service";
 import { buildMarkdown, buildPayload } from "@/features/export/build";
 

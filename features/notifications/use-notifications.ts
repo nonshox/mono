@@ -1,137 +1,87 @@
 "use client";
 
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQueryClient,
-  type InfiniteData,
-} from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useMemo } from "react";
 import {
-  fetchNotifications,
-  markNotificationsRead,
   clearReadNotifications,
+  fetchNotifications,
+  markAllNotificationsRead,
+  markNotificationsRead,
   type NotificationItem,
-  type NotificationPage,
 } from "@/features/notifications/client-api";
-import {
-  allUnreadIds,
-  chunk,
-  countUnread,
-  flattenPages,
-  keepUnreadInPages,
-  markAllReadInPages,
-  markReadInPages,
-} from "@/features/notifications/model";
 import { getApiErrorMessage } from "@/lib/api-client";
-
-export const notificationsKey = ["notifications"] as const;
-
-type PagesData = InfiniteData<NotificationPage, string | null>;
+import {
+  countUnread,
+  keepUnreadInList,
+  markAllReadInList,
+  markReadInList,
+} from "@/features/notifications/model";
 
 export function useNotifications() {
-  const queryClient = useQueryClient();
-  const query = useInfiniteQuery({
-    queryKey: notificationsKey,
-    queryFn: ({ pageParam }) => fetchNotifications(pageParam),
-    initialPageParam: null as string | null,
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
-    staleTime: 30_000,
-  });
+  const [items, setItems] = useState<NotificationItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const pages = useMemo(() => query.data?.pages ?? [], [query.data]);
-  const items = useMemo(() => flattenPages(pages), [pages]);
-  const unreadCount = useMemo(() => countUnread(items), [items]);
-  const loading = query.isLoading;
-  const error = query.error
-    ? getApiErrorMessage(query.error, "Notifications could not be loaded.")
-    : "";
+  useEffect(() => {
+    let active = true;
+    fetchNotifications()
+      .then((page) => active && setItems(page.items))
+      .catch((cause) =>
+        active &&
+        setError(getApiErrorMessage(cause, "Notifications could not be loaded.")),
+      )
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  const snapshot = async (): Promise<PagesData | undefined> => {
-    await queryClient.cancelQueries({ queryKey: notificationsKey });
-    return queryClient.getQueryData<PagesData>(notificationsKey);
+  const unreadCount = countUnread(items);
+
+  const markRead = (item: NotificationItem) => {
+    if (item.read) return;
+    const previous = items;
+    setItems(markReadInList(items, item.id)); // optimistic
+    void markNotificationsRead(item.id).catch((cause) => {
+      setItems(previous); // rollback
+      toast.error(getApiErrorMessage(cause, "Could not mark as read."));
+    });
   };
-  const restore = (previous: PagesData | undefined) => {
-    if (previous) queryClient.setQueryData(notificationsKey, previous);
-    else void queryClient.invalidateQueries({ queryKey: notificationsKey });
+
+  const markAllRead = () => {
+    const previous = items;
+    setItems(markAllReadInList(items));
+    void markAllNotificationsRead().catch((cause) => {
+      setItems(previous);
+      toast.error(getApiErrorMessage(cause, "Could not mark all as read."));
+    });
   };
-  const patch = (updater: (pages: NotificationPage[]) => NotificationPage[]) => {
-    queryClient.setQueryData<PagesData>(notificationsKey, (data) =>
-      data ? { ...data, pages: updater(data.pages) } : data,
-    );
+
+  const clearRead = () => {
+    const previous = items;
+    setItems(keepUnreadInList(items));
+    void clearReadNotifications()
+      .then(({ deleted }) => {
+        if (deleted === 0) {
+          setItems(previous);
+          toast.message("No read notifications to clear.");
+        } else {
+          toast.success(`${deleted} ${deleted === 1 ? "notification" : "notifications"} cleared.`);
+        }
+      })
+      .catch((cause) => {
+        setItems(previous);
+        toast.error(getApiErrorMessage(cause, "Could not clear read notifications."));
+      });
   };
-
-  const markReadMutation = useMutation({
-    mutationFn: (item: NotificationItem) =>
-      item.read ? Promise.resolve() : markNotificationsRead(item.ids ?? [item.id]),
-    onMutate: async (item) => {
-      if (item.read) return { previous: undefined as PagesData | undefined };
-      const previous = await snapshot();
-      patch((current) => markReadInPages(current, item));
-      return { previous };
-    },
-    onError: (_cause, _item, context) => {
-      restore(context?.previous);
-      toast.error("This notification could not be marked as read.");
-    },
-  });
-
-  const markAllReadMutation = useMutation({
-    mutationFn: async () => {
-      const ids = allUnreadIds(flattenPages(pages));
-      for (const batch of chunk(ids, 50)) {
-        await markNotificationsRead(batch);
-      }
-    },
-    onMutate: async () => {
-      const previous = await snapshot();
-      patch(markAllReadInPages);
-      return { previous };
-    },
-    onError: (_cause, _vars, context) => {
-      restore(context?.previous);
-      toast.error("Notifications could not be marked as read.");
-    },
-  });
-
-  const clearReadMutation = useMutation({
-    mutationFn: () => clearReadNotifications(),
-    onMutate: async () => {
-      const previous = await snapshot();
-      patch(keepUnreadInPages);
-      return { previous };
-    },
-    onError: (_cause, _vars, context) => {
-      restore(context?.previous);
-      toast.error("Read notifications could not be cleared.");
-    },
-  });
-
-  const hasReadVisible = items.some((item) => item.read);
 
   return {
     items,
     unreadCount,
     loading,
-    loaded: query.isSuccess || query.data !== undefined,
     error,
-    hasMore: query.hasNextPage ?? false,
-    loadingMore: query.isFetchingNextPage,
-    hasReadVisible,
-    loadMore: () => {
-      if (query.hasNextPage && !query.isFetchingNextPage) {
-        void query.fetchNextPage();
-      }
-    },
-    markRead: (item: NotificationItem) => markReadMutation.mutate(item),
-    markAllRead: () => markAllReadMutation.mutate(),
-    clearRead: () => clearReadMutation.mutate(),
+    markRead,
+    markAllRead,
+    clearRead,
   };
-}
-
-/** Drop the cached notifications list (used on sign-out / re-auth). */
-export function useClearNotifications() {
-  const queryClient = useQueryClient();
-  return () => queryClient.removeQueries({ queryKey: notificationsKey });
 }

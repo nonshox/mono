@@ -14,7 +14,7 @@ import {
 } from "@/features/telegram/commands";
 import {
   replyCapture,
-  replyToday,
+  replyCheck,
   replyWeek,
 } from "@/features/telegram/replies";
 
@@ -96,8 +96,8 @@ export async function POST(request: Request) {
     }
     after(async () => {
       try {
-        if (intent.kind === "today") {
-          await replyToday(origin, sendReply, chatId, userId);
+        if (intent.kind === "check") {
+          await replyCheck(origin, sendReply, chatId, userId);
         } else if (intent.kind === "week") {
           await replyWeek(origin, sendReply, chatId, userId);
         } else if (intent.kind === "capture") {

@@ -6,8 +6,8 @@ export type UserProfile = {
   avatar?: string;
   nudge?: boolean;
   ai?: boolean;
-  /** IANA timezone, stored silently from the browser; drives the evening nudge hour. */
   tz?: string | null;
+  actions?: string[];
 };
 
 export async function fetchUser(): Promise<UserProfile> {
@@ -33,6 +33,11 @@ export async function saveUserLetter(ai: boolean): Promise<UserProfile> {
 
 export async function saveUserTz(tz: string): Promise<UserProfile> {
   const { data } = await apiClient.patch<UserProfile>("/users", { tz });
+  return data;
+}
+
+export async function saveUserActions(actions: string[]): Promise<UserProfile> {
+  const { data } = await apiClient.patch<UserProfile>("/users", { actions });
   return data;
 }
 

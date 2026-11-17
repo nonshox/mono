@@ -64,7 +64,7 @@ export function buildMarkdown(payload: ExportPayload): string {
 
   parts.push("---");
   parts.push("");
-  parts.push("# Today");
+  parts.push("# Check");
   parts.push("");
   for (const bucket of BUCKET_ORDER) {
     const items = timeline.filter((item) => item.bucket === bucket);

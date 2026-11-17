@@ -5,16 +5,17 @@ import {
   jsonError,
   logFailure,
 } from "@/lib/http";
-import { satisfySchema } from "@/features/today/schemas";
-import { setDaySatisfied, clearDaySatisfied } from "@/features/days/service";
-import { todayDay } from "@/features/today/service";
+import { satisfySchema } from "@/features/check/schemas";
+import { getDaySatisfied, setDaySatisfied, clearDaySatisfied } from "@/features/days/service";
+import { todayDay } from "@/features/check/service";
+import { notifyDayClosed } from "@/features/notifications/events";
 
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) {
     return jsonError(403, "ORIGIN_REJECTED", "Request origin was rejected.");
   }
 
-  const auth = await getAuthAccount("Today satisfy");
+  const auth = await getAuthAccount("Check satisfy");
   if ("response" in auth) {
     return auth.response;
   }
@@ -35,10 +36,18 @@ export async function POST(request: Request) {
   }
 
   try {
-    await setDaySatisfied(auth.account.$id, todayDay(), parsed.data.satisfied);
+    const day = todayDay();
+    const previousSatisfied = await getDaySatisfied(auth.account.$id, day);
+    await setDaySatisfied(auth.account.$id, day, parsed.data.satisfied);
+    notifyDayClosed(
+      auth.account.$id,
+      day,
+      parsed.data.satisfied,
+      previousSatisfied,
+    );
     return NextResponse.json({ ok: true });
   } catch (error) {
-    logFailure("Today satisfy", error);
+    logFailure("Check satisfy", error);
     return jsonError(502, "SATISFY_FAILED", "That could not be saved.");
   }
 }
@@ -48,7 +57,7 @@ export async function DELETE(request: Request) {
     return jsonError(403, "ORIGIN_REJECTED", "Request origin was rejected.");
   }
 
-  const auth = await getAuthAccount("Today unsatisfy");
+  const auth = await getAuthAccount("Check unsatisfy");
   if ("response" in auth) {
     return auth.response;
   }
@@ -60,7 +69,7 @@ export async function DELETE(request: Request) {
     await clearDaySatisfied(auth.account.$id, todayDay());
     return NextResponse.json({ ok: true });
   } catch (error) {
-    logFailure("Today unsatisfy", error);
+    logFailure("Check unsatisfy", error);
     return jsonError(502, "SATISFY_CLEAR_FAILED", "That could not be cleared.");
   }
 }

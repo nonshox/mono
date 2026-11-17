@@ -19,6 +19,16 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  async redirects() {
+    return [
+      { source: "/today", destination: "/check", permanent: true },
+      { source: "/checklist", destination: "/check", permanent: true },
+      { source: "/api/today", destination: "/api/check", permanent: true },
+      { source: "/api/today/:path*", destination: "/api/check/:path*", permanent: true },
+      { source: "/api/checklist", destination: "/api/check", permanent: true },
+      { source: "/api/checklist/:path*", destination: "/api/check/:path*", permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

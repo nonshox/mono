@@ -5,7 +5,7 @@ import {
   jsonError,
   logFailure,
 } from "@/lib/http";
-import { listAllEntries } from "@/features/days/service";
+import { listYearEntries } from "@/features/days/service";
 import { compileYear } from "@/features/digest/compile";
 
 export async function POST(request: Request) {
@@ -23,10 +23,7 @@ export async function POST(request: Request) {
 
   try {
     const year = new Date().getUTCFullYear();
-    const entries = await listAllEntries(auth.account.$id);
-    const yearEntries = entries.filter((entry) =>
-      entry.day.startsWith(String(year)),
-    );
+    const yearEntries = await listYearEntries(auth.account.$id, year);
     if (yearEntries.length < 10) {
       return jsonError(
         400,

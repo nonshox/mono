@@ -5,9 +5,9 @@ import {
   listRecentEntries,
   appendToDay,
 } from "@/features/days/service";
-import { listTimeline } from "@/features/today/service";
-import { BUCKETS } from "@/features/today/types";
-import type { TimelineItem } from "@/features/today/types";
+import { listTimeline } from "@/features/check/service";
+import { BUCKETS } from "@/features/check/types";
+import type { TimelineItem } from "@/features/check/types";
 
 const BUCKET_HEADING: Record<string, string> = {
   rise: "Rise",
@@ -15,8 +15,8 @@ const BUCKET_HEADING: Record<string, string> = {
   evening: "Evening",
 };
 
-/** Format today's buckets for Telegram. Pure — unit-testable shape in/out. */
-export function formatToday(items: TimelineItem[]): string {
+/** Format the check buckets for Telegram. */
+export function formatCheck(items: TimelineItem[]): string {
   const lines: string[] = [];
   let doneTotal = 0;
   for (const bucket of BUCKETS) {
@@ -31,19 +31,20 @@ export function formatToday(items: TimelineItem[]): string {
     }
   }
   lines.push("");
-  lines.push(`${doneTotal}/${items.length} today`);
+  lines.push(`${doneTotal}/${items.length} done`);
   return lines.join("\n");
 }
 
-export async function replyToday(
+export async function replyCheck(
   origin: string,
   send: (chatId: string, text: string, buttons: Array<{ text: string; webApp: string }>) => Promise<void>,
   chatId: string,
   userId: string,
 ): Promise<void> {
   const items = await listTimeline(userId);
-  const text = items.length === 0 ? "Nothing planned today yet." : formatToday(items);
-  await send(chatId, text, [{ text: "Open Mono", webApp: `${origin}/today` }]);
+  const text =
+    items.length === 0 ? "Nothing on the check yet." : formatCheck(items);
+  await send(chatId, text, [{ text: "Open Mono", webApp: `${origin}/check` }]);
 }
 
 export async function replyWeek(

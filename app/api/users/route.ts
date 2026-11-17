@@ -7,7 +7,7 @@ import {
 } from "@/lib/http";
 import {
   ensureUserForAccount,
-  getUserRow,
+  setUserActions,
   setUserAi,
   setUserNudge,
   setUserTz,
@@ -34,6 +34,7 @@ export async function GET() {
         email: row.email,
         name: row.name,
         avatar: row.avatar ?? "",
+        actions: row.actions ?? [],
         nudge: row.nudge ?? false,
         ai: row.ai ?? false,
         tz: row.tz ?? null,
@@ -72,27 +73,31 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    await ensureUserForAccount(auth.account.$id, auth.account.email);
+    const base = await ensureUserForAccount(auth.account.$id, auth.account.email);
+    let latest = base;
     if (parsed.data.name !== undefined) {
-      await updateUserName(auth.account.$id, parsed.data.name);
+      latest = await updateUserName(auth.account.$id, parsed.data.name);
     }
     if (parsed.data.nudge !== undefined) {
-      await setUserNudge(auth.account.$id, parsed.data.nudge);
+      latest = await setUserNudge(auth.account.$id, parsed.data.nudge);
     }
     if (parsed.data.ai !== undefined) {
-      await setUserAi(auth.account.$id, parsed.data.ai);
+      latest = await setUserAi(auth.account.$id, parsed.data.ai);
     }
     if (parsed.data.tz !== undefined) {
-      await setUserTz(auth.account.$id, parsed.data.tz);
+      latest = await setUserTz(auth.account.$id, parsed.data.tz);
     }
-    const row = await getUserRow(auth.account.$id);
+    if (parsed.data.actions !== undefined) {
+      latest = await setUserActions(auth.account.$id, parsed.data.actions);
+    }
     return NextResponse.json({
-      email: row?.email ?? auth.account.email,
-      name: row?.name ?? "",
-      avatar: row?.avatar ?? "",
-      nudge: row?.nudge ?? false,
-      ai: row?.ai ?? false,
-      tz: row?.tz ?? null,
+      email: latest.email,
+      name: latest.name,
+      avatar: latest.avatar ?? "",
+      nudge: latest.nudge ?? false,
+      ai: latest.ai ?? false,
+      tz: latest.tz ?? null,
+      actions: latest.actions ?? [],
     });
   } catch (error) {
     logFailure("User update", error);

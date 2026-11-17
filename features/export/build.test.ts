@@ -16,7 +16,7 @@ const base = {
 };
 
 describe("buildPayload", () => {
-  it("sorts days ascending and today items by bucket then order", () => {
+  it("sorts days ascending and check items by bucket then order", () => {
     const payload = buildPayload(base);
     expect(payload.format).toBe("mono/1");
     expect(payload.days.map((d) => d.day)).toEqual(["2026-11-14", "2026-11-15"]);
@@ -46,8 +46,9 @@ describe("buildMarkdown", () => {
     expect(md).toContain("## 2026-11-15");
   });
 
-  it("groups today items by bucket with checkboxes", () => {
+  it("groups check items by bucket with checkboxes", () => {
     const md = buildMarkdown(payload);
+    expect(md).toContain("# Check");
     expect(md).toContain("## Rise");
     expect(md).toContain("- [x] wake up");
     expect(md).toContain("- [ ] shower");

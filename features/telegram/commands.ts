@@ -4,7 +4,7 @@
  */
 export type TelegramIntent =
   | { kind: "start"; code: string | undefined }
-  | { kind: "today" }
+  | { kind: "check" }
   | { kind: "week" }
   | { kind: "capture"; text: string }
   | { kind: "help" };
@@ -18,14 +18,22 @@ export function classifyTelegramText(text: string): TelegramIntent {
   if (start) {
     return { kind: "start", code: start[1]?.toLowerCase() };
   }
+  if (trimmed === "/check" || trimmed.toLowerCase() === "/check@mono_bot") {
+    return { kind: "check" };
+  }
   if (trimmed === "/today" || trimmed.toLowerCase() === "/today@mono_bot") {
-    return { kind: "today" };
+    return { kind: "check" }; // legacy alias
+  }
+  if (trimmed === "/checklist" || trimmed.toLowerCase() === "/checklist@mono_bot") {
+    return { kind: "check" }; // legacy alias
   }
   // General case: /command or /command@handle
   const command = /^\/([a-z][a-z0-9_-]*)(?:@[a-z0-9_]+)?(?:\s|$)/i.exec(trimmed);
   if (command) {
     const name = command[1].toLowerCase();
-    if (name === "today") return { kind: "today" };
+    if (name === "check") return { kind: "check" };
+    if (name === "today") return { kind: "check" }; // legacy alias
+    if (name === "checklist") return { kind: "check" }; // legacy alias
     if (name === "week") return { kind: "week" };
     if (name === "start") return classifyTelegramText("/start");
     return { kind: "help" };
@@ -39,7 +47,7 @@ export function classifyTelegramText(text: string): TelegramIntent {
 export const TELEGRAM_HELP = [
   "Mono bot.",
   "",
-  "/today — your three buckets and tick counts",
+  "/check — your three buckets and tick counts",
   "/week — your week, compiled",
   "or just send me a line and I'll save it to today's dot.",
   "",

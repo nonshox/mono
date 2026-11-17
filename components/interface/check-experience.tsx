@@ -1,13 +1,15 @@
 "use client";
 
-import { Check, LoaderCircle, Plus, Trash2, ArrowUp, ArrowDown, SlidersHorizontal, X as XIcon } from "lucide-react";
+import { Check, LoaderCircle, Plus, Wand, Trash2, ArrowUp, ArrowDown, SlidersHorizontal, X as XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
-  useTodayStore,
-} from "@/features/today/store";
-import { BUCKET_LABELS } from "@/features/today/types";
-import type { TimelineItem, Bucket } from "@/features/today/types";
+  useCheckStore,
+} from "@/features/check/store";
+import { suggestBucket } from "@/features/ai/client-api";
+import { getApiErrorMessage } from "@/lib/api-client";
+import { BUCKET_LABELS } from "@/features/check/types";
+import type { TimelineItem, Bucket } from "@/features/check/types";
 import { cn } from "cn";
 import { ProgressRing } from "@/components/interface/progress-ring";
 import {
@@ -30,7 +32,7 @@ function canSatisfy(): boolean {
   return new Date().getHours() >= SATISFY_AFTER_HOUR;
 }
 
-export function TodayExperience({
+export function CheckExperience({
   initial,
 }: {
   initial: {
@@ -45,17 +47,17 @@ export function TodayExperience({
     satisfied: number | null;
   };
 }) {
-  const hydrate = useTodayStore((state) => state.hydrate);
-  const items = useTodayStore((state) => state.items);
-  const satisfied = useTodayStore((state) => state.satisfied);
-  const saving = useTodayStore((state) => state.saving);
-  const toggle = useTodayStore((state) => state.toggle);
-  const add = useTodayStore((state) => state.add);
-  const remove = useTodayStore((state) => state.remove);
-  const move = useTodayStore((state) => state.move);
-  const editText = useTodayStore((state) => state.editText);
-  const satisfy = useTodayStore((state) => state.satisfy);
-  const reset = useTodayStore((state) => state.reset);
+  const hydrate = useCheckStore((state) => state.hydrate);
+  const items = useCheckStore((state) => state.items);
+  const satisfied = useCheckStore((state) => state.satisfied);
+  const saving = useCheckStore((state) => state.saving);
+  const toggle = useCheckStore((state) => state.toggle);
+  const add = useCheckStore((state) => state.add);
+  const remove = useCheckStore((state) => state.remove);
+  const move = useCheckStore((state) => state.move);
+  const editText = useCheckStore((state) => state.editText);
+  const satisfy = useCheckStore((state) => state.satisfy);
+  const reset = useCheckStore((state) => state.reset);
 
   const [manage, setManage] = useState<Record<Bucket, boolean>>({
     rise: false,
@@ -69,6 +71,8 @@ export function TodayExperience({
   });
   const [ready, setReady] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [suggestingBucket, setSuggestingBucket] = useState<Bucket | null>(null);
+  const [suggestions, setSuggestions] = useState<Partial<Record<Bucket, string[]>>>({});
 
   useEffect(() => {
     hydrate(initial);
@@ -87,6 +91,36 @@ export function TodayExperience({
 
   const toggleItem = (id: string) =>
     void toggle(id).catch(() => toast.error("Couldn't save"));
+
+  const suggestForBucket = async (bucket: Bucket) => {
+    if (suggestingBucket) return;
+    setSuggestingBucket(bucket);
+    try {
+      const { items, source } = await suggestBucket(bucket);
+      setSuggestions((prev) => ({ ...prev, [bucket]: items }));
+      if (items.length === 0) {
+        toast.info("Nothing to suggest yet");
+      } else if (source === "local") {
+        toast.info("AI is busy — quick picks from your own actions.");
+      }
+    } catch (cause) {
+      toast.error(getApiErrorMessage(cause, "Suggest is unavailable"));
+    } finally {
+      setSuggestingBucket(null);
+    }
+  };
+
+  const acceptSuggestion = (bucket: Bucket, text: string) => {
+    void add(bucket, text).catch(() => toast.error("Not saved"));
+    setSuggestions((prev) => ({
+      ...prev,
+      [bucket]: (prev[bucket] ?? []).filter((item) => item !== text),
+    }));
+  };
+
+  const dismissSuggestions = (bucket: Bucket) => {
+    setSuggestions((prev) => ({ ...prev, [bucket]: [] }));
+  };
 
   const toggleManage = (bucket: Bucket) => {
     if (manage[bucket]) setEditingId(null);
@@ -109,7 +143,7 @@ export function TodayExperience({
     try {
       await satisfy(percent);
       await reset();
-      toast.success(`Today: ${percent}% — cleared for tomorrow`);
+      toast.success(`Check: ${percent}% — cleared for tomorrow`);
     } catch {
       toast.error("Could not close the day");
     }
@@ -117,10 +151,12 @@ export function TodayExperience({
 
   return (
     <main className="min-h-full w-full bg-background px-3 pb-20 pt-5 sm:px-6 sm:pt-8">
-      <h1 className="sr-only">Today</h1>
-      <div className="mx-auto w-full max-w-5xl md:max-w-6xl">
-        {/* Buckets — three vertical strips */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+      <h1 className="sr-only">Check</h1>
+        <div className="mx-auto w-full max-w-5xl md:max-w-6xl">
+          <div
+            className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4"
+          >
+            {/* Buckets — three vertical strips */}
           {BUCKETS.map((bucket) => {
             const bucketItems = items
               .filter((item) => item.bucket === bucket)
@@ -138,6 +174,27 @@ export function TodayExperience({
                     {BUCKET_LABELS[bucket]}
                   </h2>
                   <span className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      aria-busy={suggestingBucket === bucket}
+                      aria-label={
+                        suggestingBucket === bucket
+                          ? `Reading your days for ${BUCKET_LABELS[bucket]}…`
+                          : `Suggest for ${BUCKET_LABELS[bucket]}`
+                      }
+                      className="grid size-7 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                      disabled={suggestingBucket !== null}
+                      onClick={() => void suggestForBucket(bucket)}
+                      type="button"
+                    >
+                      {suggestingBucket === bucket ? (
+                        <LoaderCircle
+                          aria-hidden="true"
+                          className="size-4 animate-spin"
+                        />
+                      ) : (
+                        <Wand aria-hidden="true" className="size-4" strokeWidth={1.8} />
+                      )}
+                    </button>
                     <span className="text-xs tabular-nums font-bold text-foreground">
                       {doneHere} / {bucketItems.length}
                     </span>
@@ -200,7 +257,43 @@ export function TodayExperience({
                   ))}
                 </ul>
 
-                {bucketItems.length === 0 && !bucketManage && (
+                {suggestions[bucket] && suggestions[bucket].length > 0 && (
+                  <div className="mt-2 rounded-xl border border-border/60 bg-muted/30 px-2 py-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="type-eyebrow">Suggestions</span>
+                      <button
+                        aria-label="Dismiss suggestions"
+                        className="grid size-5 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted focus-visible:ring-1 focus-visible:ring-ring"
+                        onClick={() => dismissSuggestions(bucket)}
+                        type="button"
+                      >
+                        <XIcon aria-hidden="true" className="size-3" strokeWidth={2.2} />
+                      </button>
+                    </div>
+                    <ul className="mt-1 grid gap-0.5">
+                      {suggestions[bucket]?.map((text) => (
+                        <li
+                          className="flex items-center justify-between gap-1.5 py-0.5"
+                          key={text}
+                        >
+                          <span className="min-w-0 truncate text-[11px] font-medium leading-5 text-foreground">
+                            {text}
+                          </span>
+                          <button
+                            aria-label={`Add "${text}"`}
+                            className="grid size-6 shrink-0 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring"
+                            onClick={() => acceptSuggestion(bucket, text)}
+                            type="button"
+                          >
+                            <Plus aria-hidden="true" className="size-3.5" strokeWidth={2.5} />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {bucketItems.length === 0 && !suggestions[bucket]?.length && !bucketManage && (
                   <p className="mt-2 py-1.5 text-xs font-medium text-foreground">
                     Nothing yet
                   </p>
@@ -238,7 +331,7 @@ export function TodayExperience({
               </section>
             );
           })}
-        </div>
+          </div>
 
         {/* Single evening button — merged satisfy + reset */}
         <div className="mt-6 flex items-center justify-end">
@@ -249,7 +342,7 @@ export function TodayExperience({
                 : `End of day, ${percent} percent done`
             }
             className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-xs font-extrabold text-background outline-none transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30"
-            disabled={!ready || items.length === 0 || saving}
+            disabled={!ready || items.length === 0 || saving || satisfied !== null}
             onClick={() => void endDay()}
             title={ready ? undefined : "Available after 6pm"}
             type="button"

@@ -18,7 +18,6 @@ import {
   type SignInCodeForm,
   type SignInEmailForm,
 } from "@/features/auth/schemas";
-import { useClearNotifications } from "@/features/notifications/use-notifications";
 import { useUserStore } from "@/features/users/store";
 import { getApiErrorMessage } from "@/lib/api-client";
 
@@ -32,7 +31,6 @@ export function AuthExperience() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [cooldown, setCooldown] = useState(0);
-  const clearNotifications = useClearNotifications();
 
   const emailForm = useForm<SignInEmailForm>({
     resolver: zodResolver(signInEmailFormSchema),
@@ -89,7 +87,6 @@ export function AuthExperience() {
 
     try {
       await verifyEmailCode(userId, value);
-      clearNotifications();
       useUserStore.getState().reset();
       const target = next && next.startsWith("/") ? next : "/";
       router.replace(target);

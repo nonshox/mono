@@ -4,6 +4,7 @@ import { jsonError, logFailure } from "@/lib/http";
 import { listLetterTargets } from "@/features/users/service";
 import { listRecentEntries } from "@/features/days/service";
 import { sendTelegramNotification } from "@/features/telegram/service";
+import { notifyLetterReady } from "@/features/notifications/events";
 import { compileLetter } from "@/features/digest/compile";
 
 function isAuthorized(request: Request): boolean {
@@ -63,6 +64,7 @@ export async function GET(request: Request) {
       }
 
       const letter = compileLetter(recent);
+      await notifyLetterReady(userId);
       await sendTelegramNotification(userId, letter);
       sent += 1;
     } catch (error) {

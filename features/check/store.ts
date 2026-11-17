@@ -12,7 +12,7 @@ import {
 } from "./client-api";
 import type { TimelineItem, Bucket } from "./types";
 
-type TodayState = {
+type CheckState = {
   items: TimelineItem[];
   day: string;
   satisfied: number | null;
@@ -32,7 +32,7 @@ type TodayState = {
   }) => void;
 };
 
-export const useTodayStore = create<TodayState>((set, get) => ({
+export const useCheckStore = create<CheckState>((set, get) => ({
   items: [],
   day: "",
   satisfied: null,

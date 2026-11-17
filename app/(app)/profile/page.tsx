@@ -6,6 +6,7 @@ import { getUserRow } from "@/features/users/service";
 import { PageLoader } from "@/components/interface/page-loader";
 import { SessionExpired } from "@/components/interface/session-expired";
 import { UserAvatar } from "@/components/interface/user-avatar";
+import { ActionsEditor } from "@/components/interface/actions-editor";
 
 export const metadata = {
   title: "Profile",
@@ -28,6 +29,7 @@ async function AuthenticatedProfile() {
   const user = await getUserRow(account.$id).catch(() => null);
   const name = user?.name.trim() || "";
   const email = account.email;
+  const actions = user?.actions ?? [];
   const joined = user?.$createdAt
     ? new Intl.DateTimeFormat(undefined, {
         month: "long",
@@ -85,6 +87,9 @@ async function AuthenticatedProfile() {
             </div>
           )}
         </dl>
+
+        {/* Actions — what you're actively doing */}
+        <ActionsEditor initial={actions} />
       </div>
     </main>
   );

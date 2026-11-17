@@ -67,7 +67,7 @@ Notes: Hobby cron fires within the scheduled hour (best-effort) — fine for a s
 - bell icon (navbar) — inbox panel: grouping, unread badge, mark read/all-read
 - `/` — greeting + **year in dots** (365-day journal: hollow dot, tap to write/edit/erase, “on this day” flashback, `/api/days*`)
 - `/journal` — reading mode (every entry as one book, year dividers, search-within + last-30-days themes, tap to expand as a card)
-- `/today` — minimal timeline: three fixed buckets (Rise · Midday · Evening), tap to tick/untick, "End of day" stores % of ticks as `days.satisfied` (0–100) on YES, or clears all ticks for tomorrow on NO
+- `/check` — minimal timeline: three fixed buckets (Rise · Midday · Evening), tap to tick/untick, "End of day" stores % of ticks as `days.satisfied` (0–100) on YES, or clears all ticks for tomorrow on NO
 - `/profile` — identity card (avatar or initials, name, email, member since) + `/profile/edit` (name, photo upload/remove)
 - `/settings` — account (sessions w/ revoke, Telegram connect, delete account)
 - Navbar everywhere — logo + bell icon (notifications open as a dropdown panel), account menu

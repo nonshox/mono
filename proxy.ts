@@ -29,7 +29,7 @@ export const config = {
     "/profile",
     "/profile/:path*",
     "/journal",
-    "/today",
+    "/check",
     "/library",
   ],
 };

@@ -17,6 +17,8 @@ export type UserRow = Models.Row & {
   ai?: boolean;
   /** IANA timezone (e.g. "America/New_York") — drives the evening nudge hour. */
   tz?: string | null;
+  /** Things the user is actively doing — edited in profile; feeds suggestions. */
+  actions?: string[] | null;
 };
 
 export type UserPreview = Models.Row & {
@@ -132,6 +134,29 @@ export async function setUserAvatar(
   });
   await deleteAvatarFile(previous);
   return updated;
+}
+
+export async function setUserActions(
+  userId: string,
+  actions: string[],
+): Promise<UserRow> {
+  const existing = await getUserRow(userId);
+  if (!existing) {
+    throw new Error("Users row is missing for this account.");
+  }
+  const cleaned = [
+    ...new Set(
+      actions
+        .map((action) => action.trim())
+        .filter((action) => action.length >= 2 && action.length <= 64),
+    ),
+  ].slice(0, 20);
+  return getTables().updateRow<UserRow>({
+    databaseId: getDatabaseId(),
+    tableId,
+    rowId: userId,
+    data: { actions: cleaned },
+  });
 }
 
 export async function setUserTz(
