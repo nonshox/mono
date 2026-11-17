@@ -2,6 +2,9 @@ import { AppwriteException } from "node-appwrite";
 import { NextResponse } from "next/server";
 import { getCurrentAccount } from "@/features/auth/session";
 
+/** Every private response carries this — nothing on this server is cacheable. */
+export const NO_STORE_HEADERS = { "Cache-Control": "private, no-store" } as const;
+
 export function jsonError(
   status: number,
   code: string,

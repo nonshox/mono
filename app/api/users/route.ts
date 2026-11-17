@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import {
-  getAuthAccount,
+import { NO_STORE_HEADERS, getAuthAccount,
   isSameOrigin,
   jsonError,
-  logFailure,
-} from "@/lib/http";
+  logFailure } from "@/lib/http";
 import {
   ensureUserForAccount,
   setUserActions,
@@ -39,7 +37,7 @@ export async function GET() {
         ai: row.ai ?? false,
         tz: row.tz ?? null,
       },
-      { headers: { "Cache-Control": "private, no-store" } },
+      { headers: NO_STORE_HEADERS },
     );
   } catch (error) {
     logFailure("User lookup", error);

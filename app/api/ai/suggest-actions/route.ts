@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
-import {
-  getAuthAccount,
+import { NO_STORE_HEADERS, getAuthAccount,
   isSameOrigin,
   jsonError,
-  logFailure,
-} from "@/lib/http";
+  logFailure } from "@/lib/http";
 import { listRecentEntriesSince } from "@/features/days/service";
 import { listTimeline } from "@/features/check/service";
 import { rateLimit } from "@/lib/rate-limit";
 import { detectActions } from "@/features/ai/actions";
 
-const CACHE_HEADERS = { "Cache-Control": "private, no-store" } as const;
 const WINDOW_DAYS = 10;
 
 export type SuggestActionsStats = {
@@ -73,7 +70,7 @@ export async function POST(request: Request) {
       timelineItems: pseudoEntries.length,
       windowDays: WINDOW_DAYS,
     };
-    return NextResponse.json({ actions, stats }, { headers: CACHE_HEADERS });
+    return NextResponse.json({ actions, stats }, { headers: NO_STORE_HEADERS });
   } catch (error) {
     logFailure("Suggest my actions", error);
     return jsonError(

@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import {
-  getAuthAccount,
+import { NO_STORE_HEADERS, getAuthAccount,
   isSameOrigin,
   jsonError,
-  logFailure,
-} from "@/lib/http";
+  logFailure } from "@/lib/http";
 import { polishEntrySchema } from "@/features/ai/schemas";
 import { polishEntry } from "@/features/digest/compile";
 import { rateLimit } from "@/lib/rate-limit";
@@ -51,7 +49,7 @@ export async function POST(request: Request) {
     const polished = polishEntry(parsed.data.text);
     return NextResponse.json(
       { polished },
-      { headers: { "Cache-Control": "private, no-store" } },
+      { headers: NO_STORE_HEADERS },
     );
   } catch (error) {
     logFailure("Dictation polish", error);

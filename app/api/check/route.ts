@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import {
-  getAuthAccount,
+import { NO_STORE_HEADERS, getAuthAccount,
   isSameOrigin,
   jsonError,
-  logFailure,
-} from "@/lib/http";
+  logFailure } from "@/lib/http";
 import {
   createItemSchema,
   deleteItemSchema,
@@ -13,11 +11,11 @@ import {
 import {
   createTimelineItem,
   deleteTimelineItem,
-  loadCheckBundle,
   moveTimelineItem,
   setTimelineItemDone,
   updateTimelineItemText,
 } from "@/features/check/service";
+import { loadCheckBundle } from "@/features/check/satisfy";
 
 export async function GET() {
   const auth = await getAuthAccount("Check lookup");
@@ -32,7 +30,7 @@ export async function GET() {
     const bundle = await loadCheckBundle(auth.account.$id);
     return NextResponse.json(
       bundle,
-      { headers: { "Cache-Control": "private, no-store" } },
+      { headers: NO_STORE_HEADERS },
     );
   } catch (error) {
     logFailure("Check lookup", error);

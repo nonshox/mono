@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import {
-  getAuthAccount,
+import { NO_STORE_HEADERS, getAuthAccount,
   isSameOrigin,
   jsonError,
-  logFailure,
-} from "@/lib/http";
+  logFailure } from "@/lib/http";
 import {
   deleteDayEntry,
   listYearEntries,
@@ -35,7 +33,7 @@ export async function GET(request: Request) {
     const entries = await listYearEntries(auth.account.$id, parsedYear.data);
     return NextResponse.json(
       { days: entries },
-      { headers: { "Cache-Control": "private, no-store" } },
+      { headers: NO_STORE_HEADERS },
     );
   } catch (error) {
     logFailure("Days lookup", error);

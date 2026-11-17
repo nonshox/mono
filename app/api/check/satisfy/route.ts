@@ -7,8 +7,9 @@ import {
 } from "@/lib/http";
 import { satisfySchema } from "@/features/check/schemas";
 import { getDaySatisfied, setDaySatisfied, clearDaySatisfied } from "@/features/days/service";
-import { todayDay } from "@/features/check/service";
+import { todayDay } from "@/features/check/satisfy";
 import { notifyDayClosed } from "@/features/notifications/events";
+import { getUserRow } from "@/features/users/service";
 
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) {
@@ -36,7 +37,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const day = todayDay();
+    const user = await getUserRow(auth.account.$id).catch(() => null);
+    const day = todayDay(user?.tz ?? null);
     const previousSatisfied = await getDaySatisfied(auth.account.$id, day);
     await setDaySatisfied(auth.account.$id, day, parsed.data.satisfied);
     notifyDayClosed(
@@ -66,7 +68,8 @@ export async function DELETE(request: Request) {
   }
 
   try {
-    await clearDaySatisfied(auth.account.$id, todayDay());
+    const user = await getUserRow(auth.account.$id).catch(() => null);
+    await clearDaySatisfied(auth.account.$id, todayDay(user?.tz ?? null));
     return NextResponse.json({ ok: true });
   } catch (error) {
     logFailure("Check unsatisfy", error);

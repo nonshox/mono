@@ -6,7 +6,7 @@ import { hasDayEntry, listRecentEntries } from "@/features/days/service";
 import { sendTelegramNotification } from "@/features/telegram/service";
 import { createNotification } from "@/features/notifications/service";
 import { nudgeQuestionFor } from "@/features/digest/compile";
-import { todayUtc } from "@/lib/dates";
+import { userDay } from "@/lib/dates";
 
 // One soft evening line — written for the 10:00pm minute it lands.
 const FALLBACK_MESSAGE =
@@ -64,7 +64,6 @@ export async function GET(request: Request) {
   }
 
   const now = new Date();
-  const today = todayUtc();
   const seed = Math.floor(now.getTime() / 86_400_000);
 
   let targets: Array<{ id: string; tz: string | null }>;
@@ -89,6 +88,8 @@ export async function GET(request: Request) {
       if (hour !== NUDGE_LOCAL_HOUR) {
         continue; // Their 10:00pm hasn't arrived — the next hourly ping will catch it.
       }
+      // The user's local day decides whether they already wrote today.
+      const today = userDay(target.tz, now);
       if (await hasDayEntry(target.id, today)) {
         skipped += 1;
         continue;
@@ -118,5 +119,11 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ today, sent, skipped, failed, checked: targets.length });
+  return NextResponse.json({
+    now: now.toISOString(),
+    sent,
+    skipped,
+    failed,
+    checked: targets.length,
+  });
 }

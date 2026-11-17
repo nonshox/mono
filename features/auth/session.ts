@@ -5,6 +5,14 @@ import {
   getSessionCookieName,
 } from "@/lib/appwrite/server";
 
+/** Thrown when Appwrite is unreachable (network/DNS/timeout) — not a 401. */
+export class AppwriteUnavailableError extends Error {
+  constructor(message = "Appwrite is temporarily unreachable") {
+    super(message);
+    this.name = "AppwriteUnavailableError";
+  }
+}
+
 function isTransient(error: unknown): boolean {
   // Appwrite network is down / unreachable — treat as "not signed in",
   // never crash a page over an infrastructure hiccup.
@@ -53,7 +61,7 @@ export async function getCurrentAccount() {
       return null;
     }
     if (isTransient(error)) {
-      return null;
+      throw new AppwriteUnavailableError();
     }
 
     throw error;
@@ -88,7 +96,7 @@ export async function getCurrentAccountData() {
       return null;
     }
     if (isTransient(error)) {
-      return null;
+      throw new AppwriteUnavailableError();
     }
 
     throw error;

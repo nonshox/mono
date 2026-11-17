@@ -18,12 +18,12 @@ import {
   markReadInList,
 } from "@/features/notifications/model";
 
-const SEEN_KEY = "mono_bell_seen";
+const EMPTY_ITEMS: NotificationItem[] = [];
 
 /**
- * Lazy notifications — zero network on mount. The full list is fetched only
- * when the bell opens; after the first open in a session, mounts fetch a
- * tiny unread count (id-only rows) so the badge stays honest.
+ * Notifications, the honest way: the badge always reflects reality (one
+ * indexed, id-only count query per mount), the full list is fetched on
+ * demand when the bell opens, and is cached for the rest of the session.
  */
 export function useNotifications() {
   const [items, setItems] = useState<NotificationItem[] | null>(null);
@@ -34,10 +34,7 @@ export function useNotifications() {
   const loaded = items !== null;
   const unreadCount = loaded ? countUnread(items) : count;
 
-  // Badge refresh only after the bell has been opened once this session.
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.sessionStorage.getItem(SEEN_KEY) !== "1") return;
     let active = true;
     fetchUnreadCount()
       .then((next) => active && setCount(next))
@@ -51,14 +48,13 @@ export function useNotifications() {
 
   const ensureLoaded = async () => {
     if (items !== null) {
-      return;
+      return; // cached — opening the bell again this session is instant
     }
     setLoading(true);
     setError("");
     try {
       const page = await fetchNotifications();
       setItems(page.items);
-      window.sessionStorage.setItem(SEEN_KEY, "1");
       setCount(countUnread(page.items));
     } catch (cause) {
       setError(
@@ -113,7 +109,7 @@ export function useNotifications() {
   };
 
   return {
-    items: items ?? [],
+    items: loaded ? items : EMPTY_ITEMS,
     loaded,
     unreadCount,
     loading,

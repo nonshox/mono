@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { getCurrentAccount } from "@/features/auth/session";
-import { loadCheckBundle } from "@/features/check/service";
+import { getCurrentAccount, AppwriteUnavailableError } from "@/features/auth/session";
+import { getUserRow } from "@/features/users/service";
+import { loadCheckBundle } from "@/features/check/satisfy";
 import { PageLoader } from "@/components/interface/page-loader";
 import { SessionExpired } from "@/components/interface/session-expired";
+import { ServiceUnavailable } from "@/components/interface/service-unavailable";
 import { CheckExperience } from "@/components/interface/check-experience";
 
 export const metadata: Metadata = {
@@ -19,11 +21,20 @@ export default function CheckPage() {
 }
 
 async function AuthenticatedCheck() {
-  const account = await getCurrentAccount();
+  let account;
+  try {
+    account = await getCurrentAccount();
+  } catch (error) {
+    if (error instanceof AppwriteUnavailableError) {
+      return <ServiceUnavailable />;
+    }
+    throw error;
+  }
   if (!account) {
     return <SessionExpired />;
   }
 
-  const bundle = await loadCheckBundle(account.$id);
+  const user = await getUserRow(account.$id).catch(() => null);
+  const bundle = await loadCheckBundle(account.$id, user?.tz ?? null);
   return <CheckExperience initial={bundle} />;
 }

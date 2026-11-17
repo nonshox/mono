@@ -1,9 +1,8 @@
 import "server-only";
 
-import { createHash } from "node:crypto";
 import { AppwriteException, ID, Query, type Models } from "node-appwrite";
 import { getDatabaseId, getTables, isNotFound, runTransaction } from "@/lib/appwrite/tables";
-import { todayUtc } from "@/lib/dates";
+import { sha256RowId } from "@/lib/row-id";
 import {
   BUCKETS,
   type Bucket,
@@ -61,7 +60,7 @@ export async function ensureTimelineSeed(
   const tables = getTables();
   // Deterministic ids make concurrent first-loads converge instead of duplicating.
   const seedId = (bucket: Bucket, index: number) =>
-    createHash("sha256").update(`${userId}:seed:${bucket}:${index}`).digest("hex").slice(0, 32);
+    sha256RowId(`${userId}:seed:${bucket}:${index}`);
   await Promise.all(
     BUCKETS.flatMap((bucket) =>
       DEFAULT_ITEMS[bucket].map((text, index) =>
@@ -269,23 +268,4 @@ export async function clearCheckTicks(userId: string): Promise<void> {
       }),
     ),
   );
-}
-
-/** Month-day-range key for today (UTC, matches the days table). */
-export function todayDay(): string {
-  return todayUtc();
-}
-
-/** Fetch today's full state — items + satisfied percentage. Seeds on first visit. */
-export async function loadCheckBundle(
-  userId: string,
-): Promise<{
-  items: TimelineItem[];
-  satisfied: number | null;
-  day: string;
-}> {
-  const currentItems = await ensureTimelineSeed(userId);
-  const { getDaySatisfied } = await import("@/features/days/service");
-  const satisfied = await getDaySatisfied(userId, todayDay());
-  return { items: currentItems, satisfied, day: todayDay() };
 }

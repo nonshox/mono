@@ -9,6 +9,7 @@ import { listTimeline } from "@/features/check/service";
 import { getUserRow } from "@/features/users/service";
 import { buildMarkdown, buildPayload } from "@/features/export/build";
 import { todayUtc } from "@/lib/dates";
+import { NO_STORE_HEADERS } from "@/lib/http";
 
 const formatSchema = z.enum(["json", "markdown"]);
 
@@ -60,7 +61,7 @@ export async function GET(request: Request) {
         headers: {
           "Content-Type": "text/markdown; charset=utf-8",
           "Content-Disposition": `attachment; filename="mono-export-${stamp}.md"`,
-          "Cache-Control": "private, no-store",
+          ...NO_STORE_HEADERS,
         },
       });
     }
@@ -69,7 +70,7 @@ export async function GET(request: Request) {
       headers: {
         "Content-Type": "application/json; charset=utf-8",
         "Content-Disposition": `attachment; filename="mono-export-${stamp}.json"`,
-        "Cache-Control": "private, no-store",
+        ...NO_STORE_HEADERS,
       },
     });
   } catch (error) {

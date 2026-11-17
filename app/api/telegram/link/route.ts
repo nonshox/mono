@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import {
-  getAuthAccount,
+import { NO_STORE_HEADERS, getAuthAccount,
   isSameOrigin,
   jsonError,
-  logFailure,
-} from "@/lib/http";
+  logFailure } from "@/lib/http";
 import {
   createTelegramLink,
   getTelegramConnectionStatus,
@@ -53,7 +51,7 @@ export async function GET() {
     const connected = await getTelegramConnectionStatus(auth.account.$id);
     return NextResponse.json(
       { connected },
-      { headers: { "Cache-Control": "private, no-store" } },
+      { headers: NO_STORE_HEADERS },
     );
   } catch (error) {
     logFailure("Telegram connection status", error);

@@ -5,8 +5,9 @@ import { WorkspaceShell } from "@/components/interface/workspace-shell";
 export default function AppLayout({ children }: { children: ReactNode }) {
   // WorkspaceShell uses usePathname (and so do its Links) — a dynamic API.
   // It must sit behind a Suspense boundary or static prerendering throws.
+  // Fallback mirrors the shell's opaque background so there's no white flash.
   return (
-    <Suspense>
+    <Suspense fallback={<div className="flex min-h-full flex-col bg-background" />}>
       <WorkspaceShell>{children}</WorkspaceShell>
     </Suspense>
   );

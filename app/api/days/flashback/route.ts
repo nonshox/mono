@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthAccount, jsonError, logFailure } from "@/lib/http";
+import { NO_STORE_HEADERS, getAuthAccount, jsonError, logFailure } from "@/lib/http";
 import { listFlashbackEntries } from "@/features/days/service";
 import { dayKeySchema } from "@/features/days/schemas";
 
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     );
     return NextResponse.json(
       { entries },
-      { headers: { "Cache-Control": "private, no-store" } },
+      { headers: NO_STORE_HEADERS },
     );
   } catch (error) {
     logFailure("Flashback lookup", error);

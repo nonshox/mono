@@ -1,12 +1,10 @@
 import { Account } from "node-appwrite";
 import { NextResponse } from "next/server";
 import { emailTokenVerifySchema } from "@/features/auth/schemas";
-import {
-  appwriteStatus,
+import { NO_STORE_HEADERS, appwriteStatus,
   isSameOrigin,
   jsonError,
-  logFailure,
-} from "@/lib/http";
+  logFailure } from "@/lib/http";
 import {
   createAccountClient,
   createAdminClient,
@@ -66,7 +64,7 @@ export async function POST(request: Request) {
 
     const response = NextResponse.json(
       { ok: true },
-      { headers: { "Cache-Control": "private, no-store" } },
+      { headers: NO_STORE_HEADERS },
     );
     response.cookies.set(getSessionCookieName(), session.secret, {
       httpOnly: true,

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { getCurrentAccount } from "@/features/auth/session";
+import { getCurrentAccount, AppwriteUnavailableError } from "@/features/auth/session";
 import { listAllEntries } from "@/features/days/service";
 import { PageLoader } from "@/components/interface/page-loader";
 import { SessionExpired } from "@/components/interface/session-expired";
+import { ServiceUnavailable } from "@/components/interface/service-unavailable";
 import { JournalExperience } from "@/components/interface/journal-experience";
 
 export const metadata: Metadata = {
@@ -19,7 +20,15 @@ export default function JournalPage() {
 }
 
 async function AuthenticatedJournal() {
-  const account = await getCurrentAccount();
+  let account;
+  try {
+    account = await getCurrentAccount();
+  } catch (error) {
+    if (error instanceof AppwriteUnavailableError) {
+      return <ServiceUnavailable />;
+    }
+    throw error;
+  }
   if (!account) {
     return <SessionExpired />;
   }

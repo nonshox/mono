@@ -1,10 +1,11 @@
 import { Pencil, Mail, CalendarDays } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
-import { getCurrentAccount } from "@/features/auth/session";
+import { getCurrentAccount, AppwriteUnavailableError } from "@/features/auth/session";
 import { getUserRow } from "@/features/users/service";
 import { PageLoader } from "@/components/interface/page-loader";
 import { SessionExpired } from "@/components/interface/session-expired";
+import { ServiceUnavailable } from "@/components/interface/service-unavailable";
 import { UserAvatar } from "@/components/interface/user-avatar";
 import { ActionsEditor } from "@/components/interface/actions-editor";
 
@@ -21,7 +22,15 @@ export default function ProfilePage() {
 }
 
 async function AuthenticatedProfile() {
-  const account = await getCurrentAccount();
+  let account;
+  try {
+    account = await getCurrentAccount();
+  } catch (error) {
+    if (error instanceof AppwriteUnavailableError) {
+      return <ServiceUnavailable />;
+    }
+    throw error;
+  }
   if (!account) {
     return <SessionExpired />;
   }

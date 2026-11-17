@@ -1,19 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import {
-  getAuthAccount,
+import { NO_STORE_HEADERS, getAuthAccount,
   isSameOrigin,
   jsonError,
-  logFailure,
-} from "@/lib/http";
+  logFailure } from "@/lib/http";
 import { getUserRow } from "@/features/users/service";
 import { rateLimit } from "@/lib/rate-limit";
 import { listRecentEntriesSince } from "@/features/days/service";
 import { listTimeline } from "@/features/check/service";
 import { suggestBucket, suggestDay, type SuggestMeta } from "@/features/ai/suggest";
 import { report, startTiming } from "@/lib/telemetry";
-
-const CACHE_HEADERS = { "Cache-Control": "private, no-store" } as const;
 
 const bucketSchema = z
   .object({ bucket: z.enum(["rise", "midday", "evening"]).optional() })
@@ -92,7 +88,7 @@ export async function POST(request: Request) {
       });
       return NextResponse.json(body, {
         headers: {
-          ...CACHE_HEADERS,
+          ...NO_STORE_HEADERS,
           "Server-Timing": timing.header(),
         },
       });

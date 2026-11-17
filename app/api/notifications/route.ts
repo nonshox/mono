@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import {
-  getAuthAccount,
+import { NO_STORE_HEADERS, getAuthAccount,
   isSameOrigin,
   jsonError,
-  logFailure,
-} from "@/lib/http";
+  logFailure } from "@/lib/http";
 import { z } from "zod";
 import {
   clearReadNotifications as clearReadInDb,
@@ -28,12 +26,10 @@ export async function GET(request: Request) {
     return jsonError(401, "UNAUTHENTICATED", "Sign in to view notifications.");
   }
 
-  const CACHE_HEADERS = { "Cache-Control": "private, no-store" } as const;
-
   // ?count=1 — the cheap badge-only path (id-only rows, ~1 KB).
   if (new URL(request.url).searchParams.get("count") === "1") {
     const unreadCount = await countUnreadNotifications(auth.account.$id);
-    return NextResponse.json({ unreadCount }, { headers: CACHE_HEADERS });
+    return NextResponse.json({ unreadCount }, { headers: NO_STORE_HEADERS });
   }
 
   try {
@@ -41,7 +37,7 @@ export async function GET(request: Request) {
     const unreadCount = items.filter((item) => !item.read).length;
     return NextResponse.json(
       { items, hasMore: false, unreadCount },
-      { headers: CACHE_HEADERS },
+      { headers: NO_STORE_HEADERS },
     );
   } catch (error) {
     logFailure("Notification list", error);

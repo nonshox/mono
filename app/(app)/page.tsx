@@ -1,11 +1,12 @@
 import { Suspense } from "react";
-import { getCurrentAccount } from "@/features/auth/session";
+import { getCurrentAccount, AppwriteUnavailableError } from "@/features/auth/session";
 import { getUserRow } from "@/features/users/service";
 import { listYearEntries, listYearsWithEntries } from "@/features/days/service";
+import { userDay } from "@/lib/dates";
 import { PageLoader } from "@/components/interface/page-loader";
 import { SessionExpired } from "@/components/interface/session-expired";
+import { ServiceUnavailable } from "@/components/interface/service-unavailable";
 import { DayDots } from "@/components/interface/day-dots";
-import { todayUtc } from "@/lib/dates";
 
 export default function HomePage() {
   return (
@@ -16,7 +17,15 @@ export default function HomePage() {
 }
 
 async function AuthenticatedHome() {
-  const account = await getCurrentAccount();
+  let account;
+  try {
+    account = await getCurrentAccount();
+  } catch (error) {
+    if (error instanceof AppwriteUnavailableError) {
+      return <ServiceUnavailable />;
+    }
+    throw error;
+  }
   if (!account) {
     return <SessionExpired />;
   }
@@ -24,7 +33,7 @@ async function AuthenticatedHome() {
   const user = await getUserRow(account.$id).catch(() => null);
   const firstName = user?.name.trim().split(/\s+/)[0] ?? "";
   const year = new Date().getUTCFullYear();
-  const today = todayUtc();
+  const today = userDay(user?.tz);
   const [entries, years] = await Promise.all([
     listYearEntries(account.$id, year).catch(() => []),
     listYearsWithEntries(account.$id).catch(() => []),

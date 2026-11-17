@@ -259,6 +259,23 @@ async function callGemini(
   throw new Error(`Gemini unavailable (last status ${lastStatus}).`);
 }
 
+const actionsLine = (userActions: string[]): string =>
+  userActions.length > 0 ? userActions.map((a) => `- ${a}`).join("\n") : "(none set)";
+
+const timelineLine = (timelineTexts: string[]): string =>
+  timelineTexts.length > 0
+    ? timelineTexts.slice(0, 30).map((t) => `- ${t}`).join("\n")
+    : "(empty)";
+
+const threadsLine = (threads: Threads): string =>
+  threads.activities.length > 0 ? threads.activities.join("; ") : "(none clear)";
+
+const entriesLine = (entries: DayEntry[]): string =>
+  entries
+    .slice(-10)
+    .map((entry) => `${entry.day.slice(5)}: ${entry.text.slice(0, 120)}`)
+    .join("\n");
+
 const personalPrompt = (
   entries: DayEntry[],
   threads: Threads,
@@ -273,18 +290,15 @@ const personalPrompt = (
     '{"rise":["..."],"midday":["..."],"evening":["..."]}',
     "",
     "User's current actions:",
-    userActions.length > 0 ? userActions.map((a) => `- ${a}`).join("\n") : "(none set)",
+    actionsLine(userActions),
     "Threads:",
-    threads.activities.length > 0 ? threads.activities.join("; ") : "(none clear)",
+    threadsLine(threads),
     "",
     "Already on the check:",
-    timelineTexts.length > 0 ? timelineTexts.slice(0, 30).map((t) => `- ${t}`).join("\n") : "(empty)",
+    timelineLine(timelineTexts),
     "",
     "Recent entries:",
-    entries
-      .slice(-10)
-      .map((entry) => `${entry.day.slice(5)}: ${entry.text.slice(0, 120)}`)
-      .join("\n"),
+    entriesLine(entries),
   ].join("\n");
 
 const bucketPrompt = (
@@ -300,18 +314,15 @@ const bucketPrompt = (
     "Return ONLY a JSON array of 2 strings: [\"...\",\"...\"]",
     "",
     "User's current actions:",
-    userActions.length > 0 ? userActions.map((a) => `- ${a}`).join("\n") : "(none set)",
+    actionsLine(userActions),
     "Threads:",
-    threads.activities.length > 0 ? threads.activities.join("; ") : "(none clear)",
+    threadsLine(threads),
     "",
     "Already on the check:",
-    timelineTexts.length > 0 ? timelineTexts.slice(0, 30).map((t) => `- ${t}`).join("\n") : "(empty)",
+    timelineLine(timelineTexts),
     "",
     "Recent entries:",
-    entries
-      .slice(-10)
-      .map((entry) => `${entry.day.slice(5)}: ${entry.text.slice(0, 120)}`)
-      .join("\n"),
+    entriesLine(entries),
   ].join("\n");
 
 const habitsPrompt = (): string =>

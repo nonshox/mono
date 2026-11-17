@@ -1,6 +1,7 @@
 import "server-only";
 
-import { createHash } from "node:crypto";
+
+import { sha256RowId } from "@/lib/row-id";
 import { AppwriteException, Query, type Models } from "node-appwrite";
 import { getDatabaseId, getTables, isNotFound } from "@/lib/appwrite/tables";
 import { logFailure } from "@/lib/http";
@@ -44,7 +45,7 @@ export async function getDaySatisfied(
 
 /** Deterministic row id — one row per user per day, upsertable by id. */
 export function dayRowId(userId: string, day: string): string {
-  return createHash("sha256").update(`${userId}:${day}`).digest("hex").slice(0, 32);
+  return sha256RowId(`${userId}:${day}`);
 }
 
 export async function listYearEntries(

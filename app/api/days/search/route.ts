@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAuthAccount, jsonError, logFailure } from "@/lib/http";
+import { NO_STORE_HEADERS, getAuthAccount, jsonError, logFailure } from "@/lib/http";
 import { searchDayEntries } from "@/features/days/service";
 
 const querySchema = z.string().trim().min(2).max(100);
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     const entries = await searchDayEntries(auth.account.$id, parsed.data);
     return NextResponse.json(
       { entries },
-      { headers: { "Cache-Control": "private, no-store" } },
+      { headers: NO_STORE_HEADERS },
     );
   } catch (error) {
     logFailure("Day search", error);
