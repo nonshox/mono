@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
 import { stem, STOP, tokenize } from "@/features/ai/nlp";
 import {
   localBucketSuggestions,
@@ -28,6 +29,16 @@ const TOTAL_BUDGET_MS = 5_000;
 
 type GeminiResponse = {
   candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  usageMetadata?: {
+    promptTokenCount?: number;
+    candidatesTokenCount?: number;
+    totalTokenCount?: number;
+  };
+};
+
+export type GeminiUsage = {
+  promptTokens: number;
+  outputTokens: number;
 };
 
 /* ------------------------------------------------------------------ */
@@ -146,7 +157,10 @@ async function fetchModel(
   schema: SuggestSchema | undefined,
   key: string,
   timeoutMs: number,
-): Promise<{ ok: true; text: string } | { ok: false; status: number }> {
+): Promise<
+  | { ok: true; text: string; usage?: GeminiUsage; model: string }
+  | { ok: false; status: number }
+> {
   const response = await fetch(`${ENDPOINT}/${model}:generateContent`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": key },
@@ -181,14 +195,20 @@ async function fetchModel(
   if (!text) {
     throw new Error("Gemini returned an empty response.");
   }
-  return { ok: true, text };
+  const usage = data.usageMetadata
+    ? {
+        promptTokens: data.usageMetadata.promptTokenCount ?? 0,
+        outputTokens: data.usageMetadata.candidatesTokenCount ?? 0,
+      }
+    : undefined;
+  return { ok: true, text, usage, model };
 }
 
 async function callGemini(
   prompt: string,
   maxOutputTokens: number,
   schema?: SuggestSchema,
-): Promise<string> {
+): Promise<{ text: string; model: string; usage?: GeminiUsage; attempts: number }> {
   const key = process.env.GEMINI_API_KEY;
   if (!key) {
     throw new Error("GEMINI_API_KEY is not configured.");
@@ -198,24 +218,34 @@ async function callGemini(
     ? [configured, ...FALLBACK_MODELS.filter((m) => m !== configured)]
     : FALLBACK_MODELS;
 
+  // Exponential backoff ceiling between model attempts (120ms → 240ms),
+  // always clamped so the whole call can never exceed the 5s budget.
   let lastStatus = 0;
+  let attempts = 0;
   const started = Date.now();
   const remaining = () => TOTAL_BUDGET_MS - (Date.now() - started);
-  for (const model of candidates) {
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+  for (const [index, model] of candidates.entries()) {
+    if (index > 0) {
+      const backoff = Math.min(120 * 2 ** (index - 1), remaining());
+      if (backoff > 0) await sleep(backoff);
+    }
     const budget = remaining();
     if (budget <= 500) break; // hard ~5s cap — serve local, never hang
     try {
+      attempts += 1;
       let result = await fetchModel(model, prompt, maxOutputTokens, schema, key, budget);
       if (!result.ok && result.status === 400 && schema) {
         // Schema rejected — downgrade to unstructured JSON for this model.
         const downgradeBudget = remaining();
         if (downgradeBudget > 500) {
+          attempts += 1;
           result = await fetchModel(model, prompt, maxOutputTokens, undefined, key, downgradeBudget);
         }
       }
       if (result.ok) {
         noteGeminiSuccess();
-        return result.text;
+        return { text: result.text, model: result.model, usage: result.usage, attempts };
       }
       lastStatus = result.status;
       // 4xx is usually fatal (model missing / quota), 5xx worth retrying down the list.
@@ -341,44 +371,141 @@ const localFor = (
   source: "local",
 });
 
+// --- Suggestion cache ---------------------------------------------------------
+// Same context ⇒ same prompt ⇒ same answer. Repeat taps within a few minutes
+// are served from memory at zero network cost; the moment the writer adds or
+// removes an item the prompt (and its hash) changes, so stale context never
+// wins. LRU-bounded, per serverless instance.
+
+type SuggestCacheValue = {
+  items?: string[];
+  picks?: BucketPicks;
+};
+
+type SuggestCacheEntry = SuggestCacheValue & {
+  expires: number;
+};
+
+const suggestCache = new Map<string, SuggestCacheEntry>();
+const CACHE_TTL_MS = 5 * 60_000;
+const CACHE_MAX = 200;
+let cacheHits = 0;
+let cacheMisses = 0;
+
+const cacheKey = (prompt: string): string =>
+  createHash("sha256").update(prompt).digest("hex").slice(0, 24);
+
+function cacheGet(key: string): SuggestCacheValue | null {
+  const entry = suggestCache.get(key);
+  if (!entry || entry.expires < Date.now()) {
+    if (entry) suggestCache.delete(key);
+    cacheMisses += 1;
+    return null;
+  }
+  // Refresh recency (Map preserves insertion order → this is LRU).
+  suggestCache.delete(key);
+  suggestCache.set(key, entry);
+  cacheHits += 1;
+  return entry;
+}
+
+function cacheSet(key: string, value: SuggestCacheValue): void {
+  if (suggestCache.size >= CACHE_MAX) {
+    const oldest = suggestCache.keys().next().value;
+    if (oldest !== undefined) suggestCache.delete(oldest);
+  }
+  suggestCache.set(key, { ...value, expires: Date.now() + CACHE_TTL_MS });
+}
+
+/** Observability hook — cheap counters for slow-request logs. */
+export function suggestCacheStats(): { hits: number; misses: number } {
+  return { hits: cacheHits, misses: cacheMisses };
+}
+
+export type SuggestMeta = {
+  model?: string;
+  attempts?: number;
+  usage?: GeminiUsage;
+};
+
 export async function suggestBucket(
   bucket: Bucket,
   entries: DayEntry[],
   userActions: string[] = [],
   timelineTexts: string[] = [],
-): Promise<{ items: string[]; source: SuggestSource }> {
+): Promise<{
+  items: string[];
+  source: SuggestSource;
+  cached: boolean;
+  meta?: SuggestMeta;
+}> {
   const threads = detectThreads(entries);
   if (!circuitOpen()) {
     try {
       const prompt = bucketPrompt(bucket, entries, threads, userActions, timelineTexts);
-      const raw = await callGemini(prompt, 120, SUGGEST_ARRAY_SCHEMA);
-      const items = parseBucketItems(raw);
+      const key = cacheKey(prompt);
+      const hit = cacheGet(key);
+      if (hit?.items) {
+        return { items: hit.items, source: "ai", cached: true };
+      }
+      const { text, model, attempts, usage } = await callGemini(
+        prompt,
+        120,
+        SUGGEST_ARRAY_SCHEMA,
+      );
+      const items = parseBucketItems(text);
       if (items) {
-        return { items, source: "ai" };
+        cacheSet(key, { items });
+        return {
+          items,
+          source: "ai",
+          cached: false,
+          meta: { model, attempts, usage },
+        };
       }
       // Answered with garbage — serve local rather than static filler.
     } catch {
       tripCircuit();
     }
   }
-  return localFor(bucket, threads, userActions, timelineTexts);
+  return { ...localFor(bucket, threads, userActions, timelineTexts), cached: false };
 }
 
 export async function suggestDay(
   entries: DayEntry[],
   userActions: string[] = [],
   timelineTexts: string[] = [],
-): Promise<{ picks: BucketPicks; source: SuggestSource }> {
+): Promise<{
+  picks: BucketPicks;
+  source: SuggestSource;
+  cached: boolean;
+  meta?: SuggestMeta;
+}> {
   const threads = detectThreads(entries);
   if (!circuitOpen()) {
     try {
       const prompt = threads.sparse
         ? habitsPrompt()
         : personalPrompt(entries, threads, userActions, timelineTexts);
-      const raw = await callGemini(prompt, 200, SUGGEST_DAY_SCHEMA);
-      const picks = parsePicks(raw);
+      const key = cacheKey(prompt);
+      const hit = cacheGet(key);
+      if (hit?.picks) {
+        return { picks: hit.picks, source: "ai", cached: true };
+      }
+      const { text, model, attempts, usage } = await callGemini(
+        prompt,
+        200,
+        SUGGEST_DAY_SCHEMA,
+      );
+      const picks = parsePicks(text);
       if (picks.rise.length + picks.midday.length + picks.evening.length > 0) {
-        return { picks, source: "ai" };
+        cacheSet(key, { picks });
+        return {
+          picks,
+          source: "ai",
+          cached: false,
+          meta: { model, attempts, usage },
+        };
       }
     } catch {
       tripCircuit();
@@ -391,5 +518,6 @@ export async function suggestDay(
       evening: localFor("evening", threads, userActions, timelineTexts).items,
     },
     source: "local",
+    cached: false,
   };
 }

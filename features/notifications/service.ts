@@ -17,7 +17,8 @@ export type NotificationKind =
   | "dot_closed"
   | "letter_ready"
   | "streak_7"
-  | "streak_30";
+  | "streak_30"
+  | "day_ending";
 
 export type NotificationItem = {
   id: string;
@@ -57,6 +58,27 @@ export async function listNotifications(
 }
 
 /** Mark one notification read — no-op unless the row belongs to `userId`. */
+/** Cheap unread count — one indexed query, id-only rows (~1 KB worst case). */
+export async function countUnreadNotifications(userId: string): Promise<number> {
+  try {
+    const result = await getTables().listRows<NotificationRow>({
+      databaseId: getDatabaseId(),
+      tableId: notificationsTableId,
+      queries: [
+        Query.equal("user", userId),
+        Query.equal("read", false),
+        Query.select(["$id"]),
+        Query.limit(100),
+      ],
+      total: false,
+    });
+    return result.rows.length;
+  } catch (error) {
+    logFailure("Unread notification count", error);
+    return 0;
+  }
+}
+
 export async function markNotificationRead(
   userId: string,
   notificationId: string,

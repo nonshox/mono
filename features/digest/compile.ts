@@ -106,12 +106,14 @@ export function compileYear(entries: DigestEntry[]): string {
   return lines.join("\n");
 }
 
+// Written for the 9:30pm moment — one short sentence, no exclamation marks,
+// always about them, never about the app.
 const NUDGE_BANK = [
-  "If today was nothing much, one line is fine.",
-  "What's one small thing you noticed today?",
-  "Three words is all it takes.",
-  "What would tomorrow-you thank you for remembering?",
-  "Nothing to say? Stop there — skip it.",
+  "The day's almost gone. What happened?",
+  "Before tomorrow starts — one line for today.",
+  "The day's closing. Stamp it with a few words.",
+  "One line about today. That's all it takes.",
+  "Nothing much happened? Write that instead.",
 ];
 
 /**
@@ -121,7 +123,7 @@ const NUDGE_BANK = [
 export function nudgeQuestionFor(entries: DigestEntry[], seed: number): string {
   const themes = extractThemes(entries, 1);
   if (themes[0]) {
-    return `${themes[0].label} keeps coming up — how did today go?`;
+    return `${themes[0].label} keeps coming up for you — how did today go?`;
   }
   return NUDGE_BANK[seed % NUDGE_BANK.length];
 }

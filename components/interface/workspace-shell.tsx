@@ -15,6 +15,7 @@ import {
   NotebookPen,
   Settings,
   Sun,
+  Sunset,
   ListChecks,
   UserRound,
 } from "lucide-react";
@@ -63,9 +64,10 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const {
     items,
+    loaded,
     unreadCount: unread,
-    loading,
     error,
+    ensureLoaded,
     markRead,
     markAllRead,
     clearRead,
@@ -135,6 +137,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       case "streak_7":
       case "streak_30":
         return <Flame aria-hidden="true" className={className} strokeWidth={1.8} />;
+      case "day_ending":
+        return <Sunset aria-hidden="true" className={className} strokeWidth={1.8} />;
       default:
         return <NotebookPen aria-hidden="true" className={className} strokeWidth={1.8} />;
     }
@@ -205,8 +209,12 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
 
           {/* Right icons */}
           <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
-            {/* Notifications — icon button with dropdown panel */}
-            <DropdownMenu>
+            {/* Notifications — icon button with dropdown panel; nothing fetches until opened */}
+            <DropdownMenu
+              onOpenChange={(open) => {
+                if (open) void ensureLoaded();
+              }}
+            >
               <DropdownMenuTrigger
                 aria-label={
                   unread > 0
@@ -270,10 +278,17 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                   </div>
                 </div>
                 <div className="max-h-[22rem] overflow-y-auto">
-                  {loading ? (
-                    <div className="type-eyebrow grid place-items-center px-4 py-8">
-                      Loading
-                    </div>
+                  {!loaded ? (
+                    error ? (
+                      <div className="px-4 py-8 text-center">
+                        <p className="text-xs font-semibold text-foreground">Unavailable</p>
+                        <p className="mt-1 text-xs text-foreground">{error}</p>
+                      </div>
+                    ) : (
+                      <div className="type-eyebrow grid place-items-center px-4 py-8">
+                        Loading
+                      </div>
+                    )
                   ) : error ? (
                     <div className="px-4 py-8 text-center">
                       <p className="text-xs font-semibold text-foreground">Unavailable</p>

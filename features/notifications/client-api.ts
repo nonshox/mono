@@ -4,7 +4,8 @@ export type NotificationKind =
   | "dot_closed"
   | "letter_ready"
   | "streak_7"
-  | "streak_30";
+  | "streak_30"
+  | "day_ending";
 
 export type NotificationItem = {
   id: string;
@@ -25,6 +26,15 @@ export type NotificationPage = {
 export async function fetchNotifications(): Promise<NotificationPage> {
   const { data } = await apiClient.get<NotificationPage>("/notifications");
   return data;
+}
+
+/** Badge-only count — one tiny query, used when the list isn't loaded. */
+export async function fetchUnreadCount(): Promise<number> {
+  const { data } = await apiClient.get<{ unreadCount: number }>(
+    "/notifications",
+    { params: { count: "1" } },
+  );
+  return data.unreadCount;
 }
 
 export async function markNotificationsRead(id: string): Promise<void> {

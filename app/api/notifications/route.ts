@@ -8,6 +8,7 @@ import {
 import { z } from "zod";
 import {
   clearReadNotifications as clearReadInDb,
+  countUnreadNotifications,
   listNotifications,
   markAllNotificationsRead as markAllReadInDb,
   markNotificationRead,
@@ -18,7 +19,7 @@ const patchSchema = z.union([
   z.object({ id: z.literal("all") }).strict(),
 ]);
 
-export async function GET() {
+export async function GET(request: Request) {
   const auth = await getAuthAccount("Notification list");
   if ("response" in auth) {
     return auth.response;
@@ -27,12 +28,20 @@ export async function GET() {
     return jsonError(401, "UNAUTHENTICATED", "Sign in to view notifications.");
   }
 
+  const CACHE_HEADERS = { "Cache-Control": "private, no-store" } as const;
+
+  // ?count=1 — the cheap badge-only path (id-only rows, ~1 KB).
+  if (new URL(request.url).searchParams.get("count") === "1") {
+    const unreadCount = await countUnreadNotifications(auth.account.$id);
+    return NextResponse.json({ unreadCount }, { headers: CACHE_HEADERS });
+  }
+
   try {
     const items = await listNotifications(auth.account.$id, 50);
     const unreadCount = items.filter((item) => !item.read).length;
     return NextResponse.json(
       { items, hasMore: false, unreadCount },
-      { headers: { "Cache-Control": "private, no-store" } },
+      { headers: CACHE_HEADERS },
     );
   } catch (error) {
     logFailure("Notification list", error);

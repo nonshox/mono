@@ -4,12 +4,17 @@ import { jsonError, logFailure } from "@/lib/http";
 import { listNudgeTargets } from "@/features/users/service";
 import { hasDayEntry, listRecentEntries } from "@/features/days/service";
 import { sendTelegramNotification } from "@/features/telegram/service";
+import { createNotification } from "@/features/notifications/service";
 import { nudgeQuestionFor } from "@/features/digest/compile";
 
+// One soft evening line — written for the 9:30pm minute it lands.
 const FALLBACK_MESSAGE =
-  "How was today? Open Mono and stamp a dot — two or three words is enough.";
+  "The day's almost gone — what happened? Open Mono and stamp it with a line.";
 
-const NUDGE_LOCAL_HOUR = 20;
+const NUDGE_LOCAL_HOUR = 21;
+
+// Shown in the bell when the nudge lands. Kept short enough to read at a glance.
+const BELL_BODY = "The day's almost gone — one line before it closes?";
 
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
@@ -42,9 +47,11 @@ function localHour(now: Date, timeZone: string | null): number | null {
 }
 
 /**
- * Fired hourly by Vercel Cron. For each opted-in user, nudges them at their
- * LOCAL 8pm (stored IANA timezone; falls back to 20:00 UTC) who haven't
- * written today. Best-effort per user — one failure never blocks the rest.
+ * Fired by GitHub Actions every 30 minutes (vercel.json must stay empty —
+ * Hobby only allows daily crons). For each opted-in user, nudges them at their
+ * LOCAL 9:30pm (stored IANA timezone; falls back to UTC when missing) who
+ * haven't written today. Delivers to Telegram AND the in-app bell. Best-effort
+ * per user — one failure never blocks the rest.
  */
 export async function GET(request: Request) {
   if (!process.env.CRON_SECRET) {
@@ -79,7 +86,7 @@ export async function GET(request: Request) {
         continue;
       }
       if (hour !== NUDGE_LOCAL_HOUR) {
-        continue; // Their evening hasn't arrived — the hourly cron will call again.
+        continue; // Their 9:30pm hasn't arrived — the next ping will catch it.
       }
       if (await hasDayEntry(target.id, today)) {
         skipped += 1;
@@ -93,6 +100,13 @@ export async function GET(request: Request) {
       } catch (error) {
         // Best-effort contextual line — fall back to the generic one.
         logFailure("Nudge prompt", error);
+      }
+
+      // Bell goes regardless of Telegram outcome — a soft 9:30pm marker.
+      try {
+        await createNotification(target.id, "day_ending", BELL_BODY, "/");
+      } catch (error) {
+        logFailure("Nudge bell", error);
       }
 
       await sendTelegramNotification(target.id, message);
