@@ -14,6 +14,16 @@ import { extractThemes } from "@/features/days/themes";
 import { getApiErrorMessage } from "@/lib/api-client";
 import { MicButton } from "@/components/interface/mic-button";
 import { PolishButton } from "@/components/interface/polish-button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTrigger,
+  AlertDialogTitle,
+  AlertDialogFooter,
+} from "@/components/ui/alert-dialog";
 import Link from "next/link";
 
 function shortLabel(day: string): string {
@@ -61,7 +71,6 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
   const [editingDay, setEditingDay] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
-  const [eraseArmed, setEraseArmed] = useState(false);
 
   const trimmedQuery = query.trim();
   const filtered = useMemo(
@@ -88,13 +97,11 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
     if (editingDay) void commit();
     setExpandedDay((prev) => (prev === day ? null : day));
     setEditingDay(null);
-    setEraseArmed(false);
   };
 
   const startEdit = (entry: DayEntry) => {
     setDraft(entry.text);
     setEditingDay(entry.day);
-    setEraseArmed(false);
   };
 
   // Escape closes an expanded card (not while typing an edit).
@@ -129,17 +136,12 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
 
   const erase = async () => {
     if (!expandedDay || saving) return;
-    if (!eraseArmed) {
-      setEraseArmed(true);
-      return;
-    }
     setSaving(true);
     try {
       await deleteDay(expandedDay);
       setItems((prev) => prev.filter((item) => item.day !== expandedDay));
       setExpandedDay(null);
       setEditingDay(null);
-      setEraseArmed(false);
     } catch (cause) {
       toast.error(getApiErrorMessage(cause, "Day not erased"));
     } finally {
@@ -325,19 +327,27 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                                 >
                                   <PenLine aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
                                 </button>
-                                <button
-                                  aria-busy={saving}
-                                  aria-label={eraseArmed ? "Confirm erase" : "Erase"}
-                                  className={`grid size-7 shrink-0 place-items-center rounded-full border transition outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 ${
-                                    eraseArmed
-                                      ? "border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20"
-                                      : "border-border text-foreground hover:bg-muted hover:text-destructive"
-                                  }`}
-                                  onClick={() => void erase()}
-                                  type="button"
-                                >
-                                  <Eraser aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
-                                </button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger
+                                    aria-label="Erase this day"
+                                    aria-busy={saving}
+                                    className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-foreground outline-none transition hover:bg-muted hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                                  >
+                                    <Eraser aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogTitle>Erase {shortLabel(entry.day)}?</AlertDialogTitle>
+                                    <AlertDialogDescription className="mt-1.5">
+                                      This entry will be deleted permanently. This cannot be undone.
+                                    </AlertDialogDescription>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Keep</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => void erase()}>
+                                        Erase
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               </>
                             )}
                             <button

@@ -20,6 +20,16 @@ import {
 import { useUserStore } from "@/features/users/store";
 import { getApiErrorMessage } from "@/lib/api-client";
 import { UserAvatar } from "@/components/interface/user-avatar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTrigger,
+  AlertDialogTitle,
+  AlertDialogFooter,
+} from "@/components/ui/alert-dialog";
 import Link from "next/link";
 
 /** Ultra-minimal editor — name, nothing else. */
@@ -164,15 +174,27 @@ export function ProfileEditor() {
                   {avatar ? "Change photo" : "Upload photo"}
                 </button>
                 {avatar && (
-                  <button
-                    aria-label="Remove photo"
-                    className="grid size-8 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
-                    disabled={loading || avatarBusy}
-                    onClick={() => void onAvatarRemove()}
-                    type="button"
-                  >
-                    <Trash2 aria-hidden="true" className="size-4" strokeWidth={1.8} />
-                  </button>
+                  <AlertDialog>
+                    <AlertDialogTrigger
+                      aria-label="Remove photo"
+                      className="grid size-8 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                      disabled={loading || avatarBusy}
+                    >
+                      <Trash2 aria-hidden="true" className="size-4" strokeWidth={1.8} />
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogTitle>Remove photo?</AlertDialogTitle>
+                      <AlertDialogDescription className="mt-1.5">
+                        Your photo will be deleted and initials shown again. This cannot be undone.
+                      </AlertDialogDescription>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Keep</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => void onAvatarRemove()}>
+                          Remove
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 )}
               </div>
             </div>

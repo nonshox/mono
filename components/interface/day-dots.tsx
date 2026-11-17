@@ -21,6 +21,16 @@ import {
 } from "@/features/days/client-api";
 import { useDaysStore } from "@/features/days/store";
 import { getApiErrorMessage } from "@/lib/api-client";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTrigger,
+  AlertDialogTitle,
+  AlertDialogFooter,
+} from "@/components/ui/alert-dialog";
 import { MicButton } from "@/components/interface/mic-button";
 import { PolishButton } from "@/components/interface/polish-button";
 import { ProgressRing } from "@/components/interface/progress-ring";
@@ -75,7 +85,6 @@ export function DayDots({
   const loading = useDaysStore((state) => state.loading);
   const stored = useDaysStore((state) => state.entries);
   const satisfiedMap = useDaysStore((state) => state.satisfied);
-  const saving = useDaysStore((state) => state.saving);
   const save = useDaysStore((state) => state.save);
   const remove = useDaysStore((state) => state.remove);
 
@@ -564,15 +573,26 @@ export function DayDots({
                         >
                           <PenLine aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
                         </button>
-                        <button
-                          aria-busy={saving}
-                          aria-label="Erase"
-                          className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-foreground outline-none transition hover:bg-muted hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring"
-                          onClick={() => void erase()}
-                          type="button"
-                        >
-                          <Eraser aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
-                        </button>
+                        <AlertDialog>
+                          <AlertDialogTrigger
+                            aria-label="Erase this day"
+                            className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-foreground outline-none transition hover:bg-muted hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <Eraser aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogTitle>Erase this day?</AlertDialogTitle>
+                            <AlertDialogDescription className="mt-1.5">
+                              The writing, the satisfaction score and the day’s ticks will be gone. This cannot be undone.
+                            </AlertDialogDescription>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Keep</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => void erase()}>
+                                Erase
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </>
                     )
                   : null}

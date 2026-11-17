@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Bell,
   BookOpenText,
+  BookOpen,
   ChevronRight,
   Eraser,
   House,
@@ -35,6 +36,16 @@ import { useNotifications, useClearNotifications } from "@/features/notification
 import { notificationHref, relativeTime } from "@/lib/notification-link";
 import type { NotificationItem } from "@/features/notifications/client-api";
 import { UserAvatar } from "@/components/interface/user-avatar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTrigger,
+  AlertDialogTitle,
+  AlertDialogFooter,
+} from "@/components/ui/alert-dialog";
 
 const breadcrumbs: Record<string, string> = {
   "/settings": "Settings",
@@ -42,6 +53,7 @@ const breadcrumbs: Record<string, string> = {
   "/profile/edit": "Edit profile",
   "/journal": "Journal",
   "/today": "Today",
+  "/library": "Library",
 };
 
 export function WorkspaceShell({ children }: { children: ReactNode }) {
@@ -158,6 +170,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
               { href: "/", icon: House, label: "Home" },
               { href: "/journal", icon: BookOpenText, label: "Journal" },
               { href: "/today", icon: Sunrise, label: "Today" },
+              { href: "/library", icon: BookOpen, label: "Library" },
             ].map(({ href, icon: Icon, label }) => {
               const active =
                 href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -216,15 +229,27 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                   <p className="type-eyebrow">Notifications</p>
                   <div className="flex items-center gap-3">
                     {hasReadVisible && (
-                      <button
-                        aria-label="Clear read notifications"
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-foreground outline-none transition hover:opacity-70 focus-visible:ring-2 focus-visible:ring-ring"
-                        onClick={() => void clearRead()}
-                        type="button"
-                      >
-                        <Eraser aria-hidden="true" className="size-3.5" strokeWidth={2} />
-                        Clear read
-                      </button>
+                      <AlertDialog>
+                        <AlertDialogTrigger
+                          aria-label="Clear read notifications"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-foreground outline-none transition hover:opacity-70 focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <Eraser aria-hidden="true" className="size-3.5" strokeWidth={2} />
+                          Clear read
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogTitle>Clear read notifications?</AlertDialogTitle>
+                          <AlertDialogDescription className="mt-1.5">
+                            Every notification you have already read will be deleted.
+                          </AlertDialogDescription>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Keep</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => void clearRead()}>
+                              Clear read
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     )}
                     {unread > 0 && (
                       <button
@@ -461,6 +486,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             { href: "/", icon: House, label: "Home" },
             { href: "/journal", icon: BookOpenText, label: "Journal" },
             { href: "/today", icon: Sunrise, label: "Today" },
+            { href: "/library", icon: BookOpen, label: "Library" },
           ].map(({ href, icon: Icon, label }) => {
             const active =
               pathname === href ||

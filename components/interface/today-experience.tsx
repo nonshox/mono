@@ -10,6 +10,16 @@ import { BUCKET_LABELS } from "@/features/today/types";
 import type { TimelineItem, Bucket } from "@/features/today/types";
 import { cn } from "cn";
 import { ProgressRing } from "@/components/interface/progress-ring";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTrigger,
+  AlertDialogTitle,
+  AlertDialogFooter,
+} from "@/components/ui/alert-dialog";
 
 const BUCKETS = ["rise", "midday", "evening"] as const;
 
@@ -57,7 +67,7 @@ export function TodayExperience({
     midday: "",
     evening: "",
   });
-  const [ready, setReady] = useState(() => canSatisfy());
+  const [ready, setReady] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -66,8 +76,13 @@ export function TodayExperience({
   }, []);
 
   useEffect(() => {
-    const id = setInterval(() => setReady(canSatisfy()), 60_000);
-    return () => clearInterval(id);
+    const tick = () => setReady(canSatisfy());
+    const id = setInterval(tick, 60_000);
+    const t = setTimeout(tick, 0); // fires after hydration, never during SSR
+    return () => {
+      clearInterval(id);
+      clearTimeout(t);
+    };
   }, []);
 
   const toggleItem = (id: string) =>
@@ -356,14 +371,26 @@ function TimelineRow({
           >
             <ArrowDown aria-hidden="true" className="size-3" strokeWidth={2.2} />
           </button>
-          <button
-            aria-label="Delete item"
-            className="grid size-6 place-items-center rounded-full text-foreground/60 outline-none transition hover:bg-muted hover:text-destructive"
-            onClick={onDelete}
-            type="button"
-          >
-            <Trash2 aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
-          </button>
+          <AlertDialog>
+            <AlertDialogTrigger
+              aria-label="Delete item"
+              className="grid size-6 place-items-center rounded-full text-foreground/60 outline-none transition hover:bg-muted hover:text-destructive"
+            >
+              <Trash2 aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogTitle>Delete this item?</AlertDialogTitle>
+              <AlertDialogDescription className="mt-1.5">
+                {`“${item.text}” will be removed.`}
+              </AlertDialogDescription>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Keep</AlertDialogCancel>
+                <AlertDialogAction onClick={onDelete}>
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
     </div>
