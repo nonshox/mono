@@ -7,6 +7,7 @@ import {
 } from "@/lib/http";
 import { listYearEntries } from "@/features/days/service";
 import { compileYear } from "@/features/digest/compile";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) {
@@ -19,6 +20,15 @@ export async function POST(request: Request) {
   }
   if (!auth.account) {
     return jsonError(401, "UNAUTHENTICATED", "Sign in to review your year.");
+  }
+
+  const limited = rateLimit("ai:review", auth.account.$id, 20, 60_000);
+  if (!limited.ok) {
+    return jsonError(
+      429,
+      "RATE_LIMITED",
+      `Slowing down — try again in ${limited.retryAfterSeconds}s.`,
+    );
   }
 
   try {

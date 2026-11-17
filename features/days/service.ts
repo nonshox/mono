@@ -3,6 +3,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { AppwriteException, Query, type Models } from "node-appwrite";
 import { getDatabaseId, getTables, isNotFound } from "@/lib/appwrite/tables";
+import { logFailure } from "@/lib/http";
 
 const tableId = "days";
 
@@ -212,26 +213,40 @@ export async function listRecentEntries(
   return entries.slice(-limit);
 }
 
-/** Every entry the user has, ascending by day. Caps at 5000 rows. */
+/** Every entry the user has, ascending by day. Paginates fully — never truncates. */
 export async function listAllEntries(
   userId: string,
 ): Promise<DayEntry[]> {
-  const result = await getTables().listRows<DayRow>({
-    databaseId: getDatabaseId(),
-    tableId,
-    queries: [
-      Query.equal("user", userId),
-      Query.select(["day", "text", "satisfied"]),
-      Query.orderAsc("day"),
-      Query.limit(5000),
-    ],
-    total: false,
-  });
-  return result.rows.map((row) => ({
-    day: row.day,
-    text: row.text,
-    satisfied: row.satisfied ?? null,
-  }));
+  const pageSize = 1000;
+  const all: DayEntry[] = [];
+  for (let offset = 0; ; offset += pageSize) {
+    const result = await getTables().listRows<DayRow>({
+      databaseId: getDatabaseId(),
+      tableId,
+      queries: [
+        Query.equal("user", userId),
+        Query.select(["day", "text", "satisfied"]),
+        Query.orderAsc("day"),
+        Query.limit(pageSize),
+        Query.offset(offset),
+      ],
+      total: false,
+    });
+    all.push(
+      ...result.rows.map((row) => ({
+        day: row.day,
+        text: row.text,
+        satisfied: row.satisfied ?? null,
+      })),
+    );
+    if (result.rows.length < pageSize) {
+      return all;
+    }
+    if (all.length >= 100_000) {
+      logFailure("List all entries", new Error("Exceeded 100k rows cap — export may be truncated"));
+      return all;
+    }
+  }
 }
 
 /** Distinct years that contain at least one entry, ascending. */

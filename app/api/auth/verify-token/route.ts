@@ -13,10 +13,21 @@ import {
   getSessionCookieName,
 } from "@/lib/appwrite/server";
 import { ensureUserForAccount } from "@/features/users/service";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) {
     return jsonError(403, "ORIGIN_REJECTED", "Request origin was rejected.");
+  }
+
+  const ip = clientIp(request);
+  const limited = rateLimit("auth:verify-token", ip, 20, 10 * 60_000);
+  if (!limited.ok) {
+    return jsonError(
+      429,
+      "RATE_LIMITED",
+      `Too many attempts. Try again in ${limited.retryAfterSeconds}s.`,
+    );
   }
 
   let body: unknown;

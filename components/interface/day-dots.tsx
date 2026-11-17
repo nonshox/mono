@@ -11,7 +11,6 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { cn } from "cn";
 import {
@@ -151,14 +150,34 @@ export function DayDots({
 
   const filled = Object.keys(stored).length;
 
-  // Flashback is server state: cache per open day, fresh for 5 minutes.
-  const flashbackQuery = useQuery({
-    queryKey: ["flashback", openDay],
-    queryFn: () => (openDay ? fetchFlashback(openDay) : Promise.resolve([])),
-    enabled: openDay !== null,
-    staleTime: 5 * 60_000,
-  });
-  const flashback = openDay ? flashbackQuery.data ?? [] : [];
+  // Flashback is server state: fetched on demand per open day. Results are
+  // keyed by day so a stale answer never shows for a different dot.
+  const flashbackRequest = useRef(0);
+  const [flashbackResult, setFlashbackResult] = useState<{
+    day: string;
+    items: Awaited<ReturnType<typeof fetchFlashback>>;
+  }>({ day: "", items: [] });
+  useEffect(() => {
+    if (!openDay) return;
+    const seq = ++flashbackRequest.current;
+    const day = openDay;
+    let active = true;
+    fetchFlashback(day)
+      .then((items) => {
+        if (active && seq === flashbackRequest.current) {
+          setFlashbackResult({ day, items });
+        }
+      })
+      .catch(() => {
+        if (active && seq === flashbackRequest.current) {
+          setFlashbackResult({ day, items: [] });
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [openDay]);
+  const flashback = openDay && flashbackResult.day === openDay ? flashbackResult.items : [];
 
   // After a search jump, open the target dot once its year has painted.
   useEffect(() => {

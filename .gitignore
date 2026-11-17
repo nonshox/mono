@@ -20,6 +20,9 @@
 # production
 /build
 
+# local data backups — personal artifacts, never public
+/scripts/backups/
+
 # misc
 .DS_Store
 *.pem

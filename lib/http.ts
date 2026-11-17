@@ -27,9 +27,9 @@ export function isSameOrigin(request: Request): boolean {
 export function logFailure(operation: string, error: unknown): void {
   const detail =
     error instanceof AppwriteException
-      ? `Appwrite ${error.code}`
+      ? `Appwrite ${error.code}${error.type ? ` ${error.type}` : ""}`
       : error instanceof Error
-        ? error.name
+        ? `${error.name}: ${String(error.message ?? "").slice(0, 140)}`
         : "UnknownError";
 
   console.error(`${operation} failed: ${detail}`);

@@ -1,7 +1,7 @@
 import "server-only";
 
-import { createHash } from "node:crypto";
 import { stem, STOP, tokenize } from "@/features/ai/nlp";
+import { todayUtc } from "@/lib/dates";
 import {
   localBucketSuggestions,
   type Bucket,
@@ -366,61 +366,10 @@ const localFor = (
     actions: userActions,
     threads: threads.activities,
     timelineTexts,
-    day: new Date().toISOString().slice(0, 10),
+    day: todayUtc(),
   }),
   source: "local",
 });
-
-// --- Suggestion cache ---------------------------------------------------------
-// Same context ⇒ same prompt ⇒ same answer. Repeat taps within a few minutes
-// are served from memory at zero network cost; the moment the writer adds or
-// removes an item the prompt (and its hash) changes, so stale context never
-// wins. LRU-bounded, per serverless instance.
-
-type SuggestCacheValue = {
-  items?: string[];
-  picks?: BucketPicks;
-};
-
-type SuggestCacheEntry = SuggestCacheValue & {
-  expires: number;
-};
-
-const suggestCache = new Map<string, SuggestCacheEntry>();
-const CACHE_TTL_MS = 5 * 60_000;
-const CACHE_MAX = 200;
-let cacheHits = 0;
-let cacheMisses = 0;
-
-const cacheKey = (prompt: string): string =>
-  createHash("sha256").update(prompt).digest("hex").slice(0, 24);
-
-function cacheGet(key: string): SuggestCacheValue | null {
-  const entry = suggestCache.get(key);
-  if (!entry || entry.expires < Date.now()) {
-    if (entry) suggestCache.delete(key);
-    cacheMisses += 1;
-    return null;
-  }
-  // Refresh recency (Map preserves insertion order → this is LRU).
-  suggestCache.delete(key);
-  suggestCache.set(key, entry);
-  cacheHits += 1;
-  return entry;
-}
-
-function cacheSet(key: string, value: SuggestCacheValue): void {
-  if (suggestCache.size >= CACHE_MAX) {
-    const oldest = suggestCache.keys().next().value;
-    if (oldest !== undefined) suggestCache.delete(oldest);
-  }
-  suggestCache.set(key, { ...value, expires: Date.now() + CACHE_TTL_MS });
-}
-
-/** Observability hook — cheap counters for slow-request logs. */
-export function suggestCacheStats(): { hits: number; misses: number } {
-  return { hits: cacheHits, misses: cacheMisses };
-}
 
 export type SuggestMeta = {
   model?: string;
@@ -436,18 +385,12 @@ export async function suggestBucket(
 ): Promise<{
   items: string[];
   source: SuggestSource;
-  cached: boolean;
   meta?: SuggestMeta;
 }> {
   const threads = detectThreads(entries);
   if (!circuitOpen()) {
     try {
       const prompt = bucketPrompt(bucket, entries, threads, userActions, timelineTexts);
-      const key = cacheKey(prompt);
-      const hit = cacheGet(key);
-      if (hit?.items) {
-        return { items: hit.items, source: "ai", cached: true };
-      }
       const { text, model, attempts, usage } = await callGemini(
         prompt,
         120,
@@ -455,11 +398,9 @@ export async function suggestBucket(
       );
       const items = parseBucketItems(text);
       if (items) {
-        cacheSet(key, { items });
         return {
           items,
           source: "ai",
-          cached: false,
           meta: { model, attempts, usage },
         };
       }
@@ -468,7 +409,7 @@ export async function suggestBucket(
       tripCircuit();
     }
   }
-  return { ...localFor(bucket, threads, userActions, timelineTexts), cached: false };
+  return localFor(bucket, threads, userActions, timelineTexts);
 }
 
 export async function suggestDay(
@@ -478,7 +419,6 @@ export async function suggestDay(
 ): Promise<{
   picks: BucketPicks;
   source: SuggestSource;
-  cached: boolean;
   meta?: SuggestMeta;
 }> {
   const threads = detectThreads(entries);
@@ -487,11 +427,6 @@ export async function suggestDay(
       const prompt = threads.sparse
         ? habitsPrompt()
         : personalPrompt(entries, threads, userActions, timelineTexts);
-      const key = cacheKey(prompt);
-      const hit = cacheGet(key);
-      if (hit?.picks) {
-        return { picks: hit.picks, source: "ai", cached: true };
-      }
       const { text, model, attempts, usage } = await callGemini(
         prompt,
         200,
@@ -499,11 +434,9 @@ export async function suggestDay(
       );
       const picks = parsePicks(text);
       if (picks.rise.length + picks.midday.length + picks.evening.length > 0) {
-        cacheSet(key, { picks });
         return {
           picks,
           source: "ai",
-          cached: false,
           meta: { model, attempts, usage },
         };
       }
@@ -518,6 +451,5 @@ export async function suggestDay(
       evening: localFor("evening", threads, userActions, timelineTexts).items,
     },
     source: "local",
-    cached: false,
   };
 }

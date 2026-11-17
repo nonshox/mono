@@ -5,6 +5,7 @@ import { listYearEntries, listYearsWithEntries } from "@/features/days/service";
 import { PageLoader } from "@/components/interface/page-loader";
 import { SessionExpired } from "@/components/interface/session-expired";
 import { DayDots } from "@/components/interface/day-dots";
+import { todayUtc } from "@/lib/dates";
 
 export default function HomePage() {
   return (
@@ -23,7 +24,7 @@ async function AuthenticatedHome() {
   const user = await getUserRow(account.$id).catch(() => null);
   const firstName = user?.name.trim().split(/\s+/)[0] ?? "";
   const year = new Date().getUTCFullYear();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayUtc();
   const [entries, years] = await Promise.all([
     listYearEntries(account.$id, year).catch(() => []),
     listYearsWithEntries(account.$id).catch(() => []),

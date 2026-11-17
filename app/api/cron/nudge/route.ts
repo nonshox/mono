@@ -6,6 +6,7 @@ import { hasDayEntry, listRecentEntries } from "@/features/days/service";
 import { sendTelegramNotification } from "@/features/telegram/service";
 import { createNotification } from "@/features/notifications/service";
 import { nudgeQuestionFor } from "@/features/digest/compile";
+import { todayUtc } from "@/lib/dates";
 
 // One soft evening line — written for the 10:00pm minute it lands.
 const FALLBACK_MESSAGE =
@@ -63,7 +64,7 @@ export async function GET(request: Request) {
   }
 
   const now = new Date();
-  const today = now.toISOString().slice(0, 10);
+  const today = todayUtc();
   const seed = Math.floor(now.getTime() / 86_400_000);
 
   let targets: Array<{ id: string; tz: string | null }>;

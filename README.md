@@ -1,6 +1,6 @@
 # Mono
 
-A minimal, private app base — Next.js 16 (App Router, React 19, Tailwind 4) with an Appwrite backend, email-code auth, generic notifications, and an optional Telegram link flow. Clone it, rename it, ship your idea.
+A minimal, private journaling app — Next.js 16 (App Router, React 19, Tailwind 4) with an Appwrite backend. A year-in-dots journal, a three-bucket morning/midday/evening check, local-NLP actions, a Sunday letter, an evening Telegram nudge at your 10:00pm, and a Telegram bot that captures lines into your dot. Email-code auth, no passwords.
 
 ## Stack
 
@@ -22,8 +22,8 @@ npm run dev
 
 | Table | Columns | Index |
 |---|---|---|
-| `users` | `email` (email), `name` (string) | — (row id = auth account `$id`) |
-| `notifications` | `recipient`, `actor`, `type` (strings), `ref` (string, optional), `read` (bool) | key on `recipient` |
+| `users` | `email` (email), `name` (string), `avatar` (string, optional), `nudge` (bool), `ai` (bool), `actions` (string[]), `tz` (string) | — (row id = auth account `$id`) |
+| `notifications` | `user`, `kind` (strings), `body` (≤280), `ref` (string, optional), `read` (bool) | key on `user`, key on `user`+`read` |
 | `telegram` | `user`, `member`, `chat` (strings), `created` (datetime) | unique on `user`, `member` |
 | `codes` | `user`, `hash` (strings), `expires` (datetime), `used` (bool) | unique on `hash` |
 | `days` | `user`, `day` (`YYYY-MM-DD`), `text` (≤1000), `satisfied` (int, optional) | key on `user` |
@@ -52,13 +52,15 @@ Scripts: `dev` — `build` — `start` — `lint` — `test` — `typecheck` —
 Everything in Mono runs at $0. No Pro features are used or assumed:
 
 1. Push to `main` — the Vercel GitHub integration deploys it (CI must stay green: typecheck · lint · tests · build).
-2. Vercel → Settings → Environment Variables (Production): `APPWRITE_ENDPOINT`, `APPWRITE_PROJECT_ID`, `APPWRITE_API_KEY`, `APPWRITE_DATABASE_ID`, `APPWRITE_STORAGE_BUCKET_ID`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`, `CRON_SECRET` (GEMINI_* is unused — delete it).
+2. Vercel → Settings → Environment Variables (Production): `APPWRITE_ENDPOINT`, `APPWRITE_PROJECT_ID`, `APPWRITE_API_KEY`, `APPWRITE_DATABASE_ID`, `APPWRITE_STORAGE_BUCKET_ID`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`, `CRON_SECRET`, and optionally `GEMINI_API_KEY` (+ `GEMINI_MODEL`) for the opt-in Mono AI (suggestions, actions scan). Everything AI is optional; local fallbacks run without it.
 3. Repo → Settings → Secrets and variables → Actions: add `CRON_SECRET` = the same value as in Vercel. That's the only repo secret — the production URL is inline in `.github/workflows/cron.yml`.
 4. `vercel.json` carries only the weekly letter (Hobby-legal); the hourly evening nudge is `.github/workflows/cron.yml` calling `/api/cron/nudge` — keep Actions enabled.
 5. Appwrite Cloud free tier covers tables + storage. No external paid services anywhere.
 6. After deploy: register the Telegram webhook once, sign in once end-to-end, then Actions → "Cron — evening nudge" → **Run workflow** and confirm it's green.
 
 Notes: Hobby cron fires within the scheduled hour (best-effort) — fine for a sunset nudge. GitHub Actions cron can drift ±1 hour at peak — also fine. If you ever move to Vercel Pro, delete the workflow and re-add the hourly cron to `vercel.json` (exactly one nudge mechanism, never two).
+
+CI: `.github/workflows/check.yml` runs typecheck → lint → tests → production build on every push and pull request. The build step uses a dummy env; Appwrite is never hit at build time.
 
 ## What's inside
 

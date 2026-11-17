@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "@/components/ui/sonner";
-import { QueryProvider } from "@/components/providers/query-provider";
 import { getSiteUrl } from "@/lib/site";
 import "./globals.css";
 
@@ -64,7 +63,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               "(function(){try{var t=localStorage.getItem('mono-theme');if(t!=='dark'&&t!=='light'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.classList.toggle('dark',t==='dark')}catch(e){}})()",
           }}
         />
-        <QueryProvider>{children}</QueryProvider>
+        {children}
         <Toaster />
         <Analytics />
       </body>

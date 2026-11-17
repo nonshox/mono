@@ -11,7 +11,7 @@ npm test            # vitest run
 npm run build       # next build (needs .env present; Appwrite is not called at build time)
 ```
 
-`npm run check` runs all four.
+`npm run check` runs all four. CI: `.github/workflows/check.yml` runs the same on every push/PR (build uses a dummy env — Appwrite is never hit at build time).
 
 Toasts: `import { toast } from "sonner"` — `<Toaster />` is mounted in the root layout. Vercel Analytics is mounted too (no config needed).
 

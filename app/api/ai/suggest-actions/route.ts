@@ -7,6 +7,7 @@ import {
 } from "@/lib/http";
 import { listRecentEntriesSince } from "@/features/days/service";
 import { listTimeline } from "@/features/check/service";
+import { rateLimit } from "@/lib/rate-limit";
 import { detectActions } from "@/features/ai/actions";
 
 const CACHE_HEADERS = { "Cache-Control": "private, no-store" } as const;
@@ -15,7 +16,7 @@ const WINDOW_DAYS = 10;
 export type SuggestActionsStats = {
   /** Day entries with actual text inside the window. */
   entries: number;
-  /** Check items included in the scan, counted as today. */
+  /** Check items included in the scan, counted as today's context. */
   timelineItems: number;
   windowDays: number;
 };
@@ -34,6 +35,15 @@ export async function POST(request: Request) {
     return jsonError(401, "UNAUTHENTICATED", "Sign in first.");
   }
 
+  const limited = rateLimit("ai:suggest-actions", auth.account.$id, 30, 60_000);
+  if (!limited.ok) {
+    return jsonError(
+      429,
+      "RATE_LIMITED",
+      `Slowing down — try again in ${limited.retryAfterSeconds}s.`,
+    );
+  }
+
   try {
     const cutoff = new Date(Date.now() - WINDOW_DAYS * 24 * 60 * 60 * 1000)
       .toISOString()
@@ -50,7 +60,7 @@ export async function POST(request: Request) {
       .map((item) => item.text.trim())
       .filter((text) => text.length > 0);
     const pseudoEntries = timelineTexts.map((text) => ({
-      day: "today",
+      day: "check",
       text,
       satisfied: null,
     }));

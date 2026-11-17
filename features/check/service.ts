@@ -3,6 +3,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { AppwriteException, ID, Query, type Models } from "node-appwrite";
 import { getDatabaseId, getTables, isNotFound, runTransaction } from "@/lib/appwrite/tables";
+import { todayUtc } from "@/lib/dates";
 import {
   BUCKETS,
   type Bucket,
@@ -272,7 +273,7 @@ export async function clearCheckTicks(userId: string): Promise<void> {
 
 /** Month-day-range key for today (UTC, matches the days table). */
 export function todayDay(): string {
-  return new Date().toISOString().slice(0, 10);
+  return todayUtc();
 }
 
 /** Fetch today's full state — items + satisfied percentage. Seeds on first visit. */

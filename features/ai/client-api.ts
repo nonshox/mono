@@ -18,23 +18,20 @@ export type SuggestSource = "ai" | "local";
 export async function suggestMyDay(): Promise<{
   picks: SuggestedDay;
   source: SuggestSource;
-  cached: boolean;
 }> {
   const { data } = await apiClient.post<{
     picks: SuggestedDay;
     source: SuggestSource;
-    cached: boolean;
   }>("/ai/suggest", {});
   return data;
 }
 
 export async function suggestBucket(
   bucket: "rise" | "midday" | "evening",
-): Promise<{ items: string[]; source: SuggestSource; cached: boolean }> {
+): Promise<{ items: string[]; source: SuggestSource }> {
   const { data } = await apiClient.post<{
     items: string[];
     source: SuggestSource;
-    cached: boolean;
   }>("/ai/suggest", { bucket });
   return data;
 }

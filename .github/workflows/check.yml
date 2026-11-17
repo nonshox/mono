@@ -1,0 +1,31 @@
+name: Check
+
+# Merge gate: typecheck + lint + tests + production build.
+# Build never reaches Appwrite (prerender paths degrade gracefully), so the
+# dummy env below is enough — no secrets required.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - name: Production build
+        run: npm run build
+        env:
+          APPWRITE_ENDPOINT: https://fra.cloud.appwrite.io/v1
+          APPWRITE_PROJECT_ID: ci
+          APPWRITE_API_KEY: ci
+          APPWRITE_DATABASE_ID: ci
+          TELEGRAM_BOT_USERNAME: ci

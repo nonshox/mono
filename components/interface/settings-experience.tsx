@@ -438,7 +438,7 @@ export function SettingsExperience({
             Export
           </h2>
           <p className="mt-2 text-xs leading-5 text-foreground">
-            Everything Mono stores about you — journal, dots, today items —
+            Everything Mono stores about you — journal, dots, check items —
             as a file. Your data never leaves except into this file.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">

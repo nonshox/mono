@@ -7,6 +7,7 @@ import {
 } from "@/lib/http";
 import { polishEntrySchema } from "@/features/ai/schemas";
 import { polishEntry } from "@/features/digest/compile";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * Local text tidy for raw dictation — deterministic, no network, no cost.
@@ -23,6 +24,15 @@ export async function POST(request: Request) {
   }
   if (!auth.account) {
     return jsonError(401, "UNAUTHENTICATED", "Sign in to polish your words.");
+  }
+
+  const limited = rateLimit("ai:polish", auth.account.$id, 60, 60_000);
+  if (!limited.ok) {
+    return jsonError(
+      429,
+      "RATE_LIMITED",
+      `Slowing down — try again in ${limited.retryAfterSeconds}s.`,
+    );
   }
 
   let body: unknown;

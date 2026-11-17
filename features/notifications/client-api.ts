@@ -1,20 +1,7 @@
 import { apiClient } from "@/lib/api-client";
+import type { NotificationItem } from "./types";
 
-export type NotificationKind =
-  | "dot_closed"
-  | "letter_ready"
-  | "streak_7"
-  | "streak_30"
-  | "day_ending";
-
-export type NotificationItem = {
-  id: string;
-  kind: NotificationKind;
-  body: string;
-  ref: string | null;
-  createdAt: string;
-  read: boolean;
-};
+export type { NotificationItem, NotificationKind } from "./types";
 
 export type NotificationPage = {
   items: NotificationItem[];

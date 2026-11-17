@@ -7,9 +7,10 @@ import {
   logFailure,
 } from "@/lib/http";
 import { getUserRow } from "@/features/users/service";
+import { rateLimit } from "@/lib/rate-limit";
 import { listRecentEntriesSince } from "@/features/days/service";
 import { listTimeline } from "@/features/check/service";
-import { suggestBucket, suggestDay, suggestCacheStats, type SuggestMeta } from "@/features/ai/suggest";
+import { suggestBucket, suggestDay, type SuggestMeta } from "@/features/ai/suggest";
 import { report, startTiming } from "@/lib/telemetry";
 
 const CACHE_HEADERS = { "Cache-Control": "private, no-store" } as const;
@@ -34,6 +35,15 @@ export async function POST(request: Request) {
   }
   if (!auth.account) {
     return jsonError(401, "UNAUTHENTICATED", "Sign in first.");
+  }
+
+  const limited = rateLimit("ai:suggest", auth.account.$id, 40, 60_000);
+  if (!limited.ok) {
+    return jsonError(
+      429,
+      "RATE_LIMITED",
+      `Slowing down — try again in ${limited.retryAfterSeconds}s.`,
+    );
   }
 
   let body: unknown = {};
@@ -67,14 +77,10 @@ export async function POST(request: Request) {
     }
     const actions = (row.actions ?? []).slice(0, 20);
     const timelineTexts = items.map((item) => item.text);
-    const finish = (body: object, cached: boolean, meta?: SuggestMeta) => {
+    const finish = (body: object, meta?: SuggestMeta) => {
       timing.lap("suggest");
-      const stats = suggestCacheStats();
       report("/api/ai/suggest", timing, {
         bucket: parsed.data.bucket ?? "day",
-        cache: cached ? "hit" : "miss",
-        cacheHits: stats.hits,
-        cacheMisses: stats.misses,
         ...(meta?.model ? { model: meta.model } : {}),
         ...(meta?.attempts ? { attempts: meta.attempts } : {}),
         ...(meta?.usage
@@ -93,16 +99,16 @@ export async function POST(request: Request) {
     };
 
     if (parsed.data.bucket) {
-      const { items, source, cached, meta } = await suggestBucket(
+      const { items, source, meta } = await suggestBucket(
         parsed.data.bucket,
         entries,
         actions,
         timelineTexts,
       );
-      return finish({ items, source, cached }, cached, meta);
+      return finish({ items, source }, meta);
     }
-    const { picks, source, cached, meta } = await suggestDay(entries, actions, timelineTexts);
-    return finish({ picks, source, cached }, cached, meta);
+    const { picks, source, meta } = await suggestDay(entries, actions, timelineTexts);
+    return finish({ picks, source }, meta);
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     timing.lap("suggest");

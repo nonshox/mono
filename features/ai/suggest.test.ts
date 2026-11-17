@@ -35,22 +35,22 @@ describe("suggestBucket", () => {
     }
   });
 
-  it("serves an identical tap from cache without a second network call", async () => {
+  it("returns AI items from the model (no caching layer between taps)", async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValue(geminiOk(["Physics with coffee", "One problem before lunch"]));
+      .mockImplementation(() =>
+        Promise.resolve(geminiOk(["Physics with coffee", "One problem before lunch"])),
+      );
     vi.stubGlobal("fetch", fetchMock);
 
     const first = await suggestBucket("midday", entries, ["read", "physics"], []);
     expect(first.source).toBe("ai");
-    expect(first.cached).toBe(false);
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     const second = await suggestBucket("midday", entries, ["read", "physics"], []);
     expect(second.source).toBe("ai");
-    expect(second.cached).toBe(true);
-    expect(second.items).toEqual(first.items);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(second.items).toEqual(["Physics with coffee", "One problem before lunch"]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("falls back to local picks when Gemini answers with garbage", async () => {

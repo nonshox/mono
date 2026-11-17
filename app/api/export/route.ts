@@ -8,6 +8,7 @@ import { listAllEntries } from "@/features/days/service";
 import { listTimeline } from "@/features/check/service";
 import { getUserRow } from "@/features/users/service";
 import { buildMarkdown, buildPayload } from "@/features/export/build";
+import { todayUtc } from "@/lib/dates";
 
 const formatSchema = z.enum(["json", "markdown"]);
 
@@ -52,7 +53,7 @@ export async function GET(request: Request) {
         done: item.done,
       })),
     });
-    const stamp = new Date().toISOString().slice(0, 10);
+    const stamp = todayUtc();
 
     if (parsed.data === "markdown") {
       return new Response(buildMarkdown(payload), {

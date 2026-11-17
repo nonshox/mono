@@ -6,6 +6,7 @@ import {
   appendToDay,
 } from "@/features/days/service";
 import { listTimeline } from "@/features/check/service";
+import { todayUtc } from "@/lib/dates";
 import { BUCKETS } from "@/features/check/types";
 import type { TimelineItem } from "@/features/check/types";
 
@@ -77,7 +78,7 @@ export async function replyCapture(
   userId: string,
   text: string,
 ): Promise<void> {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayUtc();
   try {
     await appendToDay(userId, today, text);
     await send(

@@ -2,6 +2,9 @@ import "server-only";
 import { ID, Query, type Models } from "node-appwrite";
 import { getDatabaseId, getTables, isNotFound } from "@/lib/appwrite/tables";
 import { logFailure } from "@/lib/http";
+import type { NotificationItem, NotificationKind } from "./types";
+
+export type { NotificationItem, NotificationKind } from "./types";
 
 export const notificationsTableId = "notifications" as const;
 
@@ -10,22 +13,6 @@ export type NotificationRow = Models.Row & {
   kind: NotificationKind;
   body: string;
   ref: string | null;
-  read: boolean;
-};
-
-export type NotificationKind =
-  | "dot_closed"
-  | "letter_ready"
-  | "streak_7"
-  | "streak_30"
-  | "day_ending";
-
-export type NotificationItem = {
-  id: string;
-  kind: NotificationKind;
-  body: string;
-  ref: string | null;
-  createdAt: string;
   read: boolean;
 };
 
