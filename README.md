@@ -31,9 +31,9 @@ npm run dev
 
 Both `days` and `timeline` are created by `scripts/setup-days.mjs` (idempotent — also creates `users.nudge` and `users.ai` bool columns and `days.satisfied` int).
 
-`users` also needs a `nudge` (bool, default false) attribute for the optional evening Telegram nudge (`/api/cron/nudge`, requires `CRON_SECRET`, fires each user's local 9:30pm — see below) and an `ai` (bool, default false) attribute for the opt-in weekly letter (`/api/cron/letter` at 09:00 UTC Sunday).
+`users` also needs a `nudge` (bool, default false) attribute for the optional evening Telegram nudge (`/api/cron/nudge`, requires `CRON_SECRET`, fires each user's local 10:00pm — see below) and an `ai` (bool, default false) attribute for the opt-in weekly letter (`/api/cron/letter` at 09:00 UTC Sunday).
 
-**Cron triggers.** Vercel Hobby only allows daily crons, so `/api/cron/nudge` is pinged half-hourly by `.github/workflows/cron.yml` (UTC, best-effort) — set repo secrets `MONO_URL` (e.g. `https://your-app.vercel.app`) and `CRON_SECRET` (same value as the app's env var), then enable Actions. The endpoint itself is plan-agnostic: it sends each user a nudge only when it's their local 9:30pm (`users.tz`, learned silently from the browser; falls back to UTC) and they haven't written today, and also drops the same moment into the in-app bell (`day_ending`). `/api/cron/letter` stays on Vercel (`vercel.json`, weekly — hobby-safe). On Vercel Pro, you can delete the workflow and re-add `{ "path": "/api/cron/nudge", "schedule": "30 * * * *" }` to `vercel.json` instead — use exactly one mechanism.
+**Cron triggers.** Vercel Hobby only allows daily crons, so `/api/cron/nudge` is pinged hourly by `.github/workflows/cron.yml` (UTC, best-effort) — set repo secrets `MONO_URL` (e.g. `https://your-app.vercel.app`) and `CRON_SECRET` (same value as the app's env var), then enable Actions. The endpoint itself is plan-agnostic: it sends each user a nudge only when it's their local 10:00pm (`users.tz`, learned silently from the browser; falls back to UTC) and they haven't written today, and also drops the same moment into the in-app bell (`day_ending`). `/api/cron/letter` stays on Vercel (`vercel.json`, weekly — hobby-safe). On Vercel Pro, you can delete the workflow and re-add `{ "path": "/api/cron/nudge", "schedule": "0 * * * *" }` to `vercel.json` instead — use exactly one mechanism.
 
 **No AI, by design.** Everything is computed from your entries, on this machine — the Sunday letter (words written, longest day, themes, satisfaction average, the line to keep), the smart nudge (anchored to what you keep writing about), the year review in Settings (month-by-month shape and themes), and the one-tap **dictation polish** (Wand next to the mic — fillers stripped, `i`→`I`, sentences tidied, meaning untouched). Your entries never leave the device.
 
@@ -54,7 +54,7 @@ Everything in Mono runs at $0. No Pro features are used or assumed:
 1. Push to `main` — the Vercel GitHub integration deploys it (CI must stay green: typecheck · lint · tests · build).
 2. Vercel → Settings → Environment Variables (Production): `APPWRITE_ENDPOINT`, `APPWRITE_PROJECT_ID`, `APPWRITE_API_KEY`, `APPWRITE_DATABASE_ID`, `APPWRITE_STORAGE_BUCKET_ID`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`, `CRON_SECRET` (GEMINI_* is unused — delete it).
 3. Repo → Settings → Secrets and variables → Actions: add `CRON_SECRET` = the same value as in Vercel. That's the only repo secret — the production URL is inline in `.github/workflows/cron.yml`.
-4. `vercel.json` carries only the weekly letter (Hobby-legal); the half-hourly evening nudge is `.github/workflows/cron.yml` calling `/api/cron/nudge` — keep Actions enabled.
+4. `vercel.json` carries only the weekly letter (Hobby-legal); the hourly evening nudge is `.github/workflows/cron.yml` calling `/api/cron/nudge` — keep Actions enabled.
 5. Appwrite Cloud free tier covers tables + storage. No external paid services anywhere.
 6. After deploy: register the Telegram webhook once, sign in once end-to-end, then Actions → "Cron — evening nudge" → **Run workflow** and confirm it's green.
 

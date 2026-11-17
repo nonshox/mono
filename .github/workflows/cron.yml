@@ -2,8 +2,8 @@ name: Cron — evening nudge
 
 # Pings to /api/cron/nudge. Needed because:
 # - Vercel Hobby only allows daily crons ("0 * * * *" in vercel.json would fail deploy).
-#   The half-hourly ping is what lets each user get nudged at their LOCAL 9:30pm.
-# - If you're on Vercel Pro instead, delete this file and put the half-hourly cron in vercel.json.
+#   The hourly ping is what lets each user get nudged at their LOCAL 10:00pm.
+# - If you're on Vercel Pro instead, delete this file and put the hourly cron in vercel.json.
 # Use exactly one mechanism — never both.
 #
 # The production URL is inline below (it is public information). The only
@@ -13,9 +13,9 @@ name: Cron — evening nudge
 # If CRON_SECRET is not set, this job fails loudly with a clear message.
 on:
   schedule:
-    # Every 30 minutes at :30. GitHub Actions cron is UTC and best-effort (± up to an hour);
-    # combined with the hour==21 local gate, the nudge lands at ~9:30pm user-local.
-    - cron: "30 * * * *"
+    # Every hour at :00. GitHub Actions cron is UTC and best-effort (± up to an hour);
+    # combined with the hour==22 local gate, the nudge lands at ~10:00pm user-local.
+    - cron: "0 * * * *"
   workflow_dispatch: {}
 
 jobs:

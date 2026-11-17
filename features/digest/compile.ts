@@ -106,7 +106,7 @@ export function compileYear(entries: DigestEntry[]): string {
   return lines.join("\n");
 }
 
-// Written for the 9:30pm moment — one short sentence, no exclamation marks,
+// Written for the 10:00pm moment — one short sentence, no exclamation marks,
 // always about them, never about the app.
 const NUDGE_BANK = [
   "The day's almost gone. What happened?",
