@@ -46,7 +46,11 @@ export function TodayExperience({
   const satisfy = useTodayStore((state) => state.satisfy);
   const reset = useTodayStore((state) => state.reset);
 
-  const [manage, setManage] = useState(false);
+  const [manage, setManage] = useState<Record<Bucket, boolean>>({
+    rise: false,
+    midday: false,
+    evening: false,
+  });
   const [drafts, setDrafts] = useState<Record<string, string>>({
     rise: "",
     midday: "",
@@ -68,6 +72,11 @@ export function TodayExperience({
   const toggleItem = (id: string) =>
     void toggle(id).catch(() => toast.error("Couldn't save"));
 
+  const toggleManage = (bucket: Bucket) => {
+    if (manage[bucket]) setEditingId(null);
+    setManage((prev) => ({ ...prev, [bucket]: !prev[bucket] }));
+  };
+
   const submit = (bucket: Bucket) => async () => {
     const text = drafts[bucket].trim();
     if (!text) return;
@@ -75,12 +84,12 @@ export function TodayExperience({
     await add(bucket, text).catch(() => toast.error("Not saved"));
   };
 
+  const percent = items.length
+    ? Math.round((items.filter((item) => item.done).length / items.length) * 100)
+    : 0;
+
   const endDay = async () => {
-    const total = items.length;
-    if (total === 0) return;
-    const percent = Math.round(
-      (items.filter((item) => item.done).length / total) * 100,
-    );
+    if (items.length === 0) return;
     try {
       await satisfy(percent);
       await reset();
@@ -93,42 +102,49 @@ export function TodayExperience({
   return (
     <main className="min-h-full w-full bg-background px-3 pb-20 pt-5 sm:px-6 sm:pt-8">
       <div className="mx-auto w-full max-w-5xl md:max-w-6xl">
-        {/* Top row — manage toggle only, tiny */}
-        <div className="flex items-center justify-end pb-2">
-          <button
-            aria-label={manage ? "Done managing" : "Manage items"}
-            aria-pressed={manage}
-            className="grid size-7 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-            onClick={() => setManage((prev) => !prev)}
-            type="button"
-          >
-            {manage ? (
-              <XIcon aria-hidden="true" className="size-4" strokeWidth={2} />
-            ) : (
-              <SlidersHorizontal aria-hidden="true" className="size-4" strokeWidth={1.8} />
-            )}
-          </button>
-        </div>
-
-        {/* Buckets — three vertical strips, big boxes, no stretched heights */}
+        {/* Buckets — three vertical strips */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
           {BUCKETS.map((bucket) => {
             const bucketItems = items
               .filter((item) => item.bucket === bucket)
               .sort((a, b) => a.order - b.order);
             const doneHere = bucketItems.filter((item) => item.done).length;
+            const bucketManage = manage[bucket];
             return (
               <section
                 aria-label={BUCKET_LABELS[bucket]}
                 className="flex flex-col rounded-2xl border-2 border-border bg-popover p-3 sm:p-4"
                 key={bucket}
               >
-                <div className="flex items-baseline justify-between gap-2">
+                <div className="flex items-center justify-between gap-2">
                   <h2 className="text-base font-extrabold text-foreground">
                     {BUCKET_LABELS[bucket]}
                   </h2>
-                  <span className="text-xs tabular-nums font-bold text-foreground">
-                    {doneHere} / {bucketItems.length}
+                  <span className="flex shrink-0 items-center gap-1.5">
+                    <span className="text-xs tabular-nums font-bold text-foreground">
+                      {doneHere} / {bucketItems.length}
+                    </span>
+                    <button
+                      aria-label={
+                        bucketManage
+                          ? `Done managing ${BUCKET_LABELS[bucket]}`
+                          : `Manage ${BUCKET_LABELS[bucket]}`
+                      }
+                      aria-pressed={bucketManage}
+                      className="grid size-7 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                      onClick={() => toggleManage(bucket)}
+                      type="button"
+                    >
+                      {bucketManage ? (
+                        <XIcon aria-hidden="true" className="size-4" strokeWidth={2} />
+                      ) : (
+                        <SlidersHorizontal
+                          aria-hidden="true"
+                          className="size-4"
+                          strokeWidth={1.8}
+                        />
+                      )}
+                    </button>
                   </span>
                 </div>
 
@@ -139,7 +155,7 @@ export function TodayExperience({
                         key={`${item.id}:${item.text}`}
                         editing={editingId === item.id}
                         item={item}
-                        manage={manage}
+                        manage={bucketManage}
                         onDelete={() =>
                           void remove(item.id).catch(() => toast.error("Not deleted"))
                         }
@@ -167,33 +183,41 @@ export function TodayExperience({
                   ))}
                 </ul>
 
-                <form
-                  className="mt-auto flex items-center gap-1 pt-2"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void submit(bucket)();
-                  }}
-                >
-                  <input
-                    aria-label={`Add to ${BUCKET_LABELS[bucket]}`}
-                    className="h-8 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-foreground/40"
-                    maxLength={150}
-                    onChange={(event) =>
-                      setDrafts((value) => ({ ...value, [bucket]: event.target.value }))
-                    }
-                    placeholder="One small thing…"
-                    spellCheck={false}
-                    value={drafts[bucket]}
-                  />
-                  <button
-                    aria-label="Add"
-                    className="grid size-8 shrink-0 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30"
-                    disabled={!drafts[bucket].trim()}
-                    type="submit"
+                {bucketItems.length === 0 && !bucketManage && (
+                  <p className="mt-2 py-1.5 text-xs font-medium text-foreground">
+                    Nothing yet
+                  </p>
+                )}
+
+                {bucketManage && (
+                  <form
+                    className="mt-auto flex items-center gap-1 pt-2"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void submit(bucket)();
+                    }}
                   >
-                    <Plus aria-hidden="true" className="size-4" strokeWidth={2.5} />
-                  </button>
-                </form>
+                    <input
+                      aria-label={`Add to ${BUCKET_LABELS[bucket]}`}
+                      className="h-8 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-foreground/40"
+                      maxLength={150}
+                      onChange={(event) =>
+                        setDrafts((value) => ({ ...value, [bucket]: event.target.value }))
+                      }
+                      placeholder="One small thing…"
+                      spellCheck={false}
+                      value={drafts[bucket]}
+                    />
+                    <button
+                      aria-label="Add"
+                      className="grid size-8 shrink-0 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30"
+                      disabled={!drafts[bucket].trim()}
+                      type="submit"
+                    >
+                      <Plus aria-hidden="true" className="size-4" strokeWidth={2.5} />
+                    </button>
+                  </form>
+                )}
               </section>
             );
           })}
@@ -202,7 +226,12 @@ export function TodayExperience({
         {/* Single evening button — merged satisfy + reset */}
         <div className="mt-6 flex items-center justify-end">
           <button
-            className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2 text-xs font-extrabold text-background outline-none transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30"
+            aria-label={
+              satisfied !== null
+                ? `Best day, ${satisfied} percent`
+                : `End of day, ${percent} percent done`
+            }
+            className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-xs font-extrabold text-background outline-none transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30"
             disabled={!ready || items.length === 0 || saving}
             onClick={() => void endDay()}
             title={ready ? undefined : "Available after 6pm"}
@@ -211,13 +240,9 @@ export function TodayExperience({
             {saving ? (
               <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
             ) : (
-              <Check aria-hidden="true" className="size-3.5" strokeWidth={3} />
+              <ProgressRing percent={satisfied ?? percent} />
             )}
-            {satisfied !== null ? `Best day: ${satisfied}%` : `End of day · ${
-              items.length
-                ? Math.round((items.filter((item) => item.done).length / items.length) * 100)
-                : 0
-            }%`}
+            {satisfied !== null ? "Best" : "Done"}
           </button>
         </div>
       </div>
@@ -340,5 +365,38 @@ function TimelineRow({
         </div>
       )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+/** Percent shown as a hairline ring — the number is never printed. */
+function ProgressRing({ percent }: { percent: number }) {
+  const clamped = Math.min(100, Math.max(0, Math.round(percent)));
+  const radius = 6.5;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference * (1 - clamped / 100);
+  return (
+    <svg aria-hidden="true" className="size-4 -rotate-90" fill="none" viewBox="0 0 18 18">
+      <circle
+        cx="9"
+        cy="9"
+        r={radius}
+        stroke="currentColor"
+        strokeOpacity={0.28}
+        strokeWidth={2.2}
+      />
+      <circle
+        cx="9"
+        cy="9"
+        r={radius}
+        className="transition-[stroke-dashoffset] duration-300"
+        stroke="currentColor"
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+        strokeWidth={2.2}
+      />
+    </svg>
   );
 }
