@@ -31,11 +31,13 @@ npm run dev
 
 Both `days` and `timeline` are created by `scripts/setup-days.mjs` (idempotent — also creates `users.nudge` and `users.ai` bool columns and `days.satisfied` int).
 
-`users` also needs a `nudge` (bool, default false) attribute for the optional evening Telegram nudge (`/api/cron/nudge`, Vercel cron at 20:00 UTC, requires `CRON_SECRET`) and an `ai` (bool, default false) attribute for the opt-in Mono AI (weekly letter via `/api/cron/letter` at 09:00 UTC Sunday, smarter nudge, year review in Settings — requires `GEMINI_API_KEY`).
+`users` also needs a `nudge` (bool, default false) attribute for the optional evening Telegram nudge (`/api/cron/nudge`, requires `CRON_SECRET`, fires each user's local 8pm — see below) and an `ai` (bool, default false) attribute for the opt-in weekly letter (`/api/cron/letter` at 09:00 UTC Sunday).
 
-**Mono AI (opt-in, default off):** one Settings toggle ("Mono AI") gates every feature that sends your entries to Google Gemini — the Sunday letter, the smarter evening nudge, the `Generate review` button in Settings, and the one-tap **dictation polish** (wand next to the mic — speech in, clean prose out, Undo guaranteed). Off means your entries never leave Mono for AI.
+**Cron triggers.** Vercel Hobby only allows daily crons, so `/api/cron/nudge` is pinged hourly by `.github/workflows/cron.yml` (UTC, best-effort) — set repo secrets `MONO_URL` (e.g. `https://your-app.vercel.app`) and `CRON_SECRET` (same value as the app's env var), then enable Actions. The endpoint itself is plan-agnostic: it sends each user a nudge only when it's their local 8pm (`users.tz`, learned silently from the browser; falls back to 20:00 UTC) and they haven't written today. `/api/cron/letter` stays on Vercel (`vercel.json`, weekly — hobby-safe). On Vercel Pro, you can delete the workflow and re-add `{ "path": "/api/cron/nudge", "schedule": "0 * * * *" }` to `vercel.json` instead — use exactly one mechanism.
 
-Dictation uses Chrome's built-in Web Speech API — free, no keys, no model downloads. Chrome sometimes blocks it (insecure origin, VPN, Windows-level mic denial); the usual requirement is simply that the app is served from `http://localhost:3000` or HTTPS. Themes under `/journal` are computed locally and need no key, never leave the device. Tapping a theme filters the journal for it. `GEMINI_API_KEY` from [Google AI Studio](https://aistudio.google.com/apikey); `GEMINI_MODEL` optional (defaults to `gemini-3.5-flash`, free-tier eligible — the 3.x family is thinking-native, so the client budgets extra tokens for short outputs).
+**No AI, by design.** Everything is computed from your entries, on this machine — the Sunday letter (words written, longest day, themes, satisfaction average, the line to keep), the smart nudge (anchored to what you keep writing about), the year review in Settings (month-by-month shape and themes), and the one-tap **dictation polish** (Wand next to the mic — fillers stripped, `i`→`I`, sentences tidied, meaning untouched). Your entries never leave the device.
+
+Dictation uses Chrome's built-in Web Speech API — free, no keys, no model downloads. Chrome sometimes blocks it (insecure origin, VPN, Windows-level mic denial); the usual requirement is simply that the app is served from `http://localhost:3000` or HTTPS. Themes under `/journal` are computed locally and need no key; tapping a theme filters the journal for it.
 
 Both are provisioned automatically (idempotent) by:
 
@@ -45,14 +47,28 @@ node --env-file=.env scripts/setup-days.mjs
 
 Scripts: `dev` — `build` — `start` — `lint` — `test` — `typecheck` — `check` (all checks).
 
+## Deploying with zero paid plans (Vercel Hobby + GitHub + Appwrite)
+
+Everything in Mono runs at $0. No Pro features are used or assumed:
+
+1. Push to `main` — the Vercel GitHub integration deploys it (CI must stay green: typecheck · lint · tests · build).
+2. Vercel → Settings → Environment Variables (Production): `APPWRITE_ENDPOINT`, `APPWRITE_PROJECT_ID`, `APPWRITE_API_KEY`, `APPWRITE_DATABASE_ID`, `APPWRITE_STORAGE_BUCKET_ID`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`, `CRON_SECRET` (GEMINI_* is unused — delete it).
+3. Repo → Settings → Secrets and variables → Actions: add `CRON_SECRET` = the same value as in Vercel. That's the only repo secret — the production URL is inline in `.github/workflows/cron.yml`.
+4. `vercel.json` carries only the weekly letter (Hobby-legal); the hourly evening nudge is `.github/workflows/cron.yml` calling `/api/cron/nudge` — keep Actions enabled.
+5. Appwrite Cloud free tier covers tables + storage. No external paid services anywhere.
+6. After deploy: register the Telegram webhook once, sign in once end-to-end, then Actions → "Cron — evening nudge" → **Run workflow** and confirm it's green.
+
+Notes: Hobby cron fires within the scheduled hour (best-effort) — fine for a sunset nudge. GitHub Actions cron can drift ±1 hour at peak — also fine. If you ever move to Vercel Pro, delete the workflow and re-add the hourly cron to `vercel.json` (exactly one nudge mechanism, never two).
+
 ## What's inside
+
 
 - `/auth` — email-code sign-in (6-digit code, no password)
 - bell icon (navbar) — inbox panel: grouping, unread badge, mark read/all-read
 - `/` — greeting + **year in dots** (365-day journal: hollow dot, tap to write/edit/erase, “on this day” flashback, `/api/days*`)
 - `/journal` — reading mode (every entry as one book, year dividers, search-within + last-30-days themes, tap to expand as a card)
 - `/today` — minimal timeline: three fixed buckets (Rise · Midday · Evening), tap to tick/untick, "End of day" stores % of ticks as `days.satisfied` (0–100) on YES, or clears all ticks for tomorrow on NO
-- `/profile` — identity card (initials avatar, name, email, member since) + edit
+- `/profile` — identity card (avatar or initials, name, email, member since) + `/profile/edit` (name, photo upload/remove)
 - `/settings` — account (sessions w/ revoke, Telegram connect, delete account)
 - Navbar everywhere — logo + bell icon (notifications open as a dropdown panel), account menu
 

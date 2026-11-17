@@ -5,7 +5,9 @@ import {
   Bell,
   BookOpenText,
   ChevronRight,
+  Eraser,
   House,
+  LoaderCircle,
   LogOut,
   Moon,
   Settings,
@@ -27,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { logout } from "@/features/auth/client-api";
+import { saveUserTz } from "@/features/users/client-api";
 import { useUserStore } from "@/features/users/store";
 import { useNotifications, useClearNotifications } from "@/features/notifications/use-notifications";
 import { notificationHref, relativeTime } from "@/lib/notification-link";
@@ -51,6 +54,11 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     loaded,
     markRead,
     markAllRead,
+    clearRead,
+    hasReadVisible,
+    loadMore,
+    hasMore,
+    loadingMore,
   } = useNotifications();
   const clearNotifications = useClearNotifications();
   const user = useUserStore((state) => state.user);
@@ -89,6 +97,17 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     void loadUser();
   }, [loadUser]);
 
+  // Silently remember the browser's timezone — drives the evening nudge.
+  useEffect(() => {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (!user || !tz || user.tz === tz) return;
+    void saveUserTz(tz)
+      .then((saved) => useUserStore.getState().setUser(saved))
+      .catch(() => {
+        // Best-effort — the nudge falls back to UTC if unknown.
+      });
+  }, [user]);
+
   const signOut = async () => {
     try {
       await logout();
@@ -106,7 +125,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     if (href) router.push(href);
   };
 
-  const latest = items.slice(0, 7);
+  const latest = items;
 
   return (
     <>
@@ -195,15 +214,28 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
               >
                 <div className="flex items-center justify-between border-b border-border/60 px-4 py-2.5">
                   <p className="type-eyebrow">Notifications</p>
-                  {unread > 0 && (
-                    <button
-                      className="text-xs font-semibold text-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                      onClick={() => void markAllRead()}
-                      type="button"
-                    >
-                      Mark all read
-                    </button>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {hasReadVisible && (
+                      <button
+                        aria-label="Clear read notifications"
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-foreground outline-none transition hover:opacity-70 focus-visible:ring-2 focus-visible:ring-ring"
+                        onClick={() => void clearRead()}
+                        type="button"
+                      >
+                        <Eraser aria-hidden="true" className="size-3.5" strokeWidth={2} />
+                        Clear read
+                      </button>
+                    )}
+                    {unread > 0 && (
+                      <button
+                        className="text-xs font-semibold text-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                        onClick={() => void markAllRead()}
+                        type="button"
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="max-h-[22rem] overflow-y-auto">
                   {!loaded || (loading && latest.length === 0) ? (
@@ -220,44 +252,64 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                       </p>
                     </div>
                   ) : (
-                    latest.map((item) => (
-                      <button
-                        className="flex w-full items-center gap-2.5 border-b border-border/40 px-3 py-2.5 text-left outline-none transition last:border-b-0 hover:bg-muted/60 focus-visible:bg-muted/60"
-                        key={item.id}
-                        onClick={() => openNotification(item)}
-                        type="button"
-                      >
-                        <UserAvatar
-                          avatar={item.actorAvatar}
-                          name={item.actorName}
-                          size={26}
-                        />
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-xs leading-5 text-foreground">
-                            <span className="font-semibold">
-                              {item.self ? "You" : item.actorName}
-                            </span>{" "}
-                            <span className="text-foreground">
-                              {item.count > 1
-                                ? `${item.type} ×${item.count}`
-                                : item.type}
-                            </span>
-                          </span>
-                          <time
-                            className="mt-0.5 block text-xs tabular-nums text-foreground"
-                            dateTime={item.createdAt}
-                          >
-                            {relativeTime(item.createdAt)}
-                          </time>
-                        </span>
-                        {!item.read && (
-                          <span
-                            aria-hidden="true"
-                            className="size-1.5 shrink-0 rounded-full bg-badge"
+                    <>
+                      {latest.map((item) => (
+                        <button
+                          className="flex w-full items-center gap-2.5 border-b border-border/40 px-3 py-2.5 text-left outline-none transition last:border-b-0 hover:bg-muted/60 focus-visible:bg-muted/60"
+                          key={item.id}
+                          onClick={() => openNotification(item)}
+                          type="button"
+                        >
+                          <UserAvatar
+                            avatar={item.actorAvatar}
+                            name={item.actorName}
+                            size={26}
                           />
-                        )}
-                      </button>
-                    ))
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-xs leading-5 text-foreground">
+                              <span className="font-semibold">
+                                {item.self ? "You" : item.actorName}
+                              </span>{" "}
+                              <span className="text-foreground">
+                                {item.count > 1
+                                  ? `${item.type} ×${item.count}`
+                                  : item.type}
+                              </span>
+                            </span>
+                            <time
+                              className="mt-0.5 block text-xs tabular-nums text-foreground"
+                              dateTime={item.createdAt}
+                            >
+                              {relativeTime(item.createdAt)}
+                            </time>
+                          </span>
+                          {!item.read && (
+                            <span
+                              aria-hidden="true"
+                              className="size-1.5 shrink-0 rounded-full bg-badge"
+                            />
+                          )}
+                        </button>
+                      ))}
+                      {hasMore && (
+                        <div className="border-t border-border/60 px-3 py-1.5">
+                          <button
+                            className="inline-flex h-7 w-full items-center justify-center gap-1.5 rounded-full text-xs font-semibold text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                            disabled={loadingMore}
+                            onClick={() => void loadMore()}
+                            type="button"
+                          >
+                            {loadingMore && (
+                              <LoaderCircle
+                                aria-hidden="true"
+                                className="size-3.5 animate-spin"
+                              />
+                            )}
+                            {loadingMore ? "Loading" : "See more"}
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </DropdownMenuContent>
@@ -269,16 +321,29 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                 aria-label="Account menu"
                 className="grid size-9 place-items-center rounded-full outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <UserAvatar name={name || email || "?"} size={26} />
+                <UserAvatar
+                  avatar={user?.avatar || undefined}
+                  name={name || email || "?"}
+                  size={26}
+                />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56" sideOffset={8}>
                 <DropdownMenuGroup>
                   <DropdownMenuLabel className="px-2 py-2">
-                    <span className="block text-xs font-semibold">
-                      {name || "Account"}
-                    </span>
-                    <span className="block truncate text-xs text-foreground">
-                      {email}
+                    <span className="flex items-center gap-2.5">
+                      <UserAvatar
+                        avatar={user?.avatar || undefined}
+                        name={name || email || "?"}
+                        size={32}
+                      />
+                      <span className="min-w-0">
+                        <span className="block text-xs font-semibold">
+                          {name || "Account"}
+                        </span>
+                        <span className="block truncate text-xs text-foreground">
+                          {email}
+                        </span>
+                      </span>
                     </span>
                   </DropdownMenuLabel>
                 </DropdownMenuGroup>

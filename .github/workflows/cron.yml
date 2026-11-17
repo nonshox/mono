@@ -1,0 +1,34 @@
+name: Cron — evening nudge
+
+# Hourly ping to /api/cron/nudge. Needed because:
+# - Vercel Hobby only allows daily crons ("0 * * * *" in vercel.json would fail deploy),
+#   and an hourly ping is what lets each user get nudged at their LOCAL 8pm.
+# - If you're on Vercel Pro instead, delete this file and put the hourly cron in vercel.json.
+# Use exactly one mechanism — never both.
+#
+# The production URL is inline below (it is public information). The only
+# secret this workflow needs is CRON_SECRET, which must match the app's env:
+#   repo → Settings → Secrets and variables → Actions → New repository secret
+#   Name: CRON_SECRET   Value: (same value as CRON_SECRET in your .env / Vercel)
+# If CRON_SECRET is not set, this job fails loudly with a clear message.
+on:
+  schedule:
+    # Every hour at :03. GitHub Actions cron is UTC and best-effort (± up to an hour).
+    - cron: "3 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  nudge:
+    runs-on: ubuntu-latest
+    env:
+      MONO_URL: https://promono.vercel.app
+    steps:
+      - name: Ping nudge endpoint
+        run: |
+          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "CRON_SECRET repo secret is not set."
+            echo "Create it at: Settings → Secrets and variables → Actions → New repository secret"
+            exit 1
+          fi
+          curl -fsS -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "$MONO_URL/api/cron/nudge"

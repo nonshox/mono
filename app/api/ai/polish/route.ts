@@ -6,9 +6,12 @@ import {
   logFailure,
 } from "@/lib/http";
 import { polishEntrySchema } from "@/features/ai/schemas";
-import { getUserRow } from "@/features/users/service";
-import { polishEntry } from "@/features/ai/generate";
+import { polishEntry } from "@/features/digest/compile";
 
+/**
+ * Local text tidy for raw dictation — deterministic, no network, no cost.
+ * Your words never leave this device.
+ */
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) {
     return jsonError(403, "ORIGIN_REJECTED", "Request origin was rejected.");
@@ -35,12 +38,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const row = await getUserRow(auth.account.$id);
-    if (!row?.ai) {
-      return jsonError(403, "AI_NOT_ENABLED", "Enable Mono AI in Settings first.");
-    }
-
-    const polished = await polishEntry(parsed.data.text);
+    const polished = polishEntry(parsed.data.text);
     return NextResponse.json(
       { polished },
       { headers: { "Cache-Control": "private, no-store" } },

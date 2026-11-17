@@ -6,6 +6,8 @@ import { deleteDay, fetchYearDays, saveDay, type DayEntry } from "./client-api";
 type DaysState = {
   /** day-keyed text of the entries in `year`. */
   entries: Record<string, string>;
+  /** day-keyed satisfaction percent (only days closed via end-of-day appear). */
+  satisfied: Record<string, number>;
   year: number | null;
   /** True while a different year's entries are being fetched. */
   loading: boolean;
@@ -22,8 +24,14 @@ type DaysState = {
   remove: (day: string) => Promise<void>;
 };
 
+const satisfiedOf = (days: DayEntry[]) =>
+  Object.fromEntries(
+    days.filter((entry) => entry.satisfied != null).map((entry) => [entry.day, entry.satisfied as number]),
+  );
+
 export const useDaysStore = create<DaysState>((set, get) => ({
   entries: {},
+  satisfied: {},
   year: null,
   loading: false,
   loaded: false,
@@ -34,6 +42,7 @@ export const useDaysStore = create<DaysState>((set, get) => ({
       year,
       loaded: true,
       entries: Object.fromEntries(days.map((entry) => [entry.day, entry.text])),
+      satisfied: satisfiedOf(days),
     }),
 
   load: async (year) => {
@@ -46,6 +55,7 @@ export const useDaysStore = create<DaysState>((set, get) => ({
         loaded: true,
         loading: false,
         entries: Object.fromEntries(days.map((entry) => [entry.day, entry.text])),
+        satisfied: satisfiedOf(days),
       });
     } catch (cause) {
       set({ loading: false });
@@ -78,11 +88,14 @@ export const useDaysStore = create<DaysState>((set, get) => ({
 
   remove: async (day) => {
     const previous = get().entries[day];
+    const previousSatisfied = get().satisfied[day];
     if (previous === undefined) return;
     set((state) => {
       const entries = { ...state.entries };
       delete entries[day];
-      return { saving: true, entries };
+      const satisfied = { ...state.satisfied };
+      delete satisfied[day];
+      return { saving: true, entries, satisfied };
     });
     try {
       await deleteDay(day);
@@ -91,6 +104,10 @@ export const useDaysStore = create<DaysState>((set, get) => ({
       set((state) => ({
         saving: false,
         entries: { ...state.entries, [day]: previous },
+        satisfied:
+          previousSatisfied === undefined
+            ? state.satisfied
+            : { ...state.satisfied, [day]: previousSatisfied },
       }));
       throw cause;
     }

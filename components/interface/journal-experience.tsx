@@ -150,6 +150,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
   if (items.length === 0) {
     return (
       <main className="min-h-full w-full bg-background px-4 pb-20 pt-6 sm:px-6 sm:pt-10">
+        <h1 className="sr-only">Journal</h1>
         <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-3 pt-16 text-center md:max-w-3xl">
           <span className="grid size-14 place-items-center rounded-full bg-muted text-foreground">
             <BookOpen aria-hidden="true" className="size-6" strokeWidth={1.5} />
@@ -171,6 +172,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
 
   return (
     <main className="min-h-full w-full bg-background px-4 pb-20 pt-6 sm:px-6 sm:pt-10">
+      <h1 className="sr-only">Journal</h1>
       <div className="mx-auto w-full max-w-2xl md:max-w-3xl">
         {/* Search-within — the only chrome on the page */}
         <div className="flex items-center gap-2 pb-2 pt-1">

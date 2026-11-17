@@ -1,10 +1,10 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { jsonError, logFailure } from "@/lib/http";
-import { listAiTargets } from "@/features/users/service";
+import { listLetterTargets } from "@/features/users/service";
 import { listRecentEntries } from "@/features/days/service";
 import { sendTelegramNotification } from "@/features/telegram/service";
-import { generateWeeklyLetter } from "@/features/ai/generate";
+import { compileLetter } from "@/features/digest/compile";
 
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
@@ -22,8 +22,9 @@ function isAuthorized(request: Request): boolean {
 }
 
 /**
- * Fired Sundays 09:00 UTC. Sends the weekly letter to Mono-AI-opted-in
- * users who wrote at least one entry in the current week. Best-effort.
+ * Fired Sundays 09:00 UTC. Sends the weekly letter (compiled on this server
+ * from what the writer actually wrote — no AI, no network beyond Telegram)
+ * to users who opted into the letter and wrote this week.
  */
 export async function GET(request: Request) {
   if (!process.env.CRON_SECRET) {
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
 
   let targets: string[];
   try {
-    targets = await listAiTargets();
+    targets = await listLetterTargets();
   } catch (error) {
     logFailure("Letter cron", error);
     return jsonError(502, "LETTER_LOOKUP_FAILED", "Letters are unavailable right now.");
@@ -61,7 +62,7 @@ export async function GET(request: Request) {
         continue;
       }
 
-      const letter = await generateWeeklyLetter(recent);
+      const letter = compileLetter(recent);
       await sendTelegramNotification(userId, letter);
       sent += 1;
     } catch (error) {

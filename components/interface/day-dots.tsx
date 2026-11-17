@@ -2,6 +2,7 @@
 
 import { Popover } from "@base-ui/react/popover";
 import {
+  ArrowLeft,
   ChevronLeft,
   ChevronRight,
   Eraser,
@@ -22,6 +23,7 @@ import { useDaysStore } from "@/features/days/store";
 import { getApiErrorMessage } from "@/lib/api-client";
 import { MicButton } from "@/components/interface/mic-button";
 import { PolishButton } from "@/components/interface/polish-button";
+import { ProgressRing } from "@/components/interface/progress-ring";
 
 const MAX_LENGTH = 1000;
 const COUNTER_AT = 800;
@@ -65,6 +67,7 @@ export function DayDots({
   const load = useDaysStore((state) => state.load);
   const loading = useDaysStore((state) => state.loading);
   const stored = useDaysStore((state) => state.entries);
+  const satisfiedMap = useDaysStore((state) => state.satisfied);
   const saving = useDaysStore((state) => state.saving);
   const save = useDaysStore((state) => state.save);
   const remove = useDaysStore((state) => state.remove);
@@ -84,7 +87,9 @@ export function DayDots({
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
+  const [flashbackIndex, setFlashbackIndex] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [progressView, setProgressView] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<DayEntry[]>([]);
   const [searching, setSearching] = useState(false);
@@ -111,6 +116,7 @@ export function DayDots({
     }
     setAnchor(element);
     setOpenDay(day);
+    setFlashbackIndex(0);
     const existing = useDaysStore.getState().entries[day];
     setDraft(existing ?? "");
     setEditing(existing === undefined);
@@ -220,13 +226,12 @@ export function DayDots({
     const day = openDay;
     const text = draft.trim();
     const previous = useDaysStore.getState().entries[day];
-    const unchanged = text === (previous ?? "");
 
     // Close now — save in background; toast only on failure.
     setEditing(false);
     setOpenDay(null);
 
-    if (!editing || unchanged) return;
+    if (!editing || text === (previous ?? "")) return;
 
     void (async () => {
       try {
@@ -241,6 +246,26 @@ export function DayDots({
         toast.error(getApiErrorMessage(cause, "Day not saved"));
       }
     })();
+  };
+
+  // Leave edit mode but keep the popover open; commit the draft now.
+  const finishEditing = async () => {
+    const day = openDay;
+    if (!day) return;
+    const text = draft.trim();
+    const previous = useDaysStore.getState().entries[day];
+    setEditing(false);
+    if (text === (previous ?? "")) return;
+    try {
+      if (!text) {
+        await remove(day);
+        toast.success("Day cleared");
+      } else {
+        await save(day, text);
+      }
+    } catch (cause) {
+      toast.error(getApiErrorMessage(cause, "Day not saved"));
+    }
   };
 
   const erase = async () => {
@@ -267,6 +292,15 @@ export function DayDots({
           <span className="mr-1 text-xs tabular-nums text-foreground">
             {filled} / {days.length}
           </span>
+          <button
+            aria-label={progressView ? "Hide day progress rings" : "Show day progress rings"}
+            aria-pressed={progressView}
+            className="grid size-6 place-items-center rounded-md text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={() => setProgressView((value) => !value)}
+            type="button"
+          >
+            <ProgressRing className="size-3.5" percent={progressView ? 100 : 25} />
+          </button>
           <button
             aria-label="Search your days"
             aria-pressed={searchOpen}
@@ -380,16 +414,31 @@ export function DayDots({
           const isFilled = stored[day] !== undefined;
           const isFuture = day > today;
           const isToday = day === today;
+          const daySatisfied = satisfiedMap[day];
           return (
             <button
-              aria-label={`${longLabel(day)} — ${isFilled ? "written" : isFuture ? "upcoming" : "empty"}`}
+              aria-label={`${longLabel(day)} — ${
+                isFilled
+                  ? daySatisfied !== undefined
+                    ? `closed at ${daySatisfied}%`
+                    : "written"
+                  : isFuture
+                    ? "upcoming"
+                    : "empty"
+              }`}
               aria-pressed={isFilled}
               className={cn(
-                "grid aspect-square size-[1.05rem] place-items-center rounded-full border-2 border-foreground/35 bg-transparent outline-none transition-all duration-150 focus-visible:ring-2 focus-visible:ring-ring sm:size-[1.2rem]",
-                isFilled
-                  ? "border-foreground bg-foreground hover:scale-110"
-                  : "border-foreground/30 bg-transparent hover:scale-110 hover:border-foreground/70",
-                isFuture && "cursor-default border-foreground/10 hover:scale-100 hover:border-foreground/10",
+                "grid aspect-square size-[1.05rem] place-items-center rounded-full outline-none transition-all duration-150 focus-visible:ring-2 focus-visible:ring-ring sm:size-[1.2rem]",
+                progressView
+                  ? "text-foreground hover:scale-110"
+                  : cn(
+                      "border-2",
+                      isFilled
+                        ? "border-foreground bg-foreground hover:scale-110"
+                        : "border-foreground/30 bg-transparent hover:scale-110 hover:border-foreground/70",
+                      isFuture && "cursor-default border-foreground/10 hover:scale-100 hover:border-foreground/10",
+                    ),
+                progressView && isFuture && "cursor-default text-foreground/15 hover:scale-100",
                 isToday &&
                 "ring-2 ring-(--editorial)/50 ring-offset-2 ring-offset-background",
               )}
@@ -404,7 +453,14 @@ export function DayDots({
                 }
               }}
               type="button"
-            />
+            >
+              {progressView && (
+                <ProgressRing
+                  className="size-full"
+                  percent={isFilled ? (daySatisfied ?? 100) : 0}
+                />
+              )}
+            </button>
           );
         })}
       </div>
@@ -433,31 +489,44 @@ export function DayDots({
                   {openDay ? longLabel(openDay) : ""}
                 </Popover.Title>
                 <div className="-mr-1 flex items-center gap-1">
-                  <MicButton onChange={setDraft} value={draft} />
-                  <PolishButton onChange={setDraft} value={draft} />
-                  {activeText && !editing && (
+                  {editing ? (
                     <>
                       <button
-                        aria-label="Edit"
+                        aria-label="Back to reading"
                         className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-                        onClick={() => {
-                          setDraft(activeText);
-                          setEditing(true);
-                        }}
+                        onClick={() => void finishEditing()}
                         type="button"
                       >
-                        <PenLine aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+                        <ArrowLeft aria-hidden="true" className="size-3.5" strokeWidth={2} />
                       </button>
-                      <button
-                        aria-busy={saving}
-                        aria-label="Erase"
-                        className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-foreground outline-none transition hover:bg-muted hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring"
-                        onClick={() => void erase()}
-                        type="button"
-                      >
-                        <Eraser aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
-                      </button>
+                      <MicButton onChange={setDraft} value={draft} />
+                      <PolishButton onChange={setDraft} value={draft} />
                     </>
+                  ) : (
+                    activeText && (
+                      <>
+                        <button
+                          aria-label="Edit"
+                          className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                          onClick={() => {
+                            setDraft(activeText);
+                            setEditing(true);
+                          }}
+                          type="button"
+                        >
+                          <PenLine aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+                        </button>
+                        <button
+                          aria-busy={saving}
+                          aria-label="Erase"
+                          className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-foreground outline-none transition hover:bg-muted hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring"
+                          onClick={() => void erase()}
+                          type="button"
+                        >
+                          <Eraser aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+                        </button>
+                      </>
+                    )
                   )}
                 </div>
               </div>
@@ -512,20 +581,45 @@ export function DayDots({
                     )}
 
                     {flashback.length > 0 && (
-                      <div className="mt-1.5">
-                        <p className="type-label text-[11px]">On this day</p>
-                        <ul className="mt-1 grid gap-1">
-                          {flashback.map((entry) => (
-                            <li className="min-w-0" key={entry.day}>
-                              <span className="text-[11px] font-bold tabular-nums text-foreground">
-                                {shortYear(entry.day)}
+                      <div className="mt-2 border-t border-border/50 pt-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="type-label text-[11px]">On this day</p>
+                          {flashback.length > 1 && (
+                            <div className="flex items-center gap-0.5">
+                              <button
+                                aria-label="Newer entry"
+                                className="grid size-5 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-30"
+                                disabled={flashbackIndex === 0}
+                                onClick={() => setFlashbackIndex((value) => Math.max(0, value - 1))}
+                                type="button"
+                              >
+                                <ChevronLeft aria-hidden="true" className="size-3" strokeWidth={2.2} />
+                              </button>
+                              <span className="min-w-5 text-center text-[10px] font-semibold tabular-nums text-foreground">
+                                {flashbackIndex + 1}/{flashback.length}
                               </span>
-                              <p className="line-clamp-2 text-[11px] leading-4 text-foreground">
-                                {entry.text}
-                              </p>
-                            </li>
-                          ))}
-                        </ul>
+                              <button
+                                aria-label="Older entry"
+                                className="grid size-5 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-30"
+                                disabled={flashbackIndex === flashback.length - 1}
+                                onClick={() =>
+                                  setFlashbackIndex((value) =>
+                                    Math.min(flashback.length - 1, value + 1),
+                                  )
+                                }
+                                type="button"
+                              >
+                                <ChevronRight aria-hidden="true" className="size-3" strokeWidth={2.2} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-[10px] font-bold tabular-nums text-foreground">
+                          {shortYear(flashback[flashbackIndex].day)}
+                        </span>
+                        <p className="line-clamp-2 text-[11px] leading-4 text-foreground">
+                          {flashback[flashbackIndex].text}
+                        </p>
                       </div>
                     )}
                   </div>

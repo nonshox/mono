@@ -104,7 +104,26 @@ const ensureBooleanColumn = async (key) => {
   console.log(`users.${key}: created (default false)`);
 };
 
+const ensureStringColumn = async (key, size) => {
+  if (columns.columns.some((column) => column.key === key)) {
+    console.log(`users.${key}: already exists — keeping it`);
+    return;
+  }
+  await db.createStringColumn({
+    databaseId,
+    tableId: "users",
+    key,
+    required: false,
+    size,
+    xdefault: null,
+  });
+  console.log(`users.${key}: created (optional, default null)`);
+};
+
 await ensureBooleanColumn("nudge");
 await ensureBooleanColumn("ai");
+
+// IANA timezone (e.g. "America/New_York") — drives the evening nudge hour.
+await ensureStringColumn("tz", 64);
 
 console.log("Setup complete.");

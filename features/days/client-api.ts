@@ -3,6 +3,8 @@ import { apiClient } from "@/lib/api-client";
 export type DayEntry = {
   day: string;
   text: string;
+  /** End-of-day satisfaction percent (0–100); null until the day is closed. */
+  satisfied?: number | null;
 };
 
 export async function fetchYearDays(year: number): Promise<DayEntry[]> {

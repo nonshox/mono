@@ -5,9 +5,8 @@ import {
   jsonError,
   logFailure,
 } from "@/lib/http";
-import { getUserRow } from "@/features/users/service";
 import { listAllEntries } from "@/features/days/service";
-import { generateYearReview } from "@/features/ai/generate";
+import { compileYear } from "@/features/digest/compile";
 
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) {
@@ -23,15 +22,6 @@ export async function POST(request: Request) {
   }
 
   try {
-    const row = await getUserRow(auth.account.$id);
-    if (!row?.ai) {
-      return jsonError(
-        403,
-        "AI_NOT_ENABLED",
-        "Enable Mono AI in Settings first.",
-      );
-    }
-
     const year = new Date().getUTCFullYear();
     const entries = await listAllEntries(auth.account.$id);
     const yearEntries = entries.filter((entry) =>
@@ -45,7 +35,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const review = await generateYearReview(yearEntries);
+    const review = compileYear(yearEntries);
     return NextResponse.json({ year, review });
   } catch (error) {
     logFailure("Year review", error);

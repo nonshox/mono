@@ -23,6 +23,16 @@ describe("user update input", () => {
     ).toEqual({ nudge: true, ai: true });
   });
 
+  it("accepts an IANA timezone and rejects garbage", () => {
+    expect(updateUserSchema.parse({ tz: "America/New_York" })).toEqual({
+      tz: "America/New_York",
+    });
+    expect(updateUserSchema.parse({ tz: "Asia/Kolkata" }).tz).toBe("Asia/Kolkata");
+    expect(updateUserSchema.safeParse({ tz: "Mars/Olympus_Mons" }).success).toBe(false);
+    expect(updateUserSchema.safeParse({ tz: "UTC" }).success).toBe(true);
+    expect(updateUserSchema.safeParse({ tz: "not a zone" }).success).toBe(false);
+  });
+
   it("rejects empty payloads and unexpected fields", () => {
     expect(updateUserSchema.safeParse({}).success).toBe(false);
     expect(

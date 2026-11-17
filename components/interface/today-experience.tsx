@@ -9,6 +9,7 @@ import {
 import { BUCKET_LABELS } from "@/features/today/types";
 import type { TimelineItem, Bucket } from "@/features/today/types";
 import { cn } from "cn";
+import { ProgressRing } from "@/components/interface/progress-ring";
 
 const BUCKETS = ["rise", "midday", "evening"] as const;
 
@@ -101,6 +102,7 @@ export function TodayExperience({
 
   return (
     <main className="min-h-full w-full bg-background px-3 pb-20 pt-5 sm:px-6 sm:pt-8">
+      <h1 className="sr-only">Today</h1>
       <div className="mx-auto w-full max-w-5xl md:max-w-6xl">
         {/* Buckets — three vertical strips */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
@@ -368,35 +370,4 @@ function TimelineRow({
   );
 }
 
-// ---------------------------------------------------------------------------
 
-/** Percent shown as a hairline ring — the number is never printed. */
-function ProgressRing({ percent }: { percent: number }) {
-  const clamped = Math.min(100, Math.max(0, Math.round(percent)));
-  const radius = 6.5;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference * (1 - clamped / 100);
-  return (
-    <svg aria-hidden="true" className="size-4 -rotate-90" fill="none" viewBox="0 0 18 18">
-      <circle
-        cx="9"
-        cy="9"
-        r={radius}
-        stroke="currentColor"
-        strokeOpacity={0.28}
-        strokeWidth={2.2}
-      />
-      <circle
-        cx="9"
-        cy="9"
-        r={radius}
-        className="transition-[stroke-dashoffset] duration-300"
-        stroke="currentColor"
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        strokeLinecap="round"
-        strokeWidth={2.2}
-      />
-    </svg>
-  );
-}

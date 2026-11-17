@@ -40,6 +40,14 @@ export function markAllReadInPages(pages: NotificationPage[]): NotificationPage[
   }));
 }
 
+/** Keep only unread entries in every page (used by "Clear read"). */
+export function keepUnreadInPages(pages: NotificationPage[]): NotificationPage[] {
+  return pages.map((page) => ({
+    ...page,
+    items: page.items.filter((entry) => !entry.read),
+  }));
+}
+
 /** De-duplicated union of grouped ids for every unread entry. */
 export function allUnreadIds(items: NotificationItem[]): string[] {
   const ids = new Set<string>();

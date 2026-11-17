@@ -6,7 +6,14 @@ import {
 } from "@/lib/appwrite/server";
 import { logFailure } from "@/lib/http";
 
-export const getTables = () => new TablesDB(createAdminClient());
+// Reused across calls — `Client` holds only config, so one instance per process is fine.
+let tables: TablesDB | null = null;
+export const getTables = () => {
+  if (!tables) {
+    tables = new TablesDB(createAdminClient());
+  }
+  return tables;
+};
 export const getDatabaseId = () => getAppwriteDatabaseId();
 
 /**

@@ -10,6 +10,7 @@ import {
   getUserRow,
   setUserAi,
   setUserNudge,
+  setUserTz,
   updateUserName,
 } from "@/features/users/service";
 import { updateUserSchema } from "@/features/users/schemas";
@@ -35,6 +36,7 @@ export async function GET() {
         avatar: row.avatar ?? "",
         nudge: row.nudge ?? false,
         ai: row.ai ?? false,
+        tz: row.tz ?? null,
       },
       { headers: { "Cache-Control": "private, no-store" } },
     );
@@ -80,6 +82,9 @@ export async function PATCH(request: Request) {
     if (parsed.data.ai !== undefined) {
       await setUserAi(auth.account.$id, parsed.data.ai);
     }
+    if (parsed.data.tz !== undefined) {
+      await setUserTz(auth.account.$id, parsed.data.tz);
+    }
     const row = await getUserRow(auth.account.$id);
     return NextResponse.json({
       email: row?.email ?? auth.account.email,
@@ -87,6 +92,7 @@ export async function PATCH(request: Request) {
       avatar: row?.avatar ?? "",
       nudge: row?.nudge ?? false,
       ai: row?.ai ?? false,
+      tz: row?.tz ?? null,
     });
   } catch (error) {
     logFailure("User update", error);

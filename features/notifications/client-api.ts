@@ -33,3 +33,8 @@ export async function markNotificationsRead(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
   await apiClient.patch("/notifications", { ids });
 }
+
+export async function clearReadNotifications(): Promise<{ deleted: number }> {
+  const { data } = await apiClient.delete<{ deleted: number }>("/notifications");
+  return data;
+}

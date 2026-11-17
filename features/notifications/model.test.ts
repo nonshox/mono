@@ -4,6 +4,7 @@ import {
   chunk,
   countUnread,
   flattenPages,
+  keepUnreadInPages,
   markAllReadInPages,
   markReadInPages,
 } from "./model";
@@ -74,6 +75,17 @@ describe("notification model", () => {
     expect(updated.flatMap((entry) => entry.items).every((item) => item.read)).toBe(true);
     expect(countUnread(flattenPages(updated))).toBe(0);
     expect(allUnreadIds(flattenPages(updated))).toEqual([]);
+  });
+
+  it("keeps unread in every page and preserves nothing read", () => {
+    const pages = [
+      page([firstNotification, { ...secondNotification, read: true }], "next"),
+      page([{ ...secondNotification, id: "notification-3", read: true }], null),
+    ];
+
+    const updated = keepUnreadInPages(pages);
+    expect(updated[0].items.map((item) => item.id)).toEqual(["notification-1"]);
+    expect(updated[1].items).toEqual([]);
   });
 
   it("chunks id batches at 50 per API call", () => {

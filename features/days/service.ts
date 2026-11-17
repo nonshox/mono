@@ -58,6 +58,7 @@ export async function listYearEntries(
       Query.greaterThanEqual("day", `${year}-01-01`),
       Query.lessThanEqual("day", `${year}-12-31`),
       Query.select(["day", "text", "satisfied"]),
+      Query.orderAsc("day"),
       Query.limit(400),
     ],
     total: false,
@@ -163,13 +164,16 @@ export async function listAllEntries(
     queries: [
       Query.equal("user", userId),
       Query.select(["day", "text", "satisfied"]),
+      Query.orderAsc("day"),
       Query.limit(5000),
     ],
     total: false,
   });
-  return result.rows
-    .map((row) => ({ day: row.day, text: row.text, satisfied: row.satisfied ?? null }))
-    .sort((a, b) => a.day.localeCompare(b.day));
+  return result.rows.map((row) => ({
+    day: row.day,
+    text: row.text,
+    satisfied: row.satisfied ?? null,
+  }));
 }
 
 /** Distinct years that contain at least one entry, ascending. */
@@ -182,6 +186,7 @@ export async function listYearsWithEntries(
     queries: [
       Query.equal("user", userId),
       Query.select(["day"]),
+      Query.orderAsc("day"),
       Query.limit(5000),
     ],
     total: false,
@@ -268,27 +273,32 @@ export async function clearDaySatisfied(
 }
 /**
  * Same month-day in earlier years, newest first. `excludeYear` keeps the
- * currently-viewed year out of the list. At most 3 entries.
+ * currently-viewed year out of the list. At most 3 entries. Uses exact-day
+ * matches (ISO strings), so no full-text query is needed.
  */
 export async function listFlashbackEntries(
   userId: string,
   monthDay: string,
   excludeYear: number,
 ): Promise<DayEntry[]> {
+  const years = new Set<number>();
+  for (let offset = 1; offset <= 10; offset += 1) {
+    years.add(excludeYear - offset);
+  }
+  const days = [...years].map((year) => `${year}-${monthDay}`);
   const result = await getTables().listRows<DayRow>({
     databaseId: getDatabaseId(),
     tableId,
     queries: [
       Query.equal("user", userId),
-      Query.contains("day", `-${monthDay}`),
+      Query.equal("day", days),
       Query.select(["day", "text", "satisfied"]),
+      Query.orderDesc("day"),
       Query.limit(25),
     ],
     total: false,
   });
   return result.rows
     .map((row) => ({ day: row.day, text: row.text, satisfied: row.satisfied ?? null }))
-    .filter((entry) => Number(entry.day.slice(0, 4)) !== excludeYear)
-    .sort((a, b) => b.day.localeCompare(a.day))
     .slice(0, 3);
 }

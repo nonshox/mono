@@ -1,13 +1,15 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { jsonError, logFailure } from "@/lib/http";
-import { listAiTargets, listNudgeTargets } from "@/features/users/service";
+import { listNudgeTargets } from "@/features/users/service";
 import { hasDayEntry, listRecentEntries } from "@/features/days/service";
 import { sendTelegramNotification } from "@/features/telegram/service";
-import { generateNudgeQuestion } from "@/features/ai/generate";
+import { nudgeQuestionFor } from "@/features/digest/compile";
 
 const FALLBACK_MESSAGE =
   "How was today? Open Mono and stamp a dot — two or three words is enough.";
+
+const NUDGE_LOCAL_HOUR = 20;
 
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
@@ -24,10 +26,25 @@ function isAuthorized(request: Request): boolean {
   );
 }
 
+function localHour(now: Date, timeZone: string | null): number | null {
+  try {
+    const hour = Number(
+      new Intl.DateTimeFormat("en-GB", {
+        hour: "2-digit",
+        hourCycle: "h23",
+        timeZone: timeZone ?? "UTC",
+      }).format(now),
+    );
+    return Number.isNaN(hour) ? null : hour;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Fired once daily (20:00 UTC) by Vercel Cron. Nudges opted-in users who
- * haven't written today's dot yet. Best-effort per user — one failure never
- * blocks the rest.
+ * Fired hourly by Vercel Cron. For each opted-in user, nudges them at their
+ * LOCAL 8pm (stored IANA timezone; falls back to 20:00 UTC) who haven't
+ * written today. Best-effort per user — one failure never blocks the rest.
  */
 export async function GET(request: Request) {
   if (!process.env.CRON_SECRET) {
@@ -38,15 +55,13 @@ export async function GET(request: Request) {
     return jsonError(401, "UNAUTHORIZED", "Not authorized.");
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const seed = Math.floor(now.getTime() / 86_400_000);
 
-  let targets: string[];
-  let aiTargets: Set<string>;
+  let targets: Array<{ id: string; tz: string | null }>;
   try {
-    [targets, aiTargets] = await Promise.all([
-      listNudgeTargets(),
-      listAiTargets().then((ids) => new Set(ids)),
-    ]);
+    targets = await listNudgeTargets();
   } catch (error) {
     logFailure("Nudge cron", error);
     return jsonError(502, "NUDGE_LOOKUP_FAILED", "Nudges are unavailable right now.");
@@ -56,29 +71,31 @@ export async function GET(request: Request) {
   let skipped = 0;
   let failed = 0;
 
-  for (const userId of targets) {
+  for (const target of targets) {
     try {
-      if (await hasDayEntry(userId, today)) {
+      const hour = localHour(now, target.tz);
+      if (hour === null) {
+        logFailure("Nudge tz", new Error(`Invalid timezone for user ${target.id}`));
+        continue;
+      }
+      if (hour !== NUDGE_LOCAL_HOUR) {
+        continue; // Their evening hasn't arrived — the hourly cron will call again.
+      }
+      if (await hasDayEntry(target.id, today)) {
         skipped += 1;
         continue;
       }
 
       let message = FALLBACK_MESSAGE;
-      if (aiTargets.has(userId)) {
-        try {
-          const question = await generateNudgeQuestion(
-            await listRecentEntries(userId, 7),
-          );
-          if (question) {
-            message = `How was today? ${question}`;
-          }
-        } catch (error) {
-          // AI is best-effort — fall back to the generic line.
-          logFailure("Nudge prompt", error);
-        }
+      try {
+        const recent = await listRecentEntries(target.id, 7);
+        message = nudgeQuestionFor(recent, seed);
+      } catch (error) {
+        // Best-effort contextual line — fall back to the generic one.
+        logFailure("Nudge prompt", error);
       }
 
-      await sendTelegramNotification(userId, message);
+      await sendTelegramNotification(target.id, message);
       sent += 1;
     } catch (error) {
       failed += 1;
@@ -86,5 +103,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ today, sent, skipped, failed });
+  return NextResponse.json({ today, sent, skipped, failed, checked: targets.length });
 }

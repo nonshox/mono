@@ -11,6 +11,7 @@ import { useMemo } from "react";
 import {
   fetchNotifications,
   markNotificationsRead,
+  clearReadNotifications,
   type NotificationItem,
   type NotificationPage,
 } from "@/features/notifications/client-api";
@@ -19,6 +20,7 @@ import {
   chunk,
   countUnread,
   flattenPages,
+  keepUnreadInPages,
   markAllReadInPages,
   markReadInPages,
 } from "@/features/notifications/model";
@@ -93,14 +95,38 @@ export function useNotifications() {
     },
   });
 
+  const clearReadMutation = useMutation({
+    mutationFn: () => clearReadNotifications(),
+    onMutate: async () => {
+      const previous = await snapshot();
+      patch(keepUnreadInPages);
+      return { previous };
+    },
+    onError: (_cause, _vars, context) => {
+      restore(context?.previous);
+      toast.error("Read notifications could not be cleared.");
+    },
+  });
+
+  const hasReadVisible = items.some((item) => item.read);
+
   return {
     items,
     unreadCount,
     loading,
     loaded: query.isSuccess || query.data !== undefined,
     error,
+    hasMore: query.hasNextPage ?? false,
+    loadingMore: query.isFetchingNextPage,
+    hasReadVisible,
+    loadMore: () => {
+      if (query.hasNextPage && !query.isFetchingNextPage) {
+        void query.fetchNextPage();
+      }
+    },
     markRead: (item: NotificationItem) => markReadMutation.mutate(item),
     markAllRead: () => markAllReadMutation.mutate(),
+    clearRead: () => clearReadMutation.mutate(),
   };
 }
 

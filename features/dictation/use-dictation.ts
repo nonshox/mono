@@ -7,12 +7,16 @@ import { toast } from "sonner";
  * Browser-native dictation via the Web Speech API — free, no keys.
  * Parent owns the text; this hook owns the recognition session.
  *
- * Transcript model:
- *   value     = external prefix + delivered
- *   delivered = sessionFinals + currentInterim
- * Every result event swaps `delivered` for the new cumulative string, so
- * external edits made while listening are preserved and interim growth
- * never double-inserts words.
+ * Transcript model (index-based, immune to Chrome re-emitting finals):
+ *   finals    = all `isFinal` segments consumed so far, appended once each
+ *   interim   = concatenation of the not-yet-final segments
+ *   delivered = finals (+ " " + interim when present)
+ *   value     = externalPrefix + delivered          (when unedited)
+ *             = userEdit                            (when edited mid-dictation)
+ *
+ * `value.endsWith(delivered)` is checked on every event — when it holds we
+ * strip `delivered` from the tail (exact, O(1)); when the user edited during
+ * dictation we keep their text as the base and dictation appends onto it.
  */
 
 type DictationState = "idle" | "starting" | "listening" | "stopping";
@@ -93,9 +97,13 @@ export function useDictation(
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const sessionRef = useRef(0);
   const deliveredRef = useRef("");
+  const finalsRef = useRef("");
+  const finalIndexRef = useRef(0);
 
   const cleanup = useCallback(() => {
     deliveredRef.current = "";
+    finalsRef.current = "";
+    finalIndexRef.current = 0;
     const recognition = recognitionRef.current;
     if (recognition) {
       recognition.onresult = null;
@@ -132,6 +140,8 @@ export function useDictation(
     setState("starting");
     const session = ++sessionRef.current;
     deliveredRef.current = "";
+    finalsRef.current = "";
+    finalIndexRef.current = 0;
 
     // Probe permission first to produce real errors (preflight).
     try {
@@ -165,14 +175,30 @@ export function useDictation(
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       if (sessionRef.current !== session) return;
-      let cumulative = "";
-      for (let index = 0; index < event.results.length; index += 1) {
-        cumulative += event.results[index][0]?.transcript ?? "";
+      const results = event.results;
+
+      let interim = "";
+      for (let index = finalIndexRef.current; index < results.length; index += 1) {
+        const result = results[index];
+        const transcript = result[0]?.transcript ?? "";
+        if (result.isFinal) {
+          finalsRef.current = joinText(finalsRef.current, transcript);
+          finalIndexRef.current = index + 1;
+        } else {
+          interim += transcript;
+        }
       }
-      const newDelivered = cumulative;
-      const prefix = stripTail(valueRef.current, deliveredRef.current);
-      const next = joinText(prefix, newDelivered);
-      deliveredRef.current = newDelivered;
+
+      const delivered = joinText(finalsRef.current, interim);
+      const base = valueRef.current.endsWith(deliveredRef.current)
+        ? valueRef.current.slice(
+            0,
+            valueRef.current.length - deliveredRef.current.length,
+          )
+        : // User edited mid-dictation — keep their text as the base.
+          valueRef.current;
+      const next = joinText(base, delivered);
+      deliveredRef.current = delivered;
       valueRef.current = next;
       onChangeRef.current(next);
     };
@@ -201,11 +227,6 @@ export function useDictation(
     }
   }, [cleanup, lang, state]);
 
-  const toggle = useCallback(() => {
-    if (state === "idle") void start();
-    else stop();
-  }, [state, start, stop]);
-
   useEffect(
     () => () => {
       sessionRef.current += 1;
@@ -231,17 +252,9 @@ export function useDictation(
     supported: typeof window !== "undefined" && getCtor() !== undefined,
     state,
     listening,
-    engine: "native" as const,
-    toggle,
+    start,
     stop,
   };
-}
-
-function stripTail(value: string, tail: string): string {
-  if (!tail) return value;
-  const idx = value.lastIndexOf(tail);
-  if (idx === -1) return value;
-  return value.slice(0, idx);
 }
 
 function joinText(prefix: string, suffix: string): string {
@@ -249,5 +262,5 @@ function joinText(prefix: string, suffix: string): string {
   if (!suffix) return prefix;
   const left = prefix.replace(/\s+$/g, "");
   const right = suffix.replace(/^\s+/g, "");
-  return `${left} ${right}`;
+  return left && right ? `${left} ${right}` : left || right;
 }

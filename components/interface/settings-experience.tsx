@@ -2,12 +2,14 @@
 
 import {
   Download,
+  FileJson,
+  FileText,
   LoaderCircle,
   MonitorSmartphone,
   RefreshCw,
   Send,
   BellRing,
-  Sparkles,
+  NotebookPen,
   Trash2,
   Unlink,
   X,
@@ -211,10 +213,10 @@ export function SettingsExperience({
 
 
   return (
-    <main className="min-h-full w-full bg-background px-4 pb-20 pt-5 sm:px-6 sm:pt-8">
-      <div className="mx-auto w-full max-w-2xl md:max-w-3xl">
+    <main className="min-h-full w-full bg-background px-3 pb-24 pt-5 sm:px-6 sm:pt-8">
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 md:max-w-3xl">
         {/* Header */}
-        <header className="border-b border-border/60 pb-4">
+        <header className="px-1">
           <h1 className="type-title text-foreground">
             Settings
           </h1>
@@ -222,11 +224,14 @@ export function SettingsExperience({
         </header>
 
         {/* Notifications — Telegram */}
-        <section aria-label="Notifications" className="mt-6">
-          <h2 className="type-eyebrow mb-1 px-0.5">
+        <section
+          aria-label="Notifications"
+          className="rounded-2xl border-2 border-border/70 bg-popover p-4 sm:p-5"
+        >
+          <h2 className="type-eyebrow">
             Notifications
           </h2>
-          <div className="border-y border-border/60">
+          <div className="mt-2 divide-y divide-border/60">
             <div className="flex items-center gap-3 py-3">
               <Send aria-hidden="true" className="size-4 shrink-0 text-foreground" strokeWidth={1.8} />
               <div className="min-w-0 flex-1">
@@ -259,7 +264,7 @@ export function SettingsExperience({
               </button>
             </div>
             {telegramLink && (
-              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 py-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
                 <a
                   className="text-xs font-medium text-primary underline underline-offset-4 hover:opacity-80"
                   href={telegramLink}
@@ -279,7 +284,7 @@ export function SettingsExperience({
               </div>
             )}
             {/* Evening nudge — only useful with Telegram connected */}
-            <div className="flex items-center gap-3 border-t border-border/60 py-3">
+            <div className="flex items-center gap-3 py-3">
               <BellRing
                 aria-hidden="true"
                 className="size-4 shrink-0 text-foreground"
@@ -315,26 +320,26 @@ export function SettingsExperience({
                 />
               </button>
             </div>
-            {/* Mono AI — opt-in; entries go to Google Gemini when on */}
-            <div className="flex items-center gap-3 border-t border-border/60 py-3">
-              <Sparkles
+            {/* Weekly letter — compiled locally, delivered Sundays via Telegram */}
+            <div className="flex items-center gap-3 py-3">
+              <NotebookPen
                 aria-hidden="true"
                 className="size-4 shrink-0 text-foreground"
                 strokeWidth={1.8}
               />
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold leading-4 text-foreground">
-                  Mono AI
+                  Weekly letter
                 </p>
                 <p className="mt-0.5 text-xs leading-4 text-foreground">
-                  Weekly letter · smarter nudge · year review — your entries go
-                  to Google Gemini. Off means nothing leaves.
+                  A Sunday letter compiling your week — compiled on this device,
+                  never leaves it.
                 </p>
               </div>
               <button
                 aria-busy={aiSaving}
                 aria-checked={aiOn}
-                aria-label="Mono AI"
+                aria-label="Weekly letter"
                 className={`relative h-6 w-10 shrink-0 rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 ${
                   aiOn ? "bg-foreground" : "bg-muted-foreground/25"
                 }`}
@@ -355,14 +360,17 @@ export function SettingsExperience({
         </section>
 
         {/* Sessions */}
-        <section aria-label="Sessions" className="mt-6">
-          <div className="mb-1 flex items-center justify-between gap-3 px-0.5">
+        <section
+          aria-label="Sessions"
+          className="rounded-2xl border-2 border-border/70 bg-popover p-4 sm:p-5"
+        >
+          <div className="flex items-center justify-between gap-3">
             <h2 className="type-eyebrow">
               Sessions
             </h2>
             <button
               aria-label="Refresh sessions"
-              className="grid size-6 place-items-center rounded-md text-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50"
+              className="grid size-7 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
               disabled={refreshingSessions}
               onClick={() => void refreshSessions()}
               type="button"
@@ -374,11 +382,11 @@ export function SettingsExperience({
             </button>
           </div>
           {sessions.length === 0 ? (
-            <p className="border-y border-border/60 py-3 text-xs text-foreground">
+            <p className="py-4 text-xs text-foreground">
               No active sessions.
             </p>
           ) : (
-            <ul className="divide-y divide-border/60 border-y border-border/60">
+            <ul className="mt-2 divide-y divide-border/60">
               {sessions.map((session) => (
                 <li className="flex items-center gap-3 py-2" key={session.id}>
                   <MonitorSmartphone
@@ -421,89 +429,129 @@ export function SettingsExperience({
           )}
         </section>
 
-        {/* Year in review — Mono AI compiles the year into a letter */}
-        <section aria-label="Year in review" className="mt-6">
-          <h2 className="type-eyebrow mb-1 px-0.5">
-            {new Date().getUTCFullYear()} in review
+        {/* Export — your data, downloadable */}
+        <section
+          aria-label="Export your data"
+          className="rounded-2xl border-2 border-border/70 bg-popover p-4 sm:p-5"
+        >
+          <h2 className="type-eyebrow">
+            Export
           </h2>
-          <div className="border-y border-border/60 py-3">
-            <p className="text-xs leading-5 text-foreground">
-              A letter compiling everything you wrote this year — the shape,
-              what recurred, one line to keep.
-            </p>
-            {aiOn ? (
-              <button
-                aria-busy={reviewLoading}
-                className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-full border-2 border-border px-4 text-xs font-semibold text-foreground outline-none transition hover:bg-muted disabled:opacity-40"
-                disabled={reviewLoading}
-                onClick={() => void generateReview()}
-                type="button"
-              >
-                {reviewLoading ? (
-                  <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
-                ) : (
-                  <Sparkles aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
-                )}
-                {reviewLoading ? "Reading your year…" : "Generate review"}
-              </button>
-            ) : (
-              <p className="mt-2 text-xs text-foreground">
-                Enable Mono AI above to generate.
-              </p>
-            )}
-            {review && (
-              <div className="mt-3 rounded-2xl border-2 border-border bg-popover p-4">
-                <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">
-                  {review}
-                </p>
-                <div className="mt-3 border-t border-border/50 pt-2">
-                  <button
-                    className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                    onClick={downloadReview}
-                    type="button"
-                  >
-                    <Download aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
-                    Download .txt
-                  </button>
-                </div>
-              </div>
-            )}
+          <p className="mt-2 text-xs leading-5 text-foreground">
+            Everything Mono stores about you — journal, dots, today items —
+            as a file. Your data never leaves except into this file.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <a
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border-2 border-border px-4 text-xs font-semibold text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+              download
+              href="/api/export?format=json"
+            >
+              <FileJson aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+              JSON — backup
+            </a>
+            <a
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border-2 border-border px-4 text-xs font-semibold text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+              download
+              href="/api/export?format=markdown"
+            >
+              <FileText aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+              Markdown — read &amp; print
+            </a>
           </div>
         </section>
 
-        {/* Danger zone */}
-        <section aria-label="Delete account" className="mt-6">
-          <h2 className="type-eyebrow mb-1 px-0.5 text-destructive">
+        {/* Year in review — compiled locally from your entries */}
+        <section
+          aria-label="Year in review"
+          className="rounded-2xl border-2 border-border/70 bg-popover p-4 sm:p-5"
+        >
+          <h2 className="type-eyebrow">
+            {new Date().getUTCFullYear()} in review
+          </h2>
+          <p className="mt-2 text-xs leading-5 text-foreground">
+            A letter compiling everything you wrote this year — the shape,
+            what recurred, one line to keep. Compiled on this device.
+          </p>
+          <button
+            aria-busy={reviewLoading}
+            className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-full border-2 border-border px-4 text-xs font-semibold text-foreground outline-none transition hover:bg-muted disabled:opacity-40"
+            disabled={reviewLoading}
+            onClick={() => void generateReview()}
+            type="button"
+          >
+            {reviewLoading ? (
+              <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+            ) : (
+              <NotebookPen aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+            )}
+            {reviewLoading ? "Reading your year…" : "Generate my year"}
+          </button>
+          {review && (
+            <div className="mt-3 rounded-xl border border-border/60 p-4">
+              <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">
+                {review}
+              </p>
+              <div className="mt-3 border-t border-border/50 pt-2">
+                <button
+                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                  onClick={downloadReview}
+                  type="button"
+                >
+                  <Download aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+                  Download .txt
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Delete account */}
+        <section
+          aria-label="Delete account"
+          className="rounded-2xl border-2 border-destructive/30 bg-popover p-4 sm:p-5"
+        >
+          <h2 className="type-eyebrow text-destructive">
             Delete account
           </h2>
-          <div className="border-y border-destructive/20 py-3">
-            <p className="text-xs leading-5 text-foreground">
-              Erases your account and all data linked to it. This cannot be undone.
-            </p>
-            <div className="mt-2 flex items-center gap-2">
-              <input
-                aria-label="Type DELETE to confirm account deletion"
-                autoComplete="off"
-                className="type-eyebrow h-9 w-32 rounded-md border border-destructive/30 bg-transparent px-2 text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-destructive"
-                onChange={(event) => setDeleteConfirm(event.target.value)}
-                placeholder="DELETE"
-                value={deleteConfirm}
-              />
-              <button
-                className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-destructive px-4 text-xs font-semibold text-white outline-none transition hover:opacity-90 disabled:opacity-30"
-                disabled={deleting || deleteConfirm.trim().toUpperCase() !== "DELETE"}
-                onClick={() => void confirmDeleteAccount()}
-                type="button"
-              >
-                {deleting ? (
-                  <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-                ) : (
-                  <Trash2 aria-hidden="true" className="size-4" strokeWidth={2} />
-                )}
-                Delete
-              </button>
-            </div>
-          </div>
+          <p className="mt-2 text-sm font-bold text-foreground">
+            Delete your account
+          </p>
+          <p className="mt-0.5 text-xs leading-5 text-foreground">
+            Erases your dots, journal, sessions and avatar permanently.
+            This cannot be undone.
+          </p>
+          <form
+            className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void confirmDeleteAccount();
+            }}
+          >
+            <input
+              aria-label="Type DELETE to confirm account deletion"
+              autoComplete="off"
+              className="h-11 w-full shrink-0 rounded-xl border-2 border-border bg-transparent px-3 text-center text-xs font-bold uppercase tracking-[0.4em] text-foreground outline-none transition placeholder:text-foreground/40 focus-visible:border-destructive focus-visible:ring-2 focus-visible:ring-ring sm:w-44"
+              name="confirm"
+              onChange={(event) => setDeleteConfirm(event.target.value)}
+              placeholder="DELETE"
+              spellCheck={false}
+              type="text"
+              value={deleteConfirm}
+            />
+            <button
+              className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-destructive px-4 text-xs font-bold text-white outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-30"
+              disabled={deleting || deleteConfirm.trim().toUpperCase() !== "DELETE"}
+              type="submit"
+            >
+              {deleting ? (
+                <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+              ) : (
+                <Trash2 aria-hidden="true" className="size-4" strokeWidth={2} />
+              )}
+              {deleting ? "Deleting…" : "Delete my account"}
+            </button>
+          </form>
         </section>
 
         {(error || message) && (

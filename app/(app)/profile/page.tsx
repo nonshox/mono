@@ -41,6 +41,7 @@ async function AuthenticatedProfile() {
         {/* Identity */}
         <header className="flex items-center gap-4 border-b border-border/60 pb-5">
           <UserAvatar
+            avatar={user?.avatar || undefined}
             name={name || email}
             size={72}
           />
@@ -84,10 +85,6 @@ async function AuthenticatedProfile() {
             </div>
           )}
         </dl>
-
-        <p className="mt-6 text-xs leading-5 text-foreground">
-          This is the generic base profile. Wire your product’s data in here when you build the next thing.
-        </p>
       </div>
     </main>
   );

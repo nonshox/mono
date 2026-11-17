@@ -9,6 +9,7 @@ import {
   listNotifications,
   readNotifications,
 } from "@/features/notifications/service";
+import { clearReadNotifications as clearReadInDb } from "@/features/notifications/data";
 import {
   notificationCursorSchema,
   readNotificationsSchema,
@@ -45,6 +46,32 @@ export async function GET(request: Request) {
       502,
       "NOTIFICATIONS_UNAVAILABLE",
       "Notifications are unavailable.",
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  if (!isSameOrigin(request)) {
+    return jsonError(403, "ORIGIN_REJECTED", "Request origin was rejected.");
+  }
+
+  const auth = await getAuthAccount("Notification clear");
+  if ("response" in auth) {
+    return auth.response;
+  }
+  if (!auth.account) {
+    return jsonError(401, "UNAUTHENTICATED", "Sign in to clear notifications.");
+  }
+
+  try {
+    const deleted = await clearReadInDb(auth.account.$id);
+    return NextResponse.json({ deleted });
+  } catch (error) {
+    logFailure("Notification clear", error);
+    return jsonError(
+      502,
+      "NOTIFICATIONS_CLEAR_FAILED",
+      "Read notifications could not be cleared.",
     );
   }
 }

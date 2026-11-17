@@ -3,6 +3,7 @@ import { AppwriteException, Query, Users, type Models } from "node-appwrite";
 import { createAdminClient } from "@/lib/appwrite/server";
 import { getDatabaseId, getTables, isNotFound } from "@/lib/appwrite/tables";
 import { logFailure } from "@/lib/http";
+import { deleteAvatarFile } from "@/features/users/avatar";
 
 const tableId = "users";
 
@@ -12,8 +13,10 @@ export type UserRow = Models.Row & {
   avatar?: string;
   /** Opt-in for the daily evening Telegram nudge. */
   nudge?: boolean;
-  /** Opt-in for Mono AI (entries sent to Google Gemini). */
+  /** Opt-in for the weekly Telegram letter. */
   ai?: boolean;
+  /** IANA timezone (e.g. "America/New_York") — drives the evening nudge hour. */
+  tz?: string | null;
 };
 
 export type UserPreview = Models.Row & {
@@ -111,6 +114,43 @@ export async function setUserNudge(
   });
 }
 
+/** Store (or clear, with null) the avatar file id; removes the replaced file. */
+export async function setUserAvatar(
+  userId: string,
+  fileId: string | null,
+): Promise<UserRow> {
+  const existing = await getUserRow(userId);
+  if (!existing) {
+    throw new Error("Users row is missing for this account.");
+  }
+  const previous = existing.avatar?.trim() ? existing.avatar : null;
+  const updated = await getTables().updateRow<UserRow>({
+    databaseId: getDatabaseId(),
+    tableId,
+    rowId: userId,
+    data: { avatar: fileId ?? "" },
+  });
+  await deleteAvatarFile(previous);
+  return updated;
+}
+
+export async function setUserTz(
+  userId: string,
+  tz: string,
+): Promise<UserRow> {
+  const existing = await getUserRow(userId);
+  if (!existing) {
+    throw new Error("Users row is missing for this account.");
+  }
+
+  return getTables().updateRow<UserRow>({
+    databaseId: getDatabaseId(),
+    tableId,
+    rowId: userId,
+    data: { tz },
+  });
+}
+
 export async function setUserAi(
   userId: string,
   ai: boolean,
@@ -128,8 +168,8 @@ export async function setUserAi(
   });
 }
 
-/** Account ids opted into Mono AI; used by the AI cron routes. */
-export async function listAiTargets(): Promise<string[]> {
+/** Account ids opted into the weekly letter; used by the letter cron route. */
+export async function listLetterTargets(): Promise<string[]> {
   const result = await getTables().listRows<UserRow>({
     databaseId: getDatabaseId(),
     tableId,
@@ -139,19 +179,19 @@ export async function listAiTargets(): Promise<string[]> {
   return result.rows.map((row) => row.$id);
 }
 
-/** Account ids opted into the daily nudge; used by the cron endpoint. */
-export async function listNudgeTargets(): Promise<string[]> {
+/** Account ids opted into the evening nudge (with stored timezone); used by the cron endpoint. */
+export async function listNudgeTargets(): Promise<Array<{ id: string; tz: string | null }>> {
   const result = await getTables().listRows<UserRow>({
     databaseId: getDatabaseId(),
     tableId,
     queries: [
       Query.equal("nudge", true),
-      Query.select(["$id"]),
+      Query.select(["$id", "tz"]),
       Query.limit(500),
     ],
     total: false,
   });
-  return result.rows.map((row) => row.$id);
+  return result.rows.map((row) => ({ id: row.$id, tz: row.tz ?? null }));
 }
 
 /** Lightweight lookup used by other features (e.g. notification actors). */
@@ -183,6 +223,10 @@ export async function deleteUserEverywhere(userId: string): Promise<void> {
   const tables = getTables();
   const databaseId = getDatabaseId();
 
+  // Avatar storage file, if any — remove before wiping the user row.
+  const row = await getUserRow(userId).catch(() => null);
+  await deleteAvatarFile(row?.avatar);
+
   const wipe = async (table: string, column: string) => {
     for (;;) {
       const batch = await tables.listRows({
@@ -207,7 +251,7 @@ export async function deleteUserEverywhere(userId: string): Promise<void> {
     wipe("telegram", "user"),
     wipe("codes", "user"),
     wipe("days", "user"),
-    wipe("tasks", "user"),
+    wipe("timeline", "user"),
   ]);
   await tables
     .deleteRow({ databaseId, tableId, rowId: userId })

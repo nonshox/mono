@@ -1,7 +1,8 @@
 import "server-only";
 
-import { ID, Query, type Models } from "node-appwrite";
-import { getDatabaseId, getTables, isNotFound } from "@/lib/appwrite/tables";
+import { createHash } from "node:crypto";
+import { AppwriteException, ID, Query, type Models } from "node-appwrite";
+import { getDatabaseId, getTables, isNotFound, runTransaction } from "@/lib/appwrite/tables";
 import {
   BUCKETS,
   type Bucket,
@@ -50,21 +51,29 @@ const DEFAULT_ITEMS: Record<Bucket, string[]> = {
   evening: ["Plan tomorrow — just 3 lines", "Phone away", "Wind down"],
 };
 
-/** Seeds the default three buckets for a brand-new user. */
+/** Seeds the default three buckets for a brand-new user (idempotent). */
 export async function ensureTimelineSeed(userId: string): Promise<void> {
   const existing = await listTimeline(userId);
   if (existing.length > 0) return;
   const tables = getTables();
+  // Deterministic ids make concurrent first-loads converge instead of duplicating.
+  const seedId = (bucket: Bucket, index: number) =>
+    createHash("sha256").update(`${userId}:seed:${bucket}:${index}`).digest("hex").slice(0, 32);
   await Promise.all(
     BUCKETS.flatMap((bucket) =>
       DEFAULT_ITEMS[bucket].map((text, index) =>
-        tables.createRow<TimelineRow>({
-          databaseId: getDatabaseId(),
-          tableId,
-          rowId: ID.unique(),
-          permissions: [],
-          data: { user: userId, bucket, text, order: index, done: false },
-        }),
+        tables
+          .createRow<TimelineRow>({
+            databaseId: getDatabaseId(),
+            tableId,
+            rowId: seedId(bucket, index),
+            permissions: [],
+            data: { user: userId, bucket, text, order: index, done: false },
+          })
+          .catch((error) => {
+            if (error instanceof AppwriteException && error.code === 409) return;
+            throw error;
+          }),
       ),
     ),
   );
@@ -87,7 +96,7 @@ export async function createTimelineItem(
     ],
     total: false,
   });
-  const nextOrder = siblings.rows.length;
+  const nextOrder = siblings.rows.reduce((max, row) => Math.max(max, row.order), -1) + 1;
   const row = await tables.createRow<TimelineRow>({
     databaseId: getDatabaseId(),
     tableId,
@@ -165,18 +174,23 @@ export async function moveTimelineItem(
 
   const targetOrder = target.order;
   const neighbor = ordered.rows[swapIndex];
-  await tables.updateRow<TimelineRow>({
-    databaseId: getDatabaseId(),
-    tableId,
-    rowId: id,
-    data: { order: neighbor.order },
-  });
-  await tables.updateRow<TimelineRow>({
-    databaseId: getDatabaseId(),
-    tableId,
-    rowId: neighbor.$id,
-    data: { order: targetOrder },
-  });
+  // Atomic swap — either both order writes commit or neither does.
+  await runTransaction(async (transactionId) => {
+    await tables.updateRow<TimelineRow>({
+      databaseId: getDatabaseId(),
+      tableId,
+      rowId: id,
+      transactionId,
+      data: { order: neighbor.order },
+    });
+    await tables.updateRow<TimelineRow>({
+      databaseId: getDatabaseId(),
+      tableId,
+      rowId: neighbor.$id,
+      transactionId,
+      data: { order: targetOrder },
+    });
+  }, "Move timeline item");
   return true;
 }
 

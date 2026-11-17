@@ -2,21 +2,24 @@
 
 import {
   ArrowLeft,
+  Camera,
   LoaderCircle,
   Lock,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { saveUserName } from "@/features/users/client-api";
+import { saveUserName, uploadAvatar, removeAvatar } from "@/features/users/client-api";
 import {
   profileNameFormSchema,
   type ProfileNameForm,
 } from "@/features/users/schemas";
 import { useUserStore } from "@/features/users/store";
 import { getApiErrorMessage } from "@/lib/api-client";
+import { UserAvatar } from "@/components/interface/user-avatar";
 import Link from "next/link";
 
 /** Ultra-minimal editor — name, nothing else. */
@@ -25,7 +28,48 @@ export function ProfileEditor() {
   const loadUser = useUserStore((state) => state.load);
   const setUser = useUserStore((state) => state.setUser);
   const storedEmail = useUserStore((state) => state.user?.email ?? "");
+  const storedName = useUserStore((state) => state.user?.name ?? "");
+  const avatar = useUserStore((state) => state.user?.avatar ?? "");
   const [loading, setLoading] = useState(true);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const onAvatarChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Choose an image");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Keep the photo under 2 MB");
+      return;
+    }
+    setAvatarBusy(true);
+    try {
+      const saved = await uploadAvatar(file);
+      setUser(saved);
+      toast.success("Photo saved");
+    } catch (cause) {
+      toast.error(getApiErrorMessage(cause, "Photo not saved"));
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const onAvatarRemove = async () => {
+    setAvatarBusy(true);
+    try {
+      const saved = await removeAvatar();
+      setUser(saved);
+      toast.success("Photo removed");
+    } catch (cause) {
+      toast.error(getApiErrorMessage(cause, "Photo not removed"));
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
 
   const form = useForm<ProfileNameForm>({
     resolver: zodResolver(profileNameFormSchema),
@@ -85,7 +129,54 @@ export function ProfileEditor() {
           </h1>
         </header>
 
+        <input
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          aria-hidden="true"
+          className="hidden"
+          onChange={(event) => void onAvatarChange(event)}
+          ref={fileInput}
+          tabIndex={-1}
+          type="file"
+        />
+
         <form onSubmit={(event) => void onSubmit(event)}>
+          {/* Photo */}
+          <div className="flex items-center gap-4 border-b border-border/60 py-4">
+            <UserAvatar
+              avatar={avatar || undefined}
+              name={storedName || storedEmail}
+              size={72}
+            />
+            <div className="min-w-0 flex-1">
+              <span className="type-eyebrow">Photo</span>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <button
+                  className="inline-flex h-8 items-center gap-1.5 rounded-full border-2 border-border px-3.5 text-xs font-semibold text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                  disabled={loading || avatarBusy}
+                  onClick={() => fileInput.current?.click()}
+                  type="button"
+                >
+                  {avatarBusy ? (
+                    <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+                  ) : (
+                    <Camera aria-hidden="true" className="size-3.5" strokeWidth={2} />
+                  )}
+                  {avatar ? "Change photo" : "Upload photo"}
+                </button>
+                {avatar && (
+                  <button
+                    aria-label="Remove photo"
+                    className="grid size-8 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                    disabled={loading || avatarBusy}
+                    onClick={() => void onAvatarRemove()}
+                    type="button"
+                  >
+                    <Trash2 aria-hidden="true" className="size-4" strokeWidth={1.8} />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
           {/* Name */}
           <label className="block border-b border-border/60 py-4">
             <span className="type-eyebrow">

@@ -5,7 +5,11 @@ import { logFailure } from "@/lib/http";
 import { getDatabaseId, getTables } from "@/lib/appwrite/tables";
 import { getUsersByIds } from "@/features/users/service";
 import { sendTelegramNotification } from "@/features/telegram/service";
-import { getNotificationRows, markNotificationsRead } from "./data";
+import {
+  getNotificationRows,
+  markNotificationsRead,
+  pruneReadNotifications,
+} from "./data";
 import type { NotificationItem, NotificationRow } from "./types";
 
 const tableId = "notifications";
@@ -69,6 +73,20 @@ export async function listNotifications(
   nextCursor: string | null;
   unreadCount: number;
 }> {
+  // Self-cleaning (first page only): drop read rows older than 30 days, in the background.
+  if (!cursor) {
+    after(async () => {
+      try {
+        await pruneReadNotifications(
+          userId,
+          new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+        );
+      } catch (error) {
+        logFailure("Notification prune", error);
+      }
+    });
+  }
+
   const rows = await getNotificationRows(userId, cursor);
   const actors = await getUsersByIds([
     ...new Set(rows.map((row) => row.actor)),
