@@ -25,7 +25,8 @@ export async function saveUserNudge(nudge: boolean): Promise<UserProfile> {
   return data;
 }
 
-export async function saveUserAi(ai: boolean): Promise<UserProfile> {
+/** Opt-in toggle for the Sunday letter (stored in the `ai` column). */
+export async function saveUserLetter(ai: boolean): Promise<UserProfile> {
   const { data } = await apiClient.patch<UserProfile>("/users", { ai });
   return data;
 }

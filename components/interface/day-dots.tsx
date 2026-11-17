@@ -28,6 +28,16 @@ import { ProgressRing } from "@/components/interface/progress-ring";
 const MAX_LENGTH = 1000;
 const COUNTER_AT = 800;
 
+function pastLabel(day: string): string {
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${day}T00:00:00.000Z`));
+}
+
 function longLabel(day: string): string {
   return new Intl.DateTimeFormat(undefined, {
     weekday: "long",
@@ -46,9 +56,6 @@ function shortLabel(day: string): string {
   }).format(new Date(`${day}T00:00:00.000Z`));
 }
 
-function shortYear(day: string): string {
-  return day.slice(0, 4);
-}
 
 export function DayDots({
   year: initialYear,
@@ -87,7 +94,8 @@ export function DayDots({
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
-  const [flashbackIndex, setFlashbackIndex] = useState(0);
+  // null = today; otherwise index into the fetched flashback list (0 = newest past year)
+  const [viewIndex, setViewIndex] = useState<number | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [progressView, setProgressView] = useState(false);
   const [query, setQuery] = useState("");
@@ -116,7 +124,7 @@ export function DayDots({
     }
     setAnchor(element);
     setOpenDay(day);
-    setFlashbackIndex(0);
+    setViewIndex(null);
     const existing = useDaysStore.getState().entries[day];
     setDraft(existing ?? "");
     setEditing(existing === undefined);
@@ -283,6 +291,18 @@ export function DayDots({
   const showCounter = draft.length > COUNTER_AT;
   const trimmedQuery = query.trim();
   const showResults = searchOpen && trimmedQuery.length >= 2;
+  const viewingPast = viewIndex !== null;
+  const viewingDay = viewingPast
+    ? (flashback[viewIndex]?.day ?? openDay)
+    : openDay;
+  const viewingEntry = viewingPast ? flashback[viewIndex] : undefined;
+  const stepBack = () => {
+    setViewIndex(viewIndex === null ? 0 : Math.min(flashback.length - 1, viewIndex + 1));
+    setEditing(false);
+  };
+  const stepForward = () => {
+    setViewIndex(viewIndex === null ? null : viewIndex >= 1 ? viewIndex - 1 : null);
+  };
 
   return (
     <section aria-label={`${year} — the year in dots`} className="mt-8">
@@ -485,11 +505,40 @@ export function DayDots({
               className="z-50 w-56 max-w-[calc(100vw-1rem)] rounded-xl border-2 border-border/80 bg-popover p-2.5 outline-none backdrop-blur-xl sm:w-64 sm:p-3"
             >
               <div className="flex items-start justify-between gap-2">
-                <Popover.Title className="type-label leading-4 text-foreground">
-                  {openDay ? longLabel(openDay) : ""}
-                </Popover.Title>
-                <div className="-mr-1 flex items-center gap-1">
-                  {editing ? (
+                <div className="flex min-w-0 items-center gap-1">
+                  {flashback.length > 0 && (
+                    <div className="flex shrink-0 items-center">
+                      <button
+                        aria-label="Back to past day"
+                        className="grid size-6 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted disabled:pointer-events-none disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-ring"
+                        disabled={viewIndex === flashback.length - 1}
+                        onClick={stepBack}
+                        type="button"
+                      >
+                        <ChevronLeft aria-hidden="true" className="size-4" strokeWidth={2} />
+                      </button>
+                      <button
+                        aria-label="Forward to present"
+                        className="grid size-6 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted disabled:pointer-events-none disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-ring"
+                        disabled={viewIndex === null}
+                        onClick={stepForward}
+                        type="button"
+                      >
+                        <ChevronRight aria-hidden="true" className="size-4" strokeWidth={2} />
+                      </button>
+                    </div>
+                  )}
+                  <Popover.Title className="truncate type-label leading-4 text-foreground">
+                    {viewingDay ? (viewingPast ? pastLabel(viewingDay) : longLabel(viewingDay)) : ""}
+                  </Popover.Title>
+                  {viewingPast && (
+                    <span className="type-eyebrow shrink-0 rounded-full border border-border/70 px-1.5 py-0.5 leading-none text-[9px] text-foreground">
+                      Past
+                    </span>
+                  )}
+                </div>
+                <div className="-mr-1 flex shrink-0 items-center gap-1">
+                  {!viewingPast && editing ? (
                     <>
                       <button
                         aria-label="Back to reading"
@@ -502,8 +551,7 @@ export function DayDots({
                       <MicButton onChange={setDraft} value={draft} />
                       <PolishButton onChange={setDraft} value={draft} />
                     </>
-                  ) : (
-                    activeText && (
+                  ) : !viewingPast && activeText ? (
                       <>
                         <button
                           aria-label="Edit"
@@ -527,12 +575,23 @@ export function DayDots({
                         </button>
                       </>
                     )
-                  )}
+                  : null}
                 </div>
               </div>
 
               <div className="mt-1.5 min-h-16 overflow-y-auto sm:max-h-48 sm:overflow-visible">
-                {editing ? (
+                {viewingPast && viewingEntry ? (
+                  <div>
+                    <p className="max-h-32 overflow-y-auto whitespace-pre-wrap break-words text-xs leading-5 text-foreground sm:text-sm sm:leading-6">
+                      {viewingEntry.text}
+                    </p>
+                    {viewingEntry.satisfied != null && (
+                      <p className="type-label mt-1.5 text-[11px] leading-none text-foreground">
+                        {viewingEntry.satisfied}% felt that day
+                      </p>
+                    )}
+                  </div>
+                ) : editing ? (
                   <div>
                     <textarea
                       autoFocus
@@ -580,48 +639,6 @@ export function DayDots({
                       </div>
                     )}
 
-                    {flashback.length > 0 && (
-                      <div className="mt-2 border-t border-border/50 pt-1.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="type-label text-[11px]">On this day</p>
-                          {flashback.length > 1 && (
-                            <div className="flex items-center gap-0.5">
-                              <button
-                                aria-label="Newer entry"
-                                className="grid size-5 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-30"
-                                disabled={flashbackIndex === 0}
-                                onClick={() => setFlashbackIndex((value) => Math.max(0, value - 1))}
-                                type="button"
-                              >
-                                <ChevronLeft aria-hidden="true" className="size-3" strokeWidth={2.2} />
-                              </button>
-                              <span className="min-w-5 text-center text-[10px] font-semibold tabular-nums text-foreground">
-                                {flashbackIndex + 1}/{flashback.length}
-                              </span>
-                              <button
-                                aria-label="Older entry"
-                                className="grid size-5 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-30"
-                                disabled={flashbackIndex === flashback.length - 1}
-                                onClick={() =>
-                                  setFlashbackIndex((value) =>
-                                    Math.min(flashback.length - 1, value + 1),
-                                  )
-                                }
-                                type="button"
-                              >
-                                <ChevronRight aria-hidden="true" className="size-3" strokeWidth={2.2} />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                        <span className="text-[10px] font-bold tabular-nums text-foreground">
-                          {shortYear(flashback[flashbackIndex].day)}
-                        </span>
-                        <p className="line-clamp-2 text-[11px] leading-4 text-foreground">
-                          {flashback[flashbackIndex].text}
-                        </p>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>

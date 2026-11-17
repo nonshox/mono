@@ -23,7 +23,7 @@ import {
 } from "@/features/telegram/client-api";
 import { fetchSessions, type AuthSession, revokeSession } from "@/features/auth/client-api";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
-import { deleteAccount, fetchUser, saveUserAi, saveUserNudge } from "@/features/users/client-api";
+import { deleteAccount, fetchUser, saveUserLetter, saveUserNudge } from "@/features/users/client-api";
 import { useUserStore } from "@/features/users/store";
 import { useRouter } from "next/navigation";
 
@@ -41,8 +41,8 @@ export function SettingsExperience({
   const [telegramLink, setTelegramLink] = useState("");
   const [nudgeOn, setNudgeOn] = useState(false);
   const [nudgeSaving, setNudgeSaving] = useState(false);
-  const [aiOn, setAiOn] = useState(false);
-  const [aiSaving, setAiSaving] = useState(false);
+  const [letterOn, setLetterOn] = useState(false);
+  const [letterSaving, setLetterSaving] = useState(false);
   const [review, setReview] = useState("");
   const [reviewLoading, setReviewLoading] = useState(false);
   const [sessions, setSessions] = useState(initialSessions);
@@ -63,7 +63,7 @@ export function SettingsExperience({
       .then((user) => {
         if (!active) return;
         setNudgeOn(user.nudge ?? false);
-        setAiOn(user.ai ?? false);
+        setLetterOn(user.ai ?? false);
       })
       .catch(() => {});
     return () => {
@@ -109,20 +109,20 @@ export function SettingsExperience({
     }
   };
 
-  const toggleAi = async () => {
-    if (aiSaving) return;
-    const next = !aiOn;
-    setAiOn(next);
-    setAiSaving(true);
+  const toggleLetter = async () => {
+    if (letterSaving) return;
+    const next = !letterOn;
+    setLetterOn(next);
+    setLetterSaving(true);
     try {
-      const saved = await saveUserAi(next);
+      const saved = await saveUserLetter(next);
       const current = useUserStore.getState().user;
       if (current) useUserStore.getState().setUser({ ...current, ai: saved.ai ?? next });
     } catch (cause) {
-      setAiOn(!next);
+      setLetterOn(!next);
       setError(getApiErrorMessage(cause, "Save failed"));
     } finally {
-      setAiSaving(false);
+      setLetterSaving(false);
     }
   };
 
@@ -337,21 +337,21 @@ export function SettingsExperience({
                 </p>
               </div>
               <button
-                aria-busy={aiSaving}
-                aria-checked={aiOn}
+                aria-busy={letterSaving}
+                aria-checked={letterOn}
                 aria-label="Weekly letter"
                 className={`relative h-6 w-10 shrink-0 rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 ${
-                  aiOn ? "bg-foreground" : "bg-muted-foreground/25"
+                  letterOn ? "bg-foreground" : "bg-muted-foreground/25"
                 }`}
-                disabled={aiSaving}
-                onClick={() => void toggleAi()}
+                disabled={letterSaving}
+                onClick={() => void toggleLetter()}
                 role="switch"
                 type="button"
               >
                 <span
                   aria-hidden="true"
                   className={`absolute left-0.5 top-0.5 size-5 rounded-full bg-secondary outline-none transition-transform ${
-                    aiOn ? "translate-x-4" : "translate-x-0"
+                    letterOn ? "translate-x-4" : "translate-x-0"
                   }`}
                 />
               </button>
