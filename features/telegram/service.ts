@@ -378,6 +378,14 @@ export function verifyTelegramWebhookSecret(received: string | null): boolean {
   );
 }
 
+/** Resolve the Mono userId for a linked Telegram member id, or null if unlinked. */
+export async function resolveTelegramUser(
+  telegramUserId: string,
+): Promise<string | null> {
+  const connection = await findTelegramConnection("member", telegramUserId);
+  return connection?.user ?? null;
+}
+
 async function findTelegramConnection(
   key: "user" | "member",
   value: string,

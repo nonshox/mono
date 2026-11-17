@@ -66,6 +66,42 @@ export async function listYearEntries(
   return result.rows.map((row) => ({ day: row.day, text: row.text, satisfied: row.satisfied ?? null }));
 }
 
+/** Append one line to the day's entry (creates the entry if absent). */
+export async function appendToDay(
+  userId: string,
+  day: string,
+  text: string,
+): Promise<{ day: string; text: string; length: number }> {
+  const rowId = dayRowId(userId, day);
+  const tables = getTables();
+  const databaseId = getDatabaseId();
+
+  let existingText: string | null = null;
+  try {
+    const row = await tables.getRow<DayRow>({ databaseId, tableId, rowId });
+    existingText = row.text;
+  } catch (error) {
+    if (!isNotFound(error)) throw error;
+  }
+
+  const combined = existingText ? `${existingText}\n${text}` : text;
+  if (combined.length > 1000) {
+    throw new Error("today's entry is full (1000 chars)");
+  }
+
+  if (existingText === null) {
+    await upsertDayEntry(userId, day, combined);
+  } else {
+    await tables.updateRow<DayRow>({
+      databaseId,
+      tableId,
+      rowId,
+      data: { text: combined },
+    });
+  }
+  return { day, text: combined, length: combined.length };
+}
+
 export async function upsertDayEntry(
   userId: string,
   day: string,

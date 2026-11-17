@@ -3,9 +3,20 @@ import { after } from "next/server";
 import { jsonError, logFailure } from "@/lib/http";
 import {
   consumeTelegramLink,
+  resolveTelegramUser,
   sendTelegramMessage,
   verifyTelegramWebhookSecret,
 } from "@/features/telegram/service";
+import {
+  classifyTelegramText,
+  TELEGRAM_HELP,
+  TELEGRAM_NOT_LINKED,
+} from "@/features/telegram/commands";
+import {
+  replyCapture,
+  replyToday,
+  replyWeek,
+} from "@/features/telegram/replies";
 
 const telegramIdSchema = z.union([
   z.number().int().safe().positive(),
@@ -28,6 +39,14 @@ const telegramUpdateSchema = z.object({
     })
     .optional(),
 });
+
+const sendReply = async (
+  chatId: string,
+  text: string,
+  buttons: Array<{ text: string; webApp: string }>,
+): Promise<void> => {
+  await sendTelegramMessage(chatId, text, buttons);
+};
 
 export async function POST(request: Request) {
   if (
@@ -58,19 +77,58 @@ export async function POST(request: Request) {
     return Response.json({ ok: true });
   }
 
-  const start = /^\/start(?:\s+([a-f0-9]{64}))?$/.exec(message.text);
-  if (!start) {
+  const origin = new URL(request.url).origin;
+  const chatId = String(message.chat.id);
+  const intent = classifyTelegramText(message.text);
+
+  // Every intent except /start requires a linked Mono account; say so plainly.
+  if (intent.kind !== "start") {
+    const userId = await resolveTelegramUser(String(message.from.id));
+    if (!userId) {
+      after(async () => {
+        try {
+          await sendTelegramMessage(chatId, TELEGRAM_NOT_LINKED, []);
+        } catch (error) {
+          logFailure("Telegram not-linked reply", error);
+        }
+      });
+      return Response.json({ ok: true, connected: false });
+    }
+    after(async () => {
+      try {
+        if (intent.kind === "today") {
+          await replyToday(origin, sendReply, chatId, userId);
+        } else if (intent.kind === "week") {
+          await replyWeek(origin, sendReply, chatId, userId);
+        } else if (intent.kind === "capture") {
+          await replyCapture(origin, sendReply, chatId, userId, intent.text);
+        } else {
+          await sendTelegramMessage(chatId, TELEGRAM_HELP, [
+            { text: "Open Mono", webApp: `${origin}/` },
+          ]);
+        }
+      } catch (error) {
+        logFailure("Telegram command", error);
+        try {
+          await sendTelegramMessage(
+            chatId,
+            "Something broke — try again or open the app.",
+            [],
+          );
+        } catch {
+          /* bot can't reach the user either */
+        }
+      }
+    });
     return Response.json({ ok: true });
   }
 
-  const origin = new URL(request.url).origin;
-
-  // Bare /start → greeting with a Mini App button.
-  if (!start[1]) {
+  // /start — existing link flow.
+  if (!intent.code) {
     after(async () => {
       try {
         await sendTelegramMessage(
-          String(message.chat.id),
+          chatId,
           "Welcome to Mono. Tap below to open the app.",
           [{ text: "Open Mono", webApp: `${origin}/` }],
         );
@@ -82,16 +140,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await consumeTelegramLink(
-      start[1],
-      String(message.from.id),
-      String(message.chat.id),
-    );
+    const result = await consumeTelegramLink(intent.code, String(message.from.id), chatId);
     if (result.status === "connected") {
       after(async () => {
         try {
           await sendTelegramMessage(
-            String(message.chat.id),
+            chatId,
             "Your Mono account is now connected to Telegram.",
             [{ text: "Open Mono", webApp: `${origin}/` }],
           );
