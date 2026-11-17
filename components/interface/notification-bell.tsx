@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, CheckCheck, Eraser, Mail, Moon, NotebookPen } from "lucide-react";
+import { Bell, CheckCheck, Eraser, Loader2, Mail, Moon, NotebookPen } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
@@ -144,8 +144,12 @@ export function NotificationBell() {
                 <p className="mt-1 text-xs text-foreground">{error}</p>
               </div>
             ) : (
-              <div className="type-eyebrow grid place-items-center px-4 py-8">
-                Loading
+              <div className="grid place-items-center px-4 py-8">
+                <Loader2
+                  aria-hidden="true"
+                  className="size-5 animate-spin text-foreground"
+                  strokeWidth={1.8}
+                />
               </div>
             )
           ) : error ? (

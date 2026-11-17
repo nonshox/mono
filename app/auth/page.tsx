@@ -18,13 +18,13 @@ const structuredData = {
     {
       "@type": "WebSite",
       name: "Mono",
-      description: "Mono — a minimal app base.",
+      description: "A slow, private journal.",
       url: siteUrl,
     },
     {
       "@type": "WebApplication",
       name: "Mono",
-      description: "Mono — a minimal app base.",
+      description: "A slow, private journal.",
       url: siteUrl,
       applicationCategory: "ProductivityApplication",
       operatingSystem: "Web",

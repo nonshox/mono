@@ -21,11 +21,6 @@ export type UserRow = Models.Row & {
   actions?: string[] | null;
 };
 
-export type UserPreview = Models.Row & {
-  name: string;
-  avatar?: string;
-};
-
 export async function getUserRow(userId: string): Promise<UserRow | null> {
   try {
     return await getTables().getRow<UserRow>({
@@ -219,26 +214,6 @@ export async function listNudgeTargets(): Promise<Array<{ id: string; tz: string
   return result.rows.map((row) => ({ id: row.$id, tz: row.tz ?? null }));
 }
 
-/** Lightweight lookup used by other features (e.g. notification actors). */
-export async function getUsersByIds(
-  ids: string[],
-): Promise<Map<string, UserPreview>> {
-  if (ids.length === 0) {
-    return new Map();
-  }
-  const result = await getTables().listRows<UserPreview>({
-    databaseId: getDatabaseId(),
-    tableId,
-    queries: [
-      Query.equal("$id", ids),
-      Query.limit(100),
-      Query.select(["$id", "name", "avatar"]),
-    ],
-    total: false,
-  });
-  return new Map(result.rows.map((row) => [row.$id, row]));
-}
-
 /**
  * Best-effort erasure of everything mono stores about an account, then the
  * Appwrite account itself. Each step is independent; failures are logged and
@@ -270,9 +245,10 @@ export async function deleteUserEverywhere(userId: string): Promise<void> {
     }
   };
 
+  // Wipe every row this user owns — notifications carry `user`, not the old
+  // actor-based recipient/actor pair, so the delete uses the live key.
   await Promise.allSettled([
-    wipe("notifications", "recipient"),
-    wipe("notifications", "actor"),
+    wipe("notifications", "user"),
     wipe("telegram", "user"),
     wipe("codes", "user"),
     wipe("days", "user"),

@@ -11,8 +11,7 @@ export const metadata: Metadata = {
     default: "Mono",
     template: "%s | Mono",
   },
-  description: "Mono — a minimal app base.",
-  // Private, sign-in-only app: keep every page out of search indexes.
+  description: "A slow, private journal — write one line a day, close the day with a ring, read your year in dots.",
   // Pages inherit this; nothing here is meant to be crawled.
   robots: {
     index: false,
@@ -22,7 +21,7 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "Mono",
     title: "Mono",
-    description: "Mono — a minimal app base.",
+    description: "A slow, private journal — write one line a day, close the day with a ring, read your year in dots.",
     url: "/",
     locale: "en_US",
     images: [{ url: "/logotype/android-chrome-512x512.png", width: 512, height: 512, alt: "Mono" }],
@@ -30,7 +29,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary",
     title: "Mono",
-    description: "Mono — a minimal app base.",
+    description: "A slow, private journal — write one line a day, close the day with a ring, read your year in dots.",
     images: ["/logotype/android-chrome-512x512.png"],
   },
   applicationName: "Mono",

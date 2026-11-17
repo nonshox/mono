@@ -2,7 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { jsonError, logFailure } from "@/lib/http";
 import { listLetterTargets } from "@/features/users/service";
-import { listRecentEntries } from "@/features/days/service";
+import { listRecentEntriesSince } from "@/features/days/service";
 import { sendTelegramNotification } from "@/features/telegram/service";
 import { notifyLetterReady } from "@/features/notifications/events";
 import { compileLetter } from "@/features/digest/compile";
@@ -55,9 +55,7 @@ export async function GET(request: Request) {
 
   for (const userId of targets) {
     try {
-      const recent = (await listRecentEntries(userId, 30)).filter(
-        (entry) => entry.day >= weekAgo,
-      );
+      const recent = await listRecentEntriesSince(userId, weekAgo);
       if (recent.length === 0) {
         skipped += 1;
         continue;

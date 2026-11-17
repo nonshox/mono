@@ -10,9 +10,10 @@ async function safeCreate(
   userId: string,
   kind: NotificationKind,
   body: string,
+  ref?: string,
 ): Promise<void> {
   try {
-    await createNotification(userId, kind, body);
+    await createNotification(userId, kind, body, ref);
   } catch (error) {
     logFailure(`Notify ${kind}`, error);
   }
@@ -39,6 +40,7 @@ export function notifyDayClosed(
       userId,
       "dot_closed",
       `Day closed at ${percent}%. A dot joined your year.`,
+      "/",
     );
   });
 }
@@ -49,5 +51,6 @@ export async function notifyLetterReady(userId: string): Promise<void> {
     userId,
     "letter_ready",
     "Your weekly letter is ready.",
+    "/journal",
   );
 }

@@ -1,10 +1,15 @@
 import type { NotificationItem } from "@/features/notifications/client-api";
 
-/** Where a notification should take you when tapped — derived from its kind. */
+/** Where a notification should take you when tapped — its ref, by kind fallback. */
 export function notificationHref(item: NotificationItem): string {
+  if (item.ref?.startsWith("/")) {
+    return item.ref;
+  }
   switch (item.kind) {
     case "letter_ready":
       return "/journal";
+    case "dot_closed":
+      return "/check";
     default:
       return "/";
   }

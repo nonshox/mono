@@ -78,7 +78,8 @@ export async function readAvatarFile(
     const mimeType = sniffImageMime(new Uint8Array(bytes));
     if (!mimeType) return null;
     return { bytes, mimeType };
-  } catch {
+  } catch (error) {
+    logFailure("Avatar read", error);
     return null;
   }
 }

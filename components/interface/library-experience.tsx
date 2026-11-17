@@ -101,7 +101,18 @@ export function LibraryExperience() {
         <header className="px-1">
           <h2 className="type-title text-foreground">Library</h2>
           <p className="mt-1 text-xs text-foreground">
-            {books === null ? "Loading…" : `${books.length} ${books.length === 1 ? "book" : "books"} · stored on this device`}
+            {books === null ? (
+              <span className="inline-flex items-center gap-1.5">
+                <LoaderCircle
+                  aria-hidden="true"
+                  className="size-3.5 animate-spin"
+                  strokeWidth={2}
+                />
+                Loading
+              </span>
+            ) : (
+              `${books.length} ${books.length === 1 ? "book" : "books"} · stored on this device`
+            )}
           </p>
         </header>
 

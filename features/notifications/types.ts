@@ -9,6 +9,7 @@ export type NotificationItem = {
   id: string;
   kind: NotificationKind;
   body: string;
+  ref: string | null;
   createdAt: string;
   read: boolean;
 };

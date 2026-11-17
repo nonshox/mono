@@ -253,7 +253,7 @@ export function AuthExperience() {
       </div>
 
       <p className="type-eyebrow mt-12 text-foreground">
-        Mono — a minimal app base
+        A slow, private journal
       </p>
     </main>
   );

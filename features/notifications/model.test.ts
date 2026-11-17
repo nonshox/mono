@@ -11,6 +11,7 @@ const item = (id: string, read: boolean): NotificationItem => ({
   id,
   kind: "dot_closed",
   body: `dot ${id}`,
+  ref: "/check",
   createdAt: "2026-11-17T00:00:00.000Z",
   read,
 });
