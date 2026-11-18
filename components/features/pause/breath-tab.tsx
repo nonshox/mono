@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { acquireWakeLock, releaseWakeLock } from "@/features/pause/wake-lock";
 
 type PhaseKind = "in" | "hold" | "out";
 type Phase = { kind: PhaseKind; seconds: number };
@@ -95,20 +96,41 @@ export function BreathTab() {
     setStartedAt(Date.now());
   };
 
-  // Tick — drift-free because everything derives from startedAt.
+  // Keep the screen awake while breathing — a dimmed/locked screen throttles
+  // timers and stalls the pacer.
+  useEffect(() => {
+    if (running) {
+      void acquireWakeLock();
+      return () => {
+        void releaseWakeLock();
+      };
+    }
+  }, [running]);
+
+  // Tick — drift-free because everything derives from startedAt. Resyncs
+  // through as many missed phases as needed, so even a throttled hidden tab
+  // lands on the correct phase instead of lagging behind.
   useEffect(() => {
     if (!running) return;
     const id = window.setInterval(() => {
-      const elapsed = Date.now() - startedAt;
-      if (elapsed >= phaseTotalMs) {
-        const nextIndex = (phaseIndex + 1) % pattern.phases.length;
-        if (nextIndex === 0) setCycles((value) => value + 1);
-        setPhaseIndex(nextIndex);
-        setStartedAt(Date.now());
-        setRemainingMs(pattern.phases[nextIndex].seconds * 1000);
-        return;
+      let elapsed = Date.now() - startedAt;
+      let index = phaseIndex;
+      let start = startedAt;
+      let total = phaseTotalMs;
+      let wrapped = 0;
+      while (elapsed >= total) {
+        elapsed -= total;
+        index = (index + 1) % pattern.phases.length;
+        if (index === 0) wrapped += 1;
+        start += total;
+        total = pattern.phases[index].seconds * 1000;
       }
-      setRemainingMs(phaseTotalMs - elapsed);
+      if (index !== phaseIndex) {
+        if (wrapped > 0) setCycles((value) => value + wrapped);
+        setPhaseIndex(index);
+        setStartedAt(start);
+      }
+      setRemainingMs(total - elapsed);
     }, 100);
     return () => window.clearInterval(id);
   }, [running, startedAt, phaseIndex, phaseTotalMs, pattern.phases]);

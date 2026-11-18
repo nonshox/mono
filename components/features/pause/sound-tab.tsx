@@ -112,6 +112,21 @@ export function SoundTab() {
     return () => window.clearInterval(id);
   }, [timerEndAt, finishTimer]);
 
+  // Mirror the countdown into the tab title so it is visible from anywhere.
+  useEffect(() => {
+    if (timerEndAt === null) return;
+    const prev = document.title;
+    const render = () => {
+      document.title = `${formatClock(Math.max(0, timerEndAt - Date.now()))} · Pause`;
+    };
+    render();
+    const id = window.setInterval(render, 1000);
+    return () => {
+      window.clearInterval(id);
+      document.title = prev;
+    };
+  }, [timerEndAt]);
+
   const remainingMs = timerEndAt === null ? null : Math.max(0, timerEndAt - now);
   const anythingOn = brainwaveOn || noiseOn || droneOn;
 
