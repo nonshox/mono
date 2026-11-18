@@ -28,8 +28,9 @@ npm run dev
 | `codes` | `user`, `hash` (strings), `expires` (datetime), `used` (bool) | unique on `hash` |
 | `days` | `user`, `day` (`YYYY-MM-DD`), `text` (≤1000), `satisfied` (int, optional) | key on `user` |
 | `timeline` | `user`, `bucket`, `text`, `order`, `done` (bool) | key on `user` |
+| `books` | `user`, `title`, `author`, `note` (strings), `days` (int, optional) | key on `user` |
 
-Both `days` and `timeline` are created by `scripts/setup-days.mjs` (idempotent — also creates `users.nudge` and `users.ai` bool columns and `days.satisfied` int).
+Both `days` and `timeline` are created by `scripts/setup-days.mjs` (idempotent — also creates `users.nudge` and `users.ai` bool columns and `days.satisfied` int). `books` is created by `scripts/setup-books.mjs` (idempotent).
 
 `users` also needs a `nudge` (bool, default false) attribute for the optional evening Telegram nudge (`/api/cron/nudge`, requires `CRON_SECRET`, fires each user's local 10:00pm — see below) and an `ai` (bool, default false) attribute for the opt-in weekly letter (`/api/cron/letter` at 09:00 UTC Sunday).
 
@@ -87,8 +88,9 @@ app/
   error.tsx          # branded global error screen
   globals.css        # design tokens
 components/
-  ui/                # primitives (button, dropdown-menu, input, label, sonner)
-  interface/         # composed experiences (settings, editor, shell)
+  ui/                # shadcn primitives (button, dialog, input, select, checkbox, switch, ...)
+  shared/            # cross-feature pieces (shell, bell, avatar, loader, ring, mic/polish buttons)
+  features/          # page experiences, split into separated files (check, journal, stash, home, settings, profile, auth)
 features/
   auth/              # email-code sign-in, session helpers, zod schemas
   notifications/     # generic notifications: notify(), list, mark-read

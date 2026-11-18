@@ -3,6 +3,7 @@
 import {
   BookOpenText,
   Download,
+  Languages,
   LoaderCircle,
   Trash2,
   Upload,
@@ -19,13 +20,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { toast } from "sonner";
-import { formatBytes } from "@/features/library/format";
+import { FileInput } from "@/components/ui/file-input";
+import { Button } from "@/components/ui/button";
+import { formatBytes } from "@/features/stash/format";
+import { StashWords } from "@/components/features/stash/stash-words";
 import {
   deleteBook,
   listBooks,
   saveBook,
-  type LibraryBook,
-} from "@/features/library/idb";
+  type StashBook,
+} from "@/features/stash/idb";
 
 function shortDate(iso: string): string {
   return new Intl.DateTimeFormat(undefined, {
@@ -35,8 +39,9 @@ function shortDate(iso: string): string {
   }).format(new Date(iso));
 }
 
-export function LibraryExperience() {
-  const [books, setBooks] = useState<LibraryBook[] | null>(null);
+export function StashExperience() {
+  const [tab, setTab] = useState<"books" | "words">("books");
+  const [books, setBooks] = useState<StashBook[] | null>(null);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -73,7 +78,7 @@ export function LibraryExperience() {
     }
   };
 
-  const download = (book: LibraryBook) => {
+  const download = (book: StashBook) => {
     const url = URL.createObjectURL(book.blob);
     const anchor = document.createElement("a");
     anchor.href = url;
@@ -96,41 +101,61 @@ export function LibraryExperience() {
 
   return (
     <main className="min-h-full w-full bg-background px-3 pb-24 pt-5 sm:px-6 sm:pt-8">
-      <h1 className="sr-only">Library</h1>
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 md:max-w-3xl">
-        <header className="px-1">
-          <h2 className="type-title text-foreground">Library</h2>
-          <p className="mt-1 text-xs text-foreground">
-            {books === null ? (
-              <span className="inline-flex items-center gap-1.5">
-                <LoaderCircle
-                  aria-hidden="true"
-                  className="size-3.5 animate-spin"
-                  strokeWidth={2}
-                />
-                Loading
-              </span>
-            ) : (
-              `${books.length} ${books.length === 1 ? "book" : "books"} · stored on this device`
-            )}
-          </p>
-        </header>
+      <h1 className="sr-only">Stash</h1>
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-3 md:max-w-3xl">
+        <div
+          aria-label="Stash sections"
+          className="flex gap-1 rounded-2xl border-2 border-border/70 bg-popover p-1"
+          role="tablist"
+        >
+          <Button
+            aria-controls="stash-panel-books"
+            aria-selected={tab === "books"}
+            className="h-11 flex-1 gap-2 rounded-xl text-xs font-bold"
+            id="stash-tab-books"
+            onClick={() => setTab("books")}
+            role="tab"
+            type="button"
+            variant={tab === "books" ? "default" : "ghost"}
+          >
+            <BookOpenText aria-hidden="true" className="size-4" strokeWidth={1.8} />
+            Books
+          </Button>
+          <Button
+            aria-controls="stash-panel-words"
+            aria-selected={tab === "words"}
+            className="h-11 flex-1 gap-2 rounded-xl text-xs font-bold"
+            id="stash-tab-words"
+            onClick={() => setTab("words")}
+            role="tab"
+            type="button"
+            variant={tab === "words" ? "default" : "ghost"}
+          >
+            <Languages aria-hidden="true" className="size-4" strokeWidth={1.8} />
+            Words
+          </Button>
+        </div>
 
-        <section className="rounded-2xl border-2 border-border/70 bg-popover p-4 sm:p-5">
-          <input
+        <section
+          aria-labelledby="stash-tab-books"
+          className="pt-1"
+          hidden={tab !== "books"}
+          id="stash-panel-books"
+          role="tabpanel"
+        >
+          <FileInput
             accept=".epub,.pdf,.txt,.md,.mobi,.fb2,.rtf,application/epub+zip,application/pdf,text/plain"
             aria-label="Upload book"
-            className="hidden"
             multiple
             onChange={(event) => void onPick(event)}
             ref={inputRef}
-            type="file"
           />
-          <button
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border text-xs font-bold text-foreground outline-none transition hover:border-foreground/50 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+          <Button
+            className="h-12 w-full gap-2 rounded-xl border-2 border-dashed text-xs font-bold hover:border-foreground/50 disabled:opacity-50"
             disabled={saving}
             onClick={() => inputRef.current?.click()}
             type="button"
+            variant="outline"
           >
             {saving ? (
               <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
@@ -138,7 +163,7 @@ export function LibraryExperience() {
               <Upload aria-hidden="true" className="size-4" strokeWidth={1.8} />
             )}
             {saving ? "Saving…" : "Upload books"}
-          </button>
+          </Button>
 
           {books === null ? (
             <p className="grid place-items-center py-10 text-xs font-semibold text-foreground">
@@ -151,7 +176,7 @@ export function LibraryExperience() {
                 No books yet
               </p>
               <p className="max-w-xs text-xs leading-5 text-foreground">
-                EPUB, PDF, TXT, Markdown, MOBI, FB2, RTF — saved on this device only.
+                EPUB, PDF, TXT, Markdown, MOBI, FB2, RTF â€” saved on this device only.
               </p>
             </div>
           ) : (
@@ -168,17 +193,19 @@ export function LibraryExperience() {
                       {book.name}
                     </p>
                     <p className="text-[11px] tabular-nums text-foreground">
-                      {formatBytes(book.size)} · {shortDate(book.addedAt)}
+                      {formatBytes(book.size)} Â· {shortDate(book.addedAt)}
                     </p>
                   </div>
-                  <button
+                  <Button
                     aria-label={`Download ${book.name}`}
-                    className="grid size-8 shrink-0 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                    className="size-8 rounded-full"
                     onClick={() => download(book)}
+                    size="icon"
                     type="button"
+                    variant="ghost"
                   >
                     <Download aria-hidden="true" className="size-4" strokeWidth={1.8} />
-                  </button>
+                  </Button>
                   <AlertDialog>
                     <AlertDialogTrigger
                       aria-label={`Remove ${book.name}`}
@@ -189,7 +216,7 @@ export function LibraryExperience() {
                     <AlertDialogContent>
                       <AlertDialogTitle>Remove this book?</AlertDialogTitle>
                       <AlertDialogDescription className="mt-1.5">
-                        {`“${book.name}” will be deleted from this device. It is not stored anywhere else.`}
+                        {`â€œ${book.name}â€ will be deleted from this device. It is not stored anywhere else.`}
                       </AlertDialogDescription>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Keep</AlertDialogCancel>
@@ -204,6 +231,15 @@ export function LibraryExperience() {
             </ul>
           )}
         </section>
+
+        <div
+          aria-labelledby="stash-tab-words"
+          hidden={tab !== "words"}
+          id="stash-panel-words"
+          role="tabpanel"
+        >
+          <StashWords />
+        </div>
       </div>
     </main>
   );

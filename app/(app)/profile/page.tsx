@@ -3,11 +3,11 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { getCurrentAccount, AppwriteUnavailableError } from "@/features/auth/session";
 import { getUserRow } from "@/features/users/service";
-import { PageLoader } from "@/components/interface/page-loader";
-import { SessionExpired } from "@/components/interface/session-expired";
-import { ServiceUnavailable } from "@/components/interface/service-unavailable";
-import { UserAvatar } from "@/components/interface/user-avatar";
-import { ActionsEditor } from "@/components/interface/actions-editor";
+import { PageLoader } from "@/components/shared/page-loader";
+import { SessionExpired } from "@/components/shared/session-expired";
+import { ServiceUnavailable } from "@/components/shared/service-unavailable";
+import { UserAvatar } from "@/components/shared/user-avatar";
+import { ActionsEditor } from "@/components/features/check/actions-editor";
 
 export const metadata = {
   title: "Profile",

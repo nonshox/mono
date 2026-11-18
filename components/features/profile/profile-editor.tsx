@@ -8,18 +8,21 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { FileInput } from "@/components/ui/file-input";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { saveUserName, uploadAvatar, removeAvatar } from "@/features/users/client-api";
+import { Button } from "@/components/ui/button";
 import {
   profileNameFormSchema,
   type ProfileNameForm,
 } from "@/features/users/schemas";
 import { useUserStore } from "@/features/users/store";
 import { getApiErrorMessage } from "@/lib/api-client";
-import { UserAvatar } from "@/components/interface/user-avatar";
+import { UserAvatar } from "@/components/shared/user-avatar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,7 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import Link from "next/link";
 
-/** Ultra-minimal editor — name, nothing else. */
+/** Ultra-minimal editor â€” name, nothing else. */
 export function ProfileEditor() {
   const router = useRouter();
   const loadUser = useUserStore((state) => state.load);
@@ -139,14 +142,10 @@ export function ProfileEditor() {
           </h1>
         </header>
 
-        <input
+        <FileInput
           accept="image/png,image/jpeg,image/webp,image/gif"
-          aria-hidden="true"
-          className="hidden"
           onChange={(event) => void onAvatarChange(event)}
           ref={fileInput}
-          tabIndex={-1}
-          type="file"
         />
 
         <form onSubmit={(event) => void onSubmit(event)}>
@@ -160,11 +159,12 @@ export function ProfileEditor() {
             <div className="min-w-0 flex-1">
               <span className="type-eyebrow">Photo</span>
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                <button
-                  className="inline-flex h-8 items-center gap-1.5 rounded-full border-2 border-border px-3.5 text-xs font-semibold text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                <Button
+                  className="h-8 gap-1.5 rounded-full border-2 border-border px-3.5 text-xs font-semibold disabled:opacity-40"
                   disabled={loading || avatarBusy}
                   onClick={() => fileInput.current?.click()}
                   type="button"
+                  variant="outline"
                 >
                   {avatarBusy ? (
                     <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
@@ -172,7 +172,7 @@ export function ProfileEditor() {
                     <Camera aria-hidden="true" className="size-3.5" strokeWidth={2} />
                   )}
                   {avatar ? "Change photo" : "Upload photo"}
-                </button>
+                </Button>
                 {avatar && (
                   <AlertDialog>
                     <AlertDialogTrigger
@@ -204,11 +204,11 @@ export function ProfileEditor() {
             <span className="type-eyebrow">
               Name
             </span>
-            <input
+            <Input
               autoFocus
               aria-invalid={nameError ? true : undefined}
               aria-describedby={nameError ? "name-error" : undefined}
-              className="mt-1 h-10 w-full border-0 bg-transparent p-0 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground"
+              className="mt-1 h-10 w-full border-0 bg-transparent p-0 text-sm font-medium placeholder:text-muted-foreground focus-visible:border-transparent focus-visible:ring-0 disabled:opacity-60 md:text-sm"
               disabled={loading}
               maxLength={50}
               placeholder="Your name"
@@ -231,23 +231,24 @@ export function ProfileEditor() {
               <span className="min-w-0 flex-1 truncate">{storedEmail}</span>
             </div>
             <p className="mt-1 text-xs text-foreground">
-              Tied to your sign-in — can&apos;t be changed here.
+              Tied to your sign-in â€” can&apos;t be changed here.
             </p>
           </div>
 
           {/* Actions */}
           <div className="mt-6 flex items-center gap-3">
-            <button
-              className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-foreground text-xs font-semibold text-background outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30 sm:flex-none sm:px-8"
+            <Button
+              className="h-11 flex-1 rounded-full text-xs font-semibold disabled:opacity-30 sm:flex-none sm:px-8"
               disabled={loading || isSubmitting || !isDirty}
               type="submit"
+              variant="default"
             >
               {isSubmitting ? (
                 <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
               ) : (
                 "Save changes"
               )}
-            </button>
+            </Button>
             <Link
               className="inline-flex h-11 items-center rounded-full px-4 text-xs font-semibold text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
               href="/profile"

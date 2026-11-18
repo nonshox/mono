@@ -143,7 +143,51 @@ export async function setTimelineItemDone(
   }
 }
 
-/** Swap `order` between `id` and its neighbor in the direction. */
+/**
+ * Rewrites `order` for one bucket from the given id list, in a single
+ * transaction. The list must contain exactly the bucket's rows — a mismatch
+ * (concurrent edits) fails instead of corrupting order.
+ */
+export async function reorderTimelineItems(
+  userId: string,
+  bucket: Bucket,
+  ids: string[],
+): Promise<boolean> {
+  const tables = getTables();
+  const existing = await tables.listRows<TimelineRow>({
+    databaseId: getDatabaseId(),
+    tableId,
+    queries: [
+      Query.equal("user", userId),
+      Query.equal("bucket", bucket),
+      Query.select(["$id", "order"]),
+      Query.limit(500),
+    ],
+    total: false,
+  });
+
+  const current = new Map(existing.rows.map((row) => [row.$id, row.order]));
+  if (current.size !== ids.length) return false;
+  if (!ids.every((id) => current.has(id))) return false;
+  const unique = new Set(ids);
+  if (unique.size !== ids.length) return false;
+
+  await runTransaction(async (transactionId) => {
+    for (const [index, id] of ids.entries()) {
+      if (current.get(id) === index) continue;
+      await tables.updateRow<TimelineRow>({
+        databaseId: getDatabaseId(),
+        tableId,
+        rowId: id,
+        transactionId,
+        data: { order: index },
+      });
+    }
+  }, "Reorder timeline items");
+
+  return true;
+}
+
 export async function moveTimelineItem(
   userId: string,
   id: string,

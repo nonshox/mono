@@ -5,7 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { polishEntry } from "@/features/ai/client-api";
 import { getApiErrorMessage } from "@/lib/api-client";
-import { cn } from "cn";
+import { Button } from "@/components/ui/button";
 
 /**
  * Local cleanup of dictated text: fillers out, sentence starts capitalized,
@@ -41,20 +41,20 @@ export function PolishButton({
   };
 
   return (
-    <button
+    <Button
       aria-busy={loading}
       aria-label="Tidy dictation"
-      className={cn(
-        "grid size-7 shrink-0 place-items-center rounded-full border border-border text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring",
-      )}
+      className="size-7 rounded-full"
       onClick={() => void tidy()}
+      size="icon"
       type="button"
+      variant="outline"
     >
       {loading ? (
         <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
       ) : (
         <SpellCheck aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
       )}
-    </button>
+    </Button>
   );
 }

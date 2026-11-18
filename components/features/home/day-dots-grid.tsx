@@ -1,12 +1,13 @@
 "use client";
 
 import { cn } from "cn";
-import { ProgressRing } from "@/components/interface/progress-ring";
+import { Button } from "@/components/ui/button";
+import { ProgressRing } from "@/components/shared/progress-ring";
 import { longLabel } from "./day-labels";
 import type { MutableRefObject } from "react";
 
 /**
- * The 365-dot year grid — purely presentational. Store reads and popover
+ * The 365-dot year grid â€” purely presentational. Store reads and popover
  * behaviour stay in the parent; this gets primitives + one open callback.
  */
 export function DayDotsGrid({
@@ -41,8 +42,8 @@ export function DayDotsGrid({
         const isToday = day === today;
         const daySatisfied = satisfied[day];
         return (
-          <button
-            aria-label={`${longLabel(day)} — ${
+          <Button
+            aria-label={`${longLabel(day)} â€” ${
               isFilled
                 ? daySatisfied !== undefined
                   ? `closed at ${daySatisfied}%`
@@ -53,14 +54,14 @@ export function DayDotsGrid({
             }`}
             aria-pressed={isFilled}
             className={cn(
-              "grid aspect-square size-[1.05rem] place-items-center rounded-full outline-none transition-all duration-150 focus-visible:ring-2 focus-visible:ring-ring sm:size-[1.2rem]",
+              "grid aspect-square h-auto size-[1.05rem] place-items-center rounded-full bg-transparent p-0 outline-none transition-all duration-150 hover:bg-transparent sm:size-[1.2rem]",
               progressView
                 ? "text-foreground hover:scale-110"
                 : cn(
                     "border-2",
                     isFilled
-                      ? "border-foreground bg-foreground hover:scale-110"
-                      : "border-foreground/30 bg-transparent hover:scale-110 hover:border-foreground/70",
+                      ? "border-foreground bg-foreground hover:bg-foreground hover:scale-110"
+                      : "border-foreground/30 hover:scale-110 hover:border-foreground/70",
                     isFuture &&
                       "cursor-default border-foreground/10 hover:scale-100 hover:border-foreground/10",
                   ),
@@ -88,7 +89,7 @@ export function DayDotsGrid({
                 percent={isFilled ? (daySatisfied ?? 100) : 0}
               />
             )}
-          </button>
+          </Button>
         );
       })}
     </div>

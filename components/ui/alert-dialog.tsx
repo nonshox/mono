@@ -1,6 +1,7 @@
 import * as React from "react"
 import { AlertDialog as AlertDialogPrimitive } from "@base-ui/react/alert-dialog"
 import { cn } from "cn"
+import { Button } from "@/components/ui/button"
 
 function AlertDialog({ ...props }: AlertDialogPrimitive.Root.Props) {
   return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />
@@ -119,13 +120,14 @@ function AlertDialogCancel({
 function AlertDialogAction({
   className,
   ...props
-}: React.ComponentProps<"button">) {
+}: React.ComponentProps<typeof Button>) {
   return (
-    <button
+    <Button
       data-slot="alert-dialog-action"
+      variant="destructive"
       {...props}
       className={cn(
-        "inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-destructive px-5 text-xs font-semibold text-white outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring",
+        "h-10 rounded-full bg-destructive px-5 text-xs font-semibold text-white hover:bg-destructive/85 hover:opacity-100 focus-visible:ring-ring",
         className
       )}
     />

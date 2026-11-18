@@ -30,6 +30,5 @@ export const config = {
     "/profile/:path*",
     "/journal",
     "/check",
-    "/library",
   ],
 };

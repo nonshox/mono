@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowLeft, LoaderCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, LoaderCircle } from "lucide-react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -230,31 +231,43 @@ export function AuthExperience() {
             </form>
 
             <div className="flex items-center justify-between text-sm">
-              <button
-                className="inline-flex items-center gap-1 text-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+              <Button
+                className="h-auto gap-1 px-0 text-sm"
                 disabled={pending}
                 onClick={backToEmail}
                 type="button"
+                variant="link"
               >
                 <ArrowLeft aria-hidden="true" className="size-3.5" strokeWidth={2} />
                 Change email
-              </button>
-              <button
-                className="text-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+              </Button>
+              <Button
+                className="h-auto px-0 text-sm no-underline hover:no-underline"
                 disabled={pending || cooldown > 0}
                 onClick={() => void resend()}
                 type="button"
+                variant="link"
               >
                 {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}
-              </button>
+              </Button>
             </div>
           </div>
         )}
       </div>
 
-      <p className="type-eyebrow mt-12 text-foreground">
-        A slow, private journal
-      </p>
+      <div className="mt-12 flex flex-col items-center gap-2.5">
+        {/* Stash is public (IndexedDB-only) — let sign-outs reach it here. */}
+        <Link
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground outline-none underline decoration-border underline-offset-4 transition hover:decoration-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          href="/stash"
+        >
+          Try Stash — files on this device, no account needed
+          <ArrowRight aria-hidden="true" className="size-3.5" strokeWidth={2} />
+        </Link>
+        <p className="type-eyebrow text-foreground">
+          A slow, private journal
+        </p>
+      </div>
     </main>
   );
 }

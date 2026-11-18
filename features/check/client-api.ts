@@ -36,6 +36,13 @@ export async function moveItem(
   await apiClient.patch("/check", { kind: "move", id, direction });
 }
 
+export async function reorderItems(
+  bucket: Bucket,
+  ids: string[],
+): Promise<void> {
+  await apiClient.patch("/check", { kind: "reorder", bucket, ids });
+}
+
 export async function editItemText(id: string, text: string): Promise<void> {
   await apiClient.patch("/check", { kind: "edit", id, text });
 }

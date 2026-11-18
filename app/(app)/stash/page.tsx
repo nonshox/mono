@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { LibraryExperience } from "@/components/interface/library-experience";
-import { PageLoader } from "@/components/interface/page-loader";
+import { StashExperience } from "@/components/features/stash/stash-experience";
+import { PageLoader } from "@/components/shared/page-loader";
 
 export const metadata: Metadata = {
-  title: "Library",
+  title: "Stash",
 };
 
-export default function LibraryPage() {
+export default function StashPage() {
   return (
     <Suspense fallback={<PageLoader />}>
-      <LibraryExperience />
+      <StashExperience />
     </Suspense>
   );
 }

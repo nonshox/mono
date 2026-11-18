@@ -3,10 +3,10 @@ import { getCurrentAccount, AppwriteUnavailableError } from "@/features/auth/ses
 import { getUserRow } from "@/features/users/service";
 import { listYearEntries, listYearsWithEntries } from "@/features/days/service";
 import { userDay } from "@/lib/dates";
-import { PageLoader } from "@/components/interface/page-loader";
-import { SessionExpired } from "@/components/interface/session-expired";
-import { ServiceUnavailable } from "@/components/interface/service-unavailable";
-import { DayDots } from "@/components/interface/day-dots";
+import { PageLoader } from "@/components/shared/page-loader";
+import { SessionExpired } from "@/components/shared/session-expired";
+import { ServiceUnavailable } from "@/components/shared/service-unavailable";
+import { DayDots } from "@/components/features/home/day-dots";
 
 export default function HomePage() {
   return (

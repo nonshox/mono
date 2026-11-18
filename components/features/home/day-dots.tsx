@@ -19,6 +19,9 @@ import {
 } from "@/features/days/client-api";
 import { useDaysStore } from "@/features/days/store";
 import { getApiErrorMessage } from "@/lib/api-client";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,10 +32,10 @@ import {
   AlertDialogTitle,
   AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
-import { MicButton } from "@/components/interface/mic-button";
-import { PolishButton } from "@/components/interface/polish-button";
-import { ProgressRing } from "@/components/interface/progress-ring";
-import { DayDotsGrid } from "@/components/interface/day-dots-grid";
+import { MicButton } from "@/components/shared/mic-button";
+import { PolishButton } from "@/components/shared/polish-button";
+import { ProgressRing } from "@/components/shared/progress-ring";
+import { DayDotsGrid } from "@/components/features/home/day-dots-grid";
 import { longLabel, pastLabel, shortLabel } from "./day-labels";
 
 const MAX_LENGTH = 1000;
@@ -225,7 +228,7 @@ export function DayDots({
     if (element) openFor(entry.day, element);
   };
 
-  // Instant close with optimistic background save — UI never waits.
+  // Instant close with optimistic background save â€” UI never waits.
   const closeAndSave = () => {
     if (!openDay) {
       setOpenDay(null);
@@ -235,7 +238,7 @@ export function DayDots({
     const text = draft.trim();
     const previous = useDaysStore.getState().entries[day];
 
-    // Close now — save in background; toast only on failure.
+    // Close now â€” save in background; toast only on failure.
     setEditing(false);
     setOpenDay(null);
 
@@ -305,51 +308,59 @@ export function DayDots({
   };
 
   return (
-    <section aria-label={`${year} — the year in dots`} className="mt-8">
+    <section aria-label={`${year} â€” the year in dots`} className="mt-8">
       <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-2">
         <h2 className="type-eyebrow">{year} dots</h2>
         <div className="flex shrink-0 items-center gap-0.5">
           <span className="mr-1 text-xs tabular-nums text-foreground">
             {filled} / {days.length}
           </span>
-          <button
+          <Button
             aria-label={progressView ? "Hide day progress rings" : "Show day progress rings"}
             aria-pressed={progressView}
-            className="grid size-6 place-items-center rounded-md text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            className="size-6 rounded-md"
             onClick={() => setProgressView((value) => !value)}
+            size="icon"
             type="button"
+            variant="ghost"
           >
             <ProgressRing className="size-3.5" percent={progressView ? 100 : 25} />
-          </button>
-          <button
+          </Button>
+          <Button
             aria-label="Search your days"
             aria-pressed={searchOpen}
-            className="grid size-6 place-items-center rounded-md text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            className="size-6 rounded-md"
             onClick={toggleSearch}
+            size="icon"
             type="button"
+            variant="ghost"
           >
             <Search aria-hidden="true" className="size-3.5" strokeWidth={2} />
-          </button>
+          </Button>
           {navigable.length > 1 && (
             <>
-              <button
+              <Button
                 aria-label="Previous year"
-                className="grid size-6 place-items-center rounded-md text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-30"
+                className="size-6 rounded-md disabled:opacity-30"
                 disabled={loading || navIndex <= 0}
                 onClick={() => switchYear(-1)}
+                size="icon"
                 type="button"
+                variant="ghost"
               >
                 <ChevronLeft aria-hidden="true" className="size-4" strokeWidth={2} />
-              </button>
-              <button
+              </Button>
+              <Button
                 aria-label="Next year"
-                className="grid size-6 place-items-center rounded-md text-foreground outline-none transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-30"
+                className="size-6 rounded-md disabled:opacity-30"
                 disabled={loading || navIndex === navigable.length - 1}
                 onClick={() => switchYear(1)}
+                size="icon"
                 type="button"
+                variant="ghost"
               >
                 <ChevronRight aria-hidden="true" className="size-4" strokeWidth={2} />
-              </button>
+              </Button>
             </>
           )}
         </div>
@@ -362,10 +373,10 @@ export function DayDots({
             className="size-3.5 shrink-0 text-foreground"
             strokeWidth={2}
           />
-          <input
+          <Input
             aria-label="Search your days"
             autoFocus
-            className="h-6 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            className="h-6 border-0 bg-transparent px-0 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-transparent focus-visible:ring-0 md:text-sm"
             onChange={(event) => updateQuery(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter" && results.length > 0) {
@@ -376,19 +387,21 @@ export function DayDots({
                 else toggleSearch();
               }
             }}
-            placeholder="Search your days, all years…"
+            placeholder="Search your days, all yearsâ€¦"
             spellCheck={false}
             value={query}
           />
           {query && (
-            <button
+            <Button
               aria-label="Clear search"
-              className="grid size-5 shrink-0 place-items-center rounded-full text-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+              className="size-5 rounded-full"
               onClick={() => updateQuery("")}
+              size="icon"
               type="button"
+              variant="ghost"
             >
               <X aria-hidden="true" className="size-3" strokeWidth={2.5} />
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -399,18 +412,19 @@ export function DayDots({
           className="mt-2 max-h-64 divide-y divide-border/50 overflow-y-auto rounded-xl border-2 border-border"
         >
           {searching ? (
-            <p className="px-3 py-3 text-xs text-foreground">Searching…</p>
+            <p className="px-3 py-3 text-xs text-foreground">Searchingâ€¦</p>
           ) : results.length === 0 ? (
             <p className="px-3 py-3 text-xs text-foreground">
-              No days match “{trimmedQuery}”.
+              No days match â€œ{trimmedQuery}â€.
             </p>
           ) : (
             results.map((entry) => (
-              <button
-                className="block w-full px-3 py-2 text-left outline-none transition hover:bg-muted/60 focus-visible:bg-muted/60"
+              <Button
+                className="h-auto w-full justify-start rounded-none px-3 py-2 text-left whitespace-normal hover:bg-muted/60"
                 key={entry.day}
                 onClick={() => selectResult(entry)}
                 type="button"
+                variant="ghost"
               >
                 <span className="text-xs font-semibold tabular-nums text-foreground">
                   {shortLabel(entry.day)}
@@ -418,7 +432,7 @@ export function DayDots({
                 <span className="mt-0.5 block truncate text-xs leading-4 text-foreground">
                   {entry.text}
                 </span>
-              </button>
+              </Button>
             ))
           )}
         </div>
@@ -458,24 +472,28 @@ export function DayDots({
                 <div className="flex min-w-0 items-center gap-1">
                   {flashback.length > 0 && (
                     <div className="flex shrink-0 items-center">
-                      <button
+                      <Button
                         aria-label="Back to past day"
-                        className="grid size-6 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted disabled:pointer-events-none disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-ring"
+                        className="size-6 rounded-full disabled:opacity-30"
                         disabled={viewIndex === flashback.length - 1}
                         onClick={stepBack}
+                        size="icon"
                         type="button"
+                        variant="ghost"
                       >
                         <ChevronLeft aria-hidden="true" className="size-4" strokeWidth={2} />
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         aria-label="Forward to present"
-                        className="grid size-6 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted disabled:pointer-events-none disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-ring"
+                        className="size-6 rounded-full disabled:opacity-30"
                         disabled={viewIndex === null}
                         onClick={stepForward}
+                        size="icon"
                         type="button"
+                        variant="ghost"
                       >
                         <ChevronRight aria-hidden="true" className="size-4" strokeWidth={2} />
-                      </button>
+                      </Button>
                     </div>
                   )}
                   <Popover.Title className="truncate type-label leading-4 text-foreground">
@@ -490,30 +508,34 @@ export function DayDots({
                 <div className="-mr-1 flex shrink-0 items-center gap-1">
                   {!viewingPast && editing ? (
                     <>
-                      <button
+                      <Button
                         aria-label="Back to reading"
-                        className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                        className="size-7 rounded-full"
                         onClick={() => void finishEditing()}
+                        size="icon"
                         type="button"
+                        variant="outline"
                       >
                         <ArrowLeft aria-hidden="true" className="size-3.5" strokeWidth={2} />
-                      </button>
+                      </Button>
                       <MicButton onChange={setDraft} value={draft} />
                       <PolishButton onChange={setDraft} value={draft} />
                     </>
                   ) : !viewingPast && activeText ? (
                       <>
-                        <button
+                        <Button
                           aria-label="Edit"
-                          className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                          className="size-7 rounded-full"
                           onClick={() => {
                             setDraft(activeText);
                             setEditing(true);
                           }}
+                          size="icon"
                           type="button"
+                          variant="outline"
                         >
                           <PenLine aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
-                        </button>
+                        </Button>
                         <AlertDialog>
                           <AlertDialogTrigger
                             aria-label="Erase this day"
@@ -524,7 +546,7 @@ export function DayDots({
                           <AlertDialogContent>
                             <AlertDialogTitle>Erase this day?</AlertDialogTitle>
                             <AlertDialogDescription className="mt-1.5">
-                              The writing, the satisfaction score and the day’s ticks will be gone. This cannot be undone.
+                              The writing, the satisfaction score and the dayâ€™s ticks will be gone. This cannot be undone.
                             </AlertDialogDescription>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Keep</AlertDialogCancel>
@@ -554,9 +576,9 @@ export function DayDots({
                   </div>
                 ) : editing ? (
                   <div>
-                    <textarea
+                    <Textarea
                       autoFocus
-                      className="block h-18 w-full resize-none bg-transparent text-xs leading-5 text-foreground outline-none placeholder:text-foreground/50 sm:h-20 sm:text-sm sm:leading-6"
+                      className="block h-18 w-full resize-none border-0 bg-transparent p-0 text-xs leading-5 placeholder:text-foreground/50 focus-visible:border-transparent focus-visible:ring-0 sm:h-20 sm:text-sm sm:leading-6 md:text-sm"
                       maxLength={MAX_LENGTH}
                       onChange={(event) => setDraft(event.target.value)}
                       onKeyDown={(event) => {
@@ -589,14 +611,15 @@ export function DayDots({
                         <p className="type-label text-muted-foreground/70">
                           Nothing yet.
                         </p>
-                        <button
-                          className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-foreground/70 outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring sm:text-xs"
+                        <Button
+                          className="mt-1 h-auto gap-1 px-0 text-[11px] font-semibold text-foreground/70 no-underline hover:text-foreground hover:no-underline sm:text-xs"
                           onClick={() => setEditing(true)}
                           type="button"
+                          variant="link"
                         >
                           <PenLine aria-hidden="true" className="size-3" strokeWidth={2} />
                           Write this day
-                        </button>
+                        </Button>
                       </div>
                     )}
 

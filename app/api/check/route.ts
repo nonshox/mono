@@ -12,6 +12,7 @@ import {
   createTimelineItem,
   deleteTimelineItem,
   moveTimelineItem,
+  reorderTimelineItems,
   setTimelineItemDone,
   updateTimelineItemText,
 } from "@/features/check/service";
@@ -121,6 +122,17 @@ export async function PATCH(request: Request) {
       );
       if (!ok) {
         return jsonError(404, "ITEM_NOT_FOUND", "That item no longer exists.");
+      }
+      return NextResponse.json({ ok: true });
+    }
+    if (parsed.data.kind === "reorder") {
+      const ok = await reorderTimelineItems(
+        auth.account.$id,
+        parsed.data.bucket,
+        parsed.data.ids,
+      );
+      if (!ok) {
+        return jsonError(409, "REORDER_MISMATCH", "That order no longer matches. Reload and try again.");
       }
       return NextResponse.json({ ok: true });
     }

@@ -2,6 +2,7 @@
 
 import { Mic, Square } from "lucide-react";
 import { useDictation } from "@/features/dictation/use-dictation";
+import { Button } from "@/components/ui/button";
 import { cn } from "cn";
 
 /**
@@ -19,14 +20,14 @@ export function MicButton({
   if (!supported) return null;
 
   return (
-    <button
+    <Button
       aria-label={listening ? "Release to stop dictation" : "Hold to dictate"}
       aria-pressed={listening}
       className={cn(
-        "grid size-7 shrink-0 touch-none place-items-center rounded-full border outline-none transition select-none focus-visible:ring-2 focus-visible:ring-ring",
+        "size-7 touch-none select-none rounded-full",
         listening
-          ? "animate-pulse border-foreground bg-foreground text-background"
-          : "border-border text-foreground hover:bg-muted",
+          ? "animate-pulse border-foreground bg-foreground text-background hover:bg-foreground/85"
+          : "",
       )}
       onContextMenu={(event) => event.preventDefault()}
       onKeyDown={(event) => {
@@ -56,12 +57,13 @@ export function MicButton({
         if (listening) stop();
       }}
       type="button"
+      variant="outline"
     >
       {listening ? (
         <Square aria-hidden="true" className="size-3 fill-current" />
       ) : (
         <Mic aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
       )}
-    </button>
+    </Button>
   );
 }

@@ -1,4 +1,4 @@
-import { AuthExperience } from "@/components/interface/auth-experience";
+import { AuthExperience } from "@/components/features/auth/auth-experience";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getSiteUrl } from "@/lib/site";
@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 
 const siteUrl = getSiteUrl();
 
-// The only public page. Factual, minimal schema — the app is private
-// everywhere else; the root default keeps /auth out of search indexes.
+// The only public page besides /stash. Factual, minimal schema â€” the app is
+// private everywhere else; the root default keeps /auth out of search indexes.
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [

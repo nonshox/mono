@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { History } from "lucide-react";
-import { EmptyState } from "@/components/interface/empty-state";
+import { EmptyState } from "@/components/shared/empty-state";
 
 /** Shown when the session cookie is missing or expired mid-visit. */
 export function SessionExpired() {

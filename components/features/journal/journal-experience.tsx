@@ -1,19 +1,21 @@
 "use client";
 
-import { BookOpen, Check, Eraser, LoaderCircle, PenLine, Search, X } from "lucide-react";
+import { BookOpen, Check, ChevronDown, Eraser, LoaderCircle, PenLine, X } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { deleteDay, saveDay, type DayEntry } from "@/features/days/client-api";
-import {
-  groupJournalEntries,
-  highlightParts,
-  matchesQuery,
-} from "@/features/days/group";
+import { groupJournalEntries, matchesQuery } from "@/features/days/group";
+import { searchDays, fetchYearDays } from "@/features/days/client-api";
+import { ThemesRow, EntryRow } from "@/components/features/journal/journal-entry";
 import { extractThemes } from "@/features/days/themes";
 import { getApiErrorMessage } from "@/lib/api-client";
-import { MicButton } from "@/components/interface/mic-button";
-import { PolishButton } from "@/components/interface/polish-button";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { MicButton } from "@/components/shared/mic-button";
+import { PolishButton } from "@/components/shared/polish-button";
+import { JournalHeader } from "@/components/features/journal/journal-header";
+import type { CompletedBook } from "@/features/books/client-api";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,7 +39,16 @@ function shortLabel(day: string): string {
 
 
 
-export function JournalExperience({ entries }: { entries: DayEntry[] }) {
+export function JournalExperience({
+  entries,
+  books,
+  years,
+}: {
+  entries: DayEntry[];
+  books: CompletedBook[];
+  /** Every year with at least one entry, ascending. */
+  years: number[];
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -46,6 +57,11 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
   const [items, setItems] = useState(entries);
   const [query, setQuery] = useState(urlQuery);
   const [lastUrlQuery, setLastUrlQuery] = useState(urlQuery);
+  const [loadedYears, setLoadedYears] = useState<number[]>(() =>
+    years.length > 0 ? [years[years.length - 1]] : [],
+  );
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [searchResults, setSearchResults] = useState<DayEntry[] | null>(null);
 
   // Back/forward (or an external ?q= link) re-syncs the input during render.
   if (lastUrlQuery !== urlQuery) {
@@ -73,12 +89,43 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
   const [saving, setSaving] = useState(false);
 
   const trimmedQuery = query.trim();
-  const filtered = useMemo(
+
+  // Global search — hits /api/days/search when there is a real query, so
+  // results span every year, not just the loaded window.
+  useEffect(() => {
+    let active = true;
+    const t = setTimeout(() => {
+      const q = trimmedQuery;
+      if (q.length < 2) {
+        if (active) setSearchResults(null);
+        return;
+      }
+      searchDays(q)
+        .then((found) => active && setSearchResults(found))
+        .catch(() => active && setSearchResults(null));
+    }, 300);
+    return () => {
+      active = false;
+      clearTimeout(t);
+    };
+  }, [trimmedQuery]);
+
+  // Local matches for instant feedback; server results replace them once in.
+  const localFiltered = useMemo(
     () =>
       trimmedQuery
         ? items.filter((entry) => matchesQuery(entry, trimmedQuery))
         : items,
     [items, trimmedQuery],
+  );
+  const filtered = useMemo(
+    () =>
+      trimmedQuery
+        ? [...(searchResults ?? localFiltered)].sort((a, b) =>
+            a.day.localeCompare(b.day),
+          )
+        : items,
+    [trimmedQuery, searchResults, localFiltered, items],
   );
   const groups = useMemo(() => groupJournalEntries(filtered), [filtered]);
 
@@ -93,7 +140,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
   }, [items]);
 
   const toggleExpand = (day: string) => {
-    // Auto-save on close — collapse persists dirty drafts.
+    // Auto-save on close â€” collapse persists dirty drafts.
     if (editingDay) void commit();
     setExpandedDay((prev) => (prev === day ? null : day));
     setEditingDay(null);
@@ -149,17 +196,45 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
     }
   };
 
+  const olderYears = years.filter((year) => !loadedYears.includes(year));
+  const nextOlderYear = olderYears.length > 0 ? olderYears[olderYears.length - 1] : null;
+
+  const loadEarlierYears = async () => {
+    if (nextOlderYear === null || loadingOlder) return;
+    setLoadingOlder(true);
+    try {
+      const older = await fetchYearDays(nextOlderYear);
+      setItems((prev) =>
+        [...prev, ...older].sort((a, b) => a.day.localeCompare(b.day)),
+      );
+      setLoadedYears((prev) => [...prev, nextOlderYear].sort((a, b) => a - b));
+    } catch (cause) {
+      toast.error(getApiErrorMessage(cause, "Could not load that year"));
+    } finally {
+      setLoadingOlder(false);
+    }
+  };
+
   if (items.length === 0) {
     return (
       <main className="min-h-full w-full bg-background px-4 pb-20 pt-6 sm:px-6 sm:pt-10">
         <h1 className="sr-only">Journal</h1>
-        <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-3 pt-16 text-center md:max-w-3xl">
+        <div className="mx-auto flex w-full max-w-2xl flex-col md:max-w-3xl">
+          <JournalHeader
+            initialBooks={books}
+            matches={0}
+            onQueryChange={() => undefined}
+            query=""
+            showSearch={false}
+            total={0}
+          />
+          <div className="flex flex-col items-center gap-3 pt-16 text-center">
           <span className="grid size-14 place-items-center rounded-full bg-muted text-foreground">
             <BookOpen aria-hidden="true" className="size-6" strokeWidth={1.5} />
           </span>
           <p className="text-sm font-semibold text-foreground">Nothing written yet</p>
           <p className="max-w-xs text-xs leading-relaxed text-foreground">
-            Your days gather here in order — write your first dot on the home page.
+            Your days gather here in order â€” write your first dot on the home page.
           </p>
           <Link
             className="mt-1 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
@@ -167,6 +242,7 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
           >
             Go to home
           </Link>
+          </div>
         </div>
       </main>
     );
@@ -176,68 +252,19 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
     <main className="min-h-full w-full bg-background px-4 pb-20 pt-6 sm:px-6 sm:pt-10">
       <h1 className="sr-only">Journal</h1>
       <div className="mx-auto w-full max-w-2xl md:max-w-3xl">
-        {/* Search-within — the only chrome on the page */}
-        <div className="flex items-center gap-2 pb-2 pt-1">
-          <Search
-            aria-hidden="true"
-            className="size-3.5 shrink-0 text-foreground"
-            strokeWidth={2}
-          />
-          <input
-            aria-label="Search your journal"
-            className="h-8 w-full bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground md:text-sm"
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Escape") setQuery("");
-            }}
-            placeholder="Search your journal…"
-            spellCheck={false}
-            value={query}
-          />
-          {trimmedQuery && (
-            <span className="shrink-0 text-xs tabular-nums text-foreground">
-              {filtered.length} / {items.length}
-            </span>
-          )}
-          {query && (
-            <button
-              aria-label="Clear search"
-              className="grid size-5 shrink-0 place-items-center rounded-full text-foreground outline-none transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-              onClick={() => setQuery("")}
-              type="button"
-            >
-              <X aria-hidden="true" className="size-3" strokeWidth={2.5} />
-            </button>
-          )}
-        </div>
+        <JournalHeader
+          initialBooks={books}
+          matches={filtered.length}
+          onQueryChange={setQuery}
+          query={query}
+          total={items.length}
+        />
 
-        {themes.length > 0 && (
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 px-0.5 pb-2">
-            <span className="type-label">
-              last 30 days
-            </span>
-            {themes.map((theme, index) => (
-              <span className="inline-flex items-baseline gap-2" key={theme.label}>
-                <button
-                  className="type-label text-foreground outline-none transition hover:opacity-70 focus-visible:ring-2 focus-visible:ring-ring"
-                  onClick={() => setQuery(theme.label)}
-                  type="button"
-                >
-                  {theme.label}
-                </button>
-                {index < themes.length - 1 && (
-                  <span aria-hidden="true" className="type-label text-foreground">
-                    ·
-                  </span>
-                )}
-              </span>
-            ))}
-          </div>
-        )}
+        <ThemesRow onSelectTheme={setQuery} themes={themes} />
 
         {groups.length === 0 && (
           <p className="px-0.5 py-10 text-center text-sm text-foreground">
-            No days match “{trimmedQuery}”.
+            No days match â€œ{trimmedQuery}â€.
           </p>
         )}
 
@@ -256,33 +283,9 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                 return (
                   <li key={entry.day}>
                     {!isExpanded ? (
-                      /* Collapsed — nothing but the words; tap to open */
-                      <button
-                        aria-expanded={false}
-                        aria-label={`Open ${entry.day}`}
-                        className="block w-full rounded-sm text-left outline-none transition-opacity hover:opacity-70 focus-visible:opacity-70 focus-visible:ring-2 focus-visible:ring-ring"
-                        onClick={() => toggleExpand(entry.day)}
-                        type="button"
-                      >
-                        <p className="whitespace-pre-wrap break-words text-[15px] leading-7 text-foreground">
-                          {trimmedQuery
-                            ? highlightParts(entry.text, trimmedQuery).map((part, index) =>
-                                part.match ? (
-                                  <mark
-                                    className="rounded-[3px] bg-foreground/10 text-foreground"
-                                    key={index}
-                                  >
-                                    {part.text}
-                                  </mark>
-                                ) : (
-                                  <span key={index}>{part.text}</span>
-                                ),
-                              )
-                            : entry.text}
-                        </p>
-                      </button>
+                      <EntryRow entry={entry} onOpen={toggleExpand} query={trimmedQuery} />
                     ) : (
-                      /* Expanded — solid card in place: date, words, actions */
+                      /* Expanded â€” solid card in place: date, words, actions */
                       <div className="min-w-0 overflow-hidden rounded-xl border-2 border-border/80 bg-popover">
                         <div className="flex items-center justify-between gap-2 py-1.5 pl-3 pr-1">
                           <p className="type-label leading-4 text-foreground">
@@ -293,40 +296,46 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                               <>
                                 <MicButton onChange={setDraft} value={draft} />
                                 <PolishButton onChange={setDraft} value={draft} />
-                                <button
+                                <Button
                                   aria-label="Discard changes"
-                                  className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-foreground outline-none transition hover:bg-muted hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring"
+                                  className="size-7 rounded-full border-border hover:text-destructive"
                                   onClick={() => setEditingDay(null)}
+                                  size="icon"
                                   type="button"
+                                  variant="outline"
                                 >
                                   <X aria-hidden="true" className="size-3.5" strokeWidth={2} />
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                   aria-busy={saving}
                                   aria-label="Save"
-                                  className="grid size-7 shrink-0 place-items-center rounded-full border border-border outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                                  className="size-7 rounded-full border-border disabled:opacity-40"
                                   disabled={saving || !draft.trim()}
                                   onClick={() => void commit()}
+                                  size="icon"
                                   type="button"
+                                  variant="outline"
                                 >
                                   {saving ? (
                                     <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
                                   ) : (
                                     <Check aria-hidden="true" className="size-4" strokeWidth={2.5} />
                                   )}
-                                </button>
+                                </Button>
                               </>
                             )}
                             {!isEditing && (
                               <>
-                                <button
+                                <Button
                                   aria-label="Edit"
-                                  className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                                  className="size-7 rounded-full border-border"
                                   onClick={() => startEdit(entry)}
+                                  size="icon"
                                   type="button"
+                                  variant="outline"
                                 >
                                   <PenLine aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
-                                </button>
+                                </Button>
                                 <AlertDialog>
                                   <AlertDialogTrigger
                                     aria-label="Erase this day"
@@ -350,22 +359,24 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
                                 </AlertDialog>
                               </>
                             )}
-                            <button
+                            <Button
                               aria-label="Close"
-                              className="grid size-7 shrink-0 place-items-center rounded-full border border-border text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                              className="size-7 rounded-full border-border"
                               onClick={() => toggleExpand(entry.day)}
+                              size="icon"
                               type="button"
+                              variant="outline"
                             >
                               <X aria-hidden="true" className="size-3.5" strokeWidth={2} />
-                            </button>
+                            </Button>
                           </div>
                         </div>
 
                         <div className="px-3 py-2">
                           {isEditing ? (
-                            <textarea
+                            <Textarea
                               autoFocus
-                              className="block w-full resize-none bg-transparent text-[15px] leading-7 text-foreground outline-none"
+                              className="block min-h-24 w-full resize-none border-0 bg-transparent p-0 text-[15px] leading-7 focus-visible:border-transparent focus-visible:ring-0 md:text-[15px]"
                               maxLength={1000}
                               onChange={(event) => setDraft(event.target.value)}
                               onKeyDown={(event) => {
@@ -407,6 +418,30 @@ export function JournalExperience({ entries }: { entries: DayEntry[] }) {
             </ul>
           </section>
         ))}
+
+        {!trimmedQuery && nextOlderYear !== null && (
+          <div className="flex flex-col items-center gap-1.5 pb-4 pt-6">
+            <Button
+              className="h-11 gap-2 rounded-xl border-2 px-5 text-xs font-bold disabled:opacity-50"
+              disabled={loadingOlder}
+              onClick={() => void loadEarlierYears()}
+              type="button"
+              variant="outline"
+            >
+              {loadingOlder ? (
+                <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+              ) : (
+                <ChevronDown aria-hidden="true" className="size-4" strokeWidth={2} />
+              )}
+              Load earlier years
+            </Button>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-foreground/60">
+              {olderYears.length === 1
+                ? "1 earlier year available"
+                : `${olderYears.length} earlier years available`}
+            </p>
+          </div>
+        )}
       </div>
     </main>
   );

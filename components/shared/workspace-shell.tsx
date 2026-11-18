@@ -3,7 +3,7 @@
 import {
   ArrowLeft,
   BookOpenText,
-  BookOpen,
+  Archive,
   ChevronRight,
   House,
   LogOut,
@@ -29,8 +29,8 @@ import {
 import { logout } from "@/features/auth/client-api";
 import { saveUserTz } from "@/features/users/client-api";
 import { useUserStore } from "@/features/users/store";
-import { NotificationBell } from "@/components/interface/notification-bell";
-import { UserAvatar } from "@/components/interface/user-avatar";
+import { NotificationBell } from "@/components/shared/notification-bell";
+import { UserAvatar } from "@/components/shared/user-avatar";
 
 const breadcrumbs: Record<string, string> = {
   "/settings": "Settings",
@@ -38,7 +38,7 @@ const breadcrumbs: Record<string, string> = {
   "/profile/edit": "Edit profile",
   "/journal": "Journal",
   "/check": "Check",
-  "/library": "Library",
+  "/stash": "Stash",
 };
 
 // Single source for both nav surfaces (desktop pill + mobile bottom pill).
@@ -46,7 +46,7 @@ const NAV_ITEMS = [
   { href: "/", icon: House, label: "Home" },
   { href: "/journal", icon: BookOpenText, label: "Journal" },
   { href: "/check", icon: ListChecks, label: "Check" },
-  { href: "/library", icon: BookOpen, label: "Library" },
+  { href: "/stash", icon: Archive, label: "Stash" },
 ] as const;
 
 export function WorkspaceShell({ children }: { children: ReactNode }) {
@@ -80,7 +80,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     try {
       localStorage.setItem("mono-theme", next ? "dark" : "light");
     } catch {
-      // Private mode / storage disabled — theme simply doesn't persist.
+      // Private mode / storage disabled â€” theme simply doesn't persist.
     }
   };
 
@@ -88,14 +88,14 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     void loadUser();
   }, [loadUser]);
 
-  // Silently remember the browser's timezone — drives the evening nudge.
+  // Silently remember the browser's timezone â€” drives the evening nudge.
   useEffect(() => {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (!user || !tz || user.tz === tz) return;
     void saveUserTz(tz)
       .then((saved) => useUserStore.getState().setUser(saved))
       .catch(() => {
-        // Best-effort — the nudge falls back to UTC if unknown.
+        // Best-effort â€” the nudge falls back to UTC if unknown.
       });
   }, [user]);
 
@@ -111,12 +111,12 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
 
   return (
     <>
-      {/* Navbar — glassy, sticky, the only top chrome */}
+      {/* Navbar â€” glassy, sticky, the only top chrome */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/70 backdrop-blur-xl backdrop-saturate-[1.15]">
         <div className="mx-auto flex h-12 max-w-7xl items-center justify-between gap-2 px-3 sm:px-5">
           {/* Brand */}
           <Link
-            aria-label="Mono — home"
+            aria-label="Mono â€” home"
             className="flex shrink-0 items-center gap-2 outline-none transition hover:opacity-70"
             href="/"
           >
@@ -131,7 +131,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             <span className="type-brand text-foreground">Mono</span>
           </Link>
 
-          {/* Center pill — desktop primary nav */}
+          {/* Center pill â€” desktop primary nav */}
           <nav
             aria-label="Primary"
             className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-full border-2 border-border bg-muted/60 p-1 md:flex"
@@ -163,7 +163,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
 
           {/* Right icons */}
           <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
-            {/* Notifications — opens on tap; loads only when opened */}
+            {/* Notifications â€” opens on tap; loads only when opened */}
             <NotificationBell />
 
             {/* Account */}
@@ -258,7 +258,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        {/* Breadcrumb — back arrow + section */}
+        {/* Breadcrumb â€” back arrow + section */}
         {breadcrumb && (
           <div className="border-t border-border/50">
             <div className="mx-auto flex h-8 max-w-7xl items-center gap-1 px-2 text-xs text-foreground sm:px-4">
@@ -302,7 +302,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
 
       <div className="flex min-h-0 flex-1 flex-col">{children}</div>
 
-      {/* Mobile bottom pill — glassy, icons only */}
+      {/* Mobile bottom pill â€” glassy, icons only */}
       <div className="pointer-events-none sticky bottom-3 z-30 flex justify-center px-4 pb-[max(env(safe-area-inset-bottom),0.25rem)] lg:hidden">
         <nav
           aria-label="Primary"

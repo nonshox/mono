@@ -1,6 +1,7 @@
 "use client";
 
 import { Bell, CheckCheck, Eraser, Loader2, Mail, Moon, NotebookPen } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
@@ -119,19 +120,21 @@ export function NotificationBell() {
               </AlertDialog>
             )}
             {unread > 0 && (
-              <button
+              <Button
                 aria-label="Mark all as read"
-                className="grid size-7 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                className="size-7 rounded-full"
                 onClick={() => void markAllRead()}
+                size="icon"
                 title="Mark all as read"
                 type="button"
+                variant="ghost"
               >
                 <CheckCheck
                   aria-hidden="true"
                   className="size-4 text-foreground"
                   strokeWidth={1.8}
                 />
-              </button>
+              </Button>
             )}
           </div>
         </div>

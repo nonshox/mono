@@ -2,20 +2,15 @@
 
 import {
   Download,
-  FileJson,
-  FileText,
   LoaderCircle,
-  MonitorSmartphone,
-  RefreshCw,
   Send,
   BellRing,
   NotebookPen,
-  Trash2,
   Unlink,
-  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { LocalDateTime } from "@/components/interface/local-date-time";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   createTelegramLink,
   disconnectTelegram,
@@ -23,8 +18,11 @@ import {
 } from "@/features/telegram/client-api";
 import { fetchSessions, type AuthSession, revokeSession } from "@/features/auth/client-api";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
-import { deleteAccount, fetchUser, saveUserLetter, saveUserNudge } from "@/features/users/client-api";
+import { fetchUser, saveUserLetter, saveUserNudge } from "@/features/users/client-api";
 import { useUserStore } from "@/features/users/store";
+import { SettingsSessions } from "@/components/features/settings/settings-sessions";
+import { SettingsExport } from "@/components/features/settings/settings-export";
+import { SettingsDanger } from "@/components/features/settings/settings-danger";
 import { useRouter } from "next/navigation";
 
 export function SettingsExperience({
@@ -50,8 +48,6 @@ export function SettingsExperience({
   const [refreshingSessions, setRefreshingSessions] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [deleteConfirm, setDeleteConfirm] = useState("");
-  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -159,7 +155,7 @@ export function SettingsExperience({
       const isConnected = await fetchTelegramStatus();
       setTelegramConnected(isConnected);
       if (isConnected) setTelegramLink("");
-      setMessage(isConnected ? "Telegram connected." : "Link pending — finish in Telegram.");
+      setMessage(isConnected ? "Telegram connected." : "Link pending â€” finish in Telegram.");
     } catch {
       setError("Telegram status could not be checked.");
     } finally {
@@ -198,20 +194,6 @@ export function SettingsExperience({
     }
   };
 
-  const confirmDeleteAccount = async () => {
-    if (deleting || deleteConfirm.trim().toUpperCase() !== "DELETE") return;
-    setDeleting(true);
-    try {
-      await deleteAccount();
-      router.replace("/auth");
-      router.refresh();
-    } catch (cause) {
-      setError(getApiErrorMessage(cause, "Deletion failed"));
-      setDeleting(false);
-    }
-  };
-
-
   return (
     <main className="min-h-full w-full bg-background px-3 pb-24 pt-5 sm:px-6 sm:pt-8">
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 md:max-w-3xl">
@@ -223,7 +205,7 @@ export function SettingsExperience({
           <p className="mt-0.5 truncate text-xs text-foreground">{email}</p>
         </header>
 
-        {/* Notifications — Telegram */}
+        {/* Notifications â€” Telegram */}
         <section
           aria-label="Notifications"
           className="rounded-2xl border-2 border-border/70 bg-popover p-4 sm:p-5"
@@ -238,17 +220,18 @@ export function SettingsExperience({
                 <p className="text-xs font-semibold leading-4 text-foreground">Telegram</p>
                 <p className="mt-0.5 text-xs leading-4 text-foreground">
                   {loadingTelegram
-                    ? "Checking…"
+                    ? "Checkingâ€¦"
                     : telegramConnected
                       ? "Pushes on activity"
                       : "Not connected"}
                 </p>
               </div>
-              <button
-                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border-2 border-border px-3.5 text-xs font-semibold text-foreground outline-none transition hover:bg-muted disabled:opacity-40"
+              <Button
+                className="h-8 shrink-0 gap-1.5 rounded-full border-2 border-border px-3.5 text-xs font-semibold disabled:opacity-40"
                 disabled={telegramPending || loadingTelegram}
                 onClick={() => void toggleTelegram()}
                 type="button"
+                variant="outline"
               >
                 {telegramPending && (
                   <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
@@ -261,7 +244,7 @@ export function SettingsExperience({
                 ) : (
                   "Connect"
                 )}
-              </button>
+              </Button>
             </div>
             {telegramLink && (
               <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
@@ -273,17 +256,18 @@ export function SettingsExperience({
                 >
                   Open Telegram to finish linking
                 </a>
-                <button
-                  className="text-xs font-semibold text-foreground transition hover:text-foreground"
+                <Button
+                  className="h-auto px-0 text-xs font-semibold no-underline hover:no-underline hover:opacity-80"
                   disabled={telegramPending}
                   onClick={() => void refreshTelegram()}
                   type="button"
+                  variant="link"
                 >
                   Refresh status
-                </button>
+                </Button>
               </div>
             )}
-            {/* Evening nudge — only useful with Telegram connected */}
+            {/* Evening nudge â€” only useful with Telegram connected */}
             <div className="flex items-center gap-3 py-3">
               <BellRing
                 aria-hidden="true"
@@ -300,27 +284,16 @@ export function SettingsExperience({
                     : "Connect Telegram first."}
                 </p>
               </div>
-              <button
-                aria-busy={nudgeSaving}
-                aria-checked={nudgeOn}
-                aria-label="Evening nudge"
-                className={`relative h-6 w-10 shrink-0 rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 ${
-                  nudgeOn ? "bg-foreground" : "bg-muted-foreground/25"
-                }`}
-                disabled={!telegramConnected || nudgeSaving}
-                onClick={() => void toggleNudge()}
-                role="switch"
-                type="button"
-              >
-                <span
-                  aria-hidden="true"
-                  className={`absolute left-0.5 top-0.5 size-5 rounded-full bg-secondary outline-none transition-transform ${
-                    nudgeOn ? "translate-x-4" : "translate-x-0"
-                  }`}
+                <Switch
+                  aria-busy={nudgeSaving}
+                  aria-label="Evening nudge"
+                  checked={nudgeOn}
+                  className="shrink-0"
+                  disabled={!telegramConnected || nudgeSaving}
+                  onCheckedChange={() => void toggleNudge()}
                 />
-              </button>
             </div>
-            {/* Mono AI — day suggestions + Sunday letter (entries go to Google Gemini) */}
+            {/* Mono AI â€” day suggestions + Sunday letter (entries go to Google Gemini) */}
             <div className="flex items-center gap-3 py-3">
               <NotebookPen
                 aria-hidden="true"
@@ -336,132 +309,28 @@ export function SettingsExperience({
                   Your entries go to Google Gemini when this is on.
                 </p>
               </div>
-              <button
+              <Switch
                 aria-busy={letterSaving}
-                aria-checked={letterOn}
                 aria-label="Mono AI"
-                className={`relative h-6 w-10 shrink-0 rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 ${
-                  letterOn ? "bg-foreground" : "bg-muted-foreground/25"
-                }`}
+                checked={letterOn}
+                className="shrink-0"
                 disabled={letterSaving}
-                onClick={() => void toggleLetter()}
-                role="switch"
-                type="button"
-              >
-                <span
-                  aria-hidden="true"
-                  className={`absolute left-0.5 top-0.5 size-5 rounded-full bg-secondary outline-none transition-transform ${
-                    letterOn ? "translate-x-4" : "translate-x-0"
-                  }`}
-                />
-              </button>
+                onCheckedChange={() => void toggleLetter()}
+              />
             </div>
           </div>
         </section>
 
-        {/* Sessions */}
-        <section
-          aria-label="Sessions"
-          className="rounded-2xl border-2 border-border/70 bg-popover p-4 sm:p-5"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="type-eyebrow">
-              Sessions
-            </h2>
-            <button
-              aria-label="Refresh sessions"
-              className="grid size-7 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-              disabled={refreshingSessions}
-              onClick={() => void refreshSessions()}
-              type="button"
-            >
-              <RefreshCw
-                aria-hidden="true"
-                className={`size-3.5 ${refreshingSessions ? "animate-spin" : ""}`}
-              />
-            </button>
-          </div>
-          {sessions.length === 0 ? (
-            <p className="py-4 text-xs text-foreground">
-              No active sessions.
-            </p>
-          ) : (
-            <ul className="mt-2 divide-y divide-border/60">
-              {sessions.map((session) => (
-                <li className="flex items-center gap-3 py-2" key={session.id}>
-                  <MonitorSmartphone
-                    aria-hidden="true"
-                    className="size-4 shrink-0 text-foreground"
-                    strokeWidth={1.8}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="flex items-center gap-1.5 text-xs font-semibold leading-4 text-foreground">
-                      <span className="truncate">{session.device}</span>
-                      {session.current && (
-                        <span className="type-eyebrow shrink-0 rounded-full bg-muted px-1.5 py-0.5">
-                          this device
-                        </span>
-                      )}
-                    </p>
-                    <p className="mt-0.5 text-xs leading-4 text-foreground">
-                      {session.operatingSystem ? `${session.operatingSystem} · ` : ""}
-                      <LocalDateTime value={session.createdAt} />
-                    </p>
-                  </div>
-                  {!session.current && (
-                    <button
-                      aria-label={`Revoke ${session.device} session`}
-                      className="grid size-7 shrink-0 place-items-center rounded-md text-foreground transition hover:bg-muted hover:text-destructive disabled:opacity-50"
-                      disabled={pendingSession === session.id}
-                      onClick={() => void revokeSessionForAccount(session)}
-                      type="button"
-                    >
-                      {pendingSession === session.id ? (
-                        <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
-                      ) : (
-                        <X aria-hidden="true" className="size-4" />
-                      )}
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        <SettingsSessions
+          onRefresh={() => void refreshSessions()}
+          onRevoke={(session) => void revokeSessionForAccount(session)}
+          pendingSession={pendingSession}
+          refreshing={refreshingSessions}
+          sessions={sessions}
+        />
+        <SettingsExport />
 
-        {/* Export — your data, downloadable */}
-        <section
-          aria-label="Export your data"
-          className="rounded-2xl border-2 border-border/70 bg-popover p-4 sm:p-5"
-        >
-          <h2 className="type-eyebrow">
-            Export
-          </h2>
-          <p className="mt-2 text-xs leading-5 text-foreground">
-            Everything Mono stores about you — journal, dots, check items —
-            as a file. Your data never leaves except into this file.
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <a
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border-2 border-border px-4 text-xs font-semibold text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-              download
-              href="/api/export?format=json"
-            >
-              <FileJson aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
-              JSON — backup
-            </a>
-            <a
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border-2 border-border px-4 text-xs font-semibold text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-              download
-              href="/api/export?format=markdown"
-            >
-              <FileText aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
-              Markdown — read &amp; print
-            </a>
-          </div>
-        </section>
-
-        {/* Year in review — compiled locally from your entries */}
+        {/* Year in review â€” compiled locally from your entries */}
         <section
           aria-label="Year in review"
           className="rounded-2xl border-2 border-border/70 bg-popover p-4 sm:p-5"
@@ -470,89 +339,45 @@ export function SettingsExperience({
             {new Date().getUTCFullYear()} in review
           </h2>
           <p className="mt-2 text-xs leading-5 text-foreground">
-            A letter compiling everything you wrote this year — the shape,
+            A letter compiling everything you wrote this year â€” the shape,
             what recurred, one line to keep. Compiled on this device.
           </p>
-          <button
+          <Button
             aria-busy={reviewLoading}
-            className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-full border-2 border-border px-4 text-xs font-semibold text-foreground outline-none transition hover:bg-muted disabled:opacity-40"
+            className="mt-3 h-9 gap-1.5 rounded-full border-2 border-border px-4 text-xs font-semibold disabled:opacity-40"
             disabled={reviewLoading}
             onClick={() => void generateReview()}
             type="button"
+            variant="outline"
           >
             {reviewLoading ? (
               <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
             ) : (
               <NotebookPen aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
             )}
-            {reviewLoading ? "Reading your year…" : "Generate my year"}
-          </button>
+            {reviewLoading ? "Reading your yearâ€¦" : "Generate my year"}
+          </Button>
           {review && (
             <div className="mt-3 rounded-xl border border-border/60 p-4">
               <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">
                 {review}
               </p>
               <div className="mt-3 border-t border-border/50 pt-2">
-                <button
-                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                <Button
+                  className="h-auto gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
                   onClick={downloadReview}
                   type="button"
+                  variant="ghost"
                 >
                   <Download aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
                   Download .txt
-                </button>
+                </Button>
               </div>
             </div>
           )}
         </section>
 
-        {/* Delete account */}
-        <section
-          aria-label="Delete account"
-          className="rounded-2xl border-2 border-destructive/30 bg-popover p-4 sm:p-5"
-        >
-          <h2 className="type-eyebrow text-destructive">
-            Delete account
-          </h2>
-          <p className="mt-2 text-sm font-bold text-foreground">
-            Delete your account
-          </p>
-          <p className="mt-0.5 text-xs leading-5 text-foreground">
-            Erases your dots, journal, sessions and avatar permanently.
-            This cannot be undone.
-          </p>
-          <form
-            className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void confirmDeleteAccount();
-            }}
-          >
-            <input
-              aria-label="Type DELETE to confirm account deletion"
-              autoComplete="off"
-              className="h-11 w-full shrink-0 rounded-xl border-2 border-border bg-transparent px-3 text-center text-xs font-bold uppercase tracking-[0.4em] text-foreground outline-none transition placeholder:text-foreground/40 focus-visible:border-destructive focus-visible:ring-2 focus-visible:ring-ring sm:w-44"
-              name="confirm"
-              onChange={(event) => setDeleteConfirm(event.target.value)}
-              placeholder="DELETE"
-              spellCheck={false}
-              type="text"
-              value={deleteConfirm}
-            />
-            <button
-              className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-destructive px-4 text-xs font-bold text-white outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-30"
-              disabled={deleting || deleteConfirm.trim().toUpperCase() !== "DELETE"}
-              type="submit"
-            >
-              {deleting ? (
-                <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-              ) : (
-                <Trash2 aria-hidden="true" className="size-4" strokeWidth={2} />
-              )}
-              {deleting ? "Deleting…" : "Delete my account"}
-            </button>
-          </form>
-        </section>
+        <SettingsDanger />
 
         {(error || message) && (
           <p

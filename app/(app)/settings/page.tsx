@@ -1,9 +1,9 @@
 import { Suspense } from "react";
-import { SettingsExperience } from "@/components/interface/settings-experience";
-import { PageLoader } from "@/components/interface/page-loader";
-import { SessionExpired } from "@/components/interface/session-expired";
+import { SettingsExperience } from "@/components/features/settings/settings-experience";
+import { PageLoader } from "@/components/shared/page-loader";
+import { SessionExpired } from "@/components/shared/session-expired";
 import { getCurrentAccountData, AppwriteUnavailableError } from "@/features/auth/session";
-import { ServiceUnavailable } from "@/components/interface/service-unavailable";
+import { ServiceUnavailable } from "@/components/shared/service-unavailable";
 
 export const metadata = {
   title: "Settings",

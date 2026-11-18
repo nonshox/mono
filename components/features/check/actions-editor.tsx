@@ -1,6 +1,8 @@
 "use client";
 
 import { LoaderCircle, Plus, Wand, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { saveUserActions } from "@/features/users/client-api";
@@ -94,28 +96,31 @@ export function ActionsEditor({ initial }: { initial: string[] }) {
       <div className="flex items-center justify-between gap-2">
         <h2 className="type-eyebrow">Actions</h2>
         <div className="flex items-center gap-1">
-          <button
+          <Button
             aria-label="Scan my last 10 days for actions"
-            className="grid size-8 place-items-center rounded-full text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+            className="size-8 rounded-full disabled:opacity-40"
             disabled={scanning || saving}
             onClick={() => void scan()}
+            size="icon"
             title="Scan my last 10 days"
             type="button"
+            variant="ghost"
           >
             {scanning ? (
               <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
             ) : (
               <Wand aria-hidden="true" className="size-4" strokeWidth={1.8} />
             )}
-          </button>
-          <button
+          </Button>
+          <Button
             aria-pressed={managing}
-            className="inline-flex h-8 items-center rounded-full px-3 text-xs font-semibold text-foreground outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-8 rounded-full px-3 text-xs font-semibold"
             onClick={() => setManaging((value) => !value)}
             type="button"
+            variant="ghost"
           >
             {managing ? "Done" : "Manage"}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -127,14 +132,16 @@ export function ActionsEditor({ initial }: { initial: string[] }) {
           >
             {action}
             {managing && (
-              <button
+              <Button
                 aria-label={`Remove ${action}`}
-                className="grid size-4 place-items-center rounded-full outline-none transition hover:bg-foreground/10 focus-visible:ring-2 focus-visible:ring-ring"
+                className="size-4 rounded-full hover:bg-foreground/10"
                 onClick={() => void removeAction(action)}
+                size="icon"
                 type="button"
+                variant="ghost"
               >
                 <X aria-hidden="true" className="size-3" strokeWidth={2} />
-              </button>
+              </Button>
             )}
           </li>
         ))}
@@ -149,23 +156,25 @@ export function ActionsEditor({ initial }: { initial: string[] }) {
         className="mt-2 flex items-center gap-2"
         onSubmit={(event) => void onSubmit(event)}
       >
-        <input
+        <Input
           aria-label="Add an action"
-          className="h-9 min-w-0 flex-1 rounded-full bg-muted px-4 text-sm font-medium text-foreground outline-none placeholder:text-foreground/40 focus-visible:ring-2 focus-visible:ring-ring"
+          className="h-9 min-w-0 flex-1 rounded-full border-0 bg-muted px-4 text-sm font-medium text-foreground placeholder:text-foreground/40 focus-visible:border-transparent focus-visible:ring-2"
           maxLength={64}
           onChange={(event) => setDraft(event.target.value)}
           placeholder="Add an action"
           spellCheck={false}
           value={draft}
         />
-        <button
+        <Button
           aria-label="Add action"
-          className="grid size-9 shrink-0 place-items-center rounded-full bg-foreground text-background outline-none transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30"
+          className="size-9 rounded-full disabled:opacity-30"
           disabled={!draft.trim() || saving}
+          size="icon"
           type="submit"
+          variant="default"
         >
           <Plus aria-hidden="true" className="size-4" strokeWidth={2.5} />
-        </button>
+        </Button>
       </form>
     </section>
   );
