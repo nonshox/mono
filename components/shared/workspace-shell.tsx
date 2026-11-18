@@ -10,6 +10,7 @@ import {
   Moon,
   Settings,
   Sun,
+  Wind,
   ListChecks,
   UserRound,
 } from "lucide-react";
@@ -39,6 +40,7 @@ const breadcrumbs: Record<string, string> = {
   "/journal": "Journal",
   "/check": "Check",
   "/stash": "Stash",
+  "/pause": "Pause",
 };
 
 // Single source for both nav surfaces (desktop pill + mobile bottom pill).
@@ -47,6 +49,7 @@ const NAV_ITEMS = [
   { href: "/journal", icon: BookOpenText, label: "Journal" },
   { href: "/check", icon: ListChecks, label: "Check" },
   { href: "/stash", icon: Archive, label: "Stash" },
+  { href: "/pause", icon: Wind, label: "Pause" },
 ] as const;
 
 export function WorkspaceShell({ children }: { children: ReactNode }) {
@@ -306,7 +309,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       <div className="pointer-events-none sticky bottom-3 z-30 flex justify-center px-4 pb-[max(env(safe-area-inset-bottom),0.25rem)] lg:hidden">
         <nav
           aria-label="Primary"
-          className="pointer-events-auto flex h-12 items-stretch gap-0.5 rounded-full border-2 border-border bg-background/75 px-1 backdrop-blur-xl"
+          className="pointer-events-auto flex h-12 items-stretch gap-0 rounded-full border-2 border-border bg-background/75 px-0.5 backdrop-blur-xl"
         >
           {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
             const active =

@@ -256,12 +256,19 @@ export function AuthExperience() {
       </div>
 
       <div className="mt-12 flex flex-col items-center gap-2.5">
-        {/* Stash is public (IndexedDB-only) — let sign-outs reach it here. */}
+        {/* Stash and Pause are public — let sign-outs reach them here. */}
         <Link
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground outline-none underline decoration-border underline-offset-4 transition hover:decoration-foreground focus-visible:ring-2 focus-visible:ring-ring"
           href="/stash"
         >
           Try Stash — files on this device, no account needed
+          <ArrowRight aria-hidden="true" className="size-3.5" strokeWidth={2} />
+        </Link>
+        <Link
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground outline-none underline decoration-border underline-offset-4 transition hover:decoration-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          href="/pause"
+        >
+          Pause — breath, sound, grounding, no account needed
           <ArrowRight aria-hidden="true" className="size-3.5" strokeWidth={2} />
         </Link>
         <p className="type-eyebrow text-foreground">
