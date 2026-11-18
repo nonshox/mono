@@ -142,7 +142,10 @@ body {
   /* Mobile-first document flow: the page scrolls; chrome (sticky header,
      floating tab bar) pins to the viewport. */
   min-height: 100%;
-  overscroll-behavior: none;
+  /* Pull-to-refresh stays enabled on mobile; the horizontal axis stays
+     locked so sideways swipes don't trigger the browser's nav gesture. */
+  overscroll-behavior-y: auto;
+  overscroll-behavior-x: none;
 }
 
 html {
