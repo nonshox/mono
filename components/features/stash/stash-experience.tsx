@@ -20,8 +20,16 @@ import {
   AlertDialogTrigger,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { FileInput } from "@/components/ui/file-input";
 import { Button } from "@/components/ui/button";
 import { formatBytes } from "@/features/stash/format";
@@ -44,9 +52,11 @@ function shortDate(iso: string): string {
 }
 
 export function StashExperience() {
-  const [tab, setTab] = useState<"books" | "words" | "breath" | "sound">("books");
+  const [tab, setTab] = useState<"breath" | "sound" | "words" | "books">("breath");
   const [books, setBooks] = useState<StashBook[] | null>(null);
   const [saving, setSaving] = useState(false);
+  const [bookQuery, setBookQuery] = useState("");
+  const [bookSort, setBookSort] = useState<"recent" | "name" | "size" | "type">("recent");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -103,6 +113,30 @@ export function StashExperience() {
     }
   };
 
+  const visibleBooks = useMemo(() => {
+    const all = books ?? [];
+    const needle = bookQuery.trim().toLowerCase();
+    const filtered = needle
+      ? all.filter((book) => book.name.toLowerCase().includes(needle))
+      : all;
+    switch (bookSort) {
+      case "name":
+        return [...filtered].sort((a, b) => a.name.localeCompare(b.name));
+      case "size":
+        return [...filtered].sort((a, b) => b.size - a.size);
+      case "type":
+        return [...filtered].sort((a, b) =>
+          a.type.localeCompare(b.type) || a.name.localeCompare(b.name),
+        );
+      default:
+        return [...filtered].sort((a, b) => b.addedAt.localeCompare(a.addedAt));
+    }
+  }, [books, bookQuery, bookSort]);
+  const booksTotalBytes = useMemo(
+    () => visibleBooks.reduce((sum, book) => sum + book.size, 0),
+    [visibleBooks],
+  );
+
   return (
     <main className="min-h-full w-full bg-background px-3 pb-24 pt-5 sm:px-6 sm:pt-8">
       <h1 className="sr-only">Stash</h1>
@@ -112,32 +146,6 @@ export function StashExperience() {
           className="flex gap-1 rounded-2xl border-2 border-border/70 bg-popover p-1"
           role="tablist"
         >
-          <Button
-            aria-controls="stash-panel-books"
-            aria-selected={tab === "books"}
-            className="h-11 flex-1 gap-1 rounded-xl text-xs font-bold sm:gap-2"
-            id="stash-tab-books"
-            onClick={() => setTab("books")}
-            role="tab"
-            type="button"
-            variant={tab === "books" ? "default" : "ghost"}
-          >
-            <BookOpenText aria-hidden="true" className="size-4" strokeWidth={1.8} />
-            Books
-          </Button>
-          <Button
-            aria-controls="stash-panel-words"
-            aria-selected={tab === "words"}
-            className="h-11 flex-1 gap-1 rounded-xl text-xs font-bold sm:gap-2"
-            id="stash-tab-words"
-            onClick={() => setTab("words")}
-            role="tab"
-            type="button"
-            variant={tab === "words" ? "default" : "ghost"}
-          >
-            <Languages aria-hidden="true" className="size-4" strokeWidth={1.8} />
-            Words
-          </Button>
           <Button
             aria-controls="stash-panel-breath"
             aria-selected={tab === "breath"}
@@ -163,6 +171,32 @@ export function StashExperience() {
           >
             <AudioLines aria-hidden="true" className="size-4" strokeWidth={1.8} />
             Sound
+          </Button>
+          <Button
+            aria-controls="stash-panel-words"
+            aria-selected={tab === "words"}
+            className="h-11 flex-1 gap-1 rounded-xl text-xs font-bold sm:gap-2"
+            id="stash-tab-words"
+            onClick={() => setTab("words")}
+            role="tab"
+            type="button"
+            variant={tab === "words" ? "default" : "ghost"}
+          >
+            <Languages aria-hidden="true" className="size-4" strokeWidth={1.8} />
+            Words
+          </Button>
+          <Button
+            aria-controls="stash-panel-books"
+            aria-selected={tab === "books"}
+            className="h-11 flex-1 gap-1 rounded-xl text-xs font-bold sm:gap-2"
+            id="stash-tab-books"
+            onClick={() => setTab("books")}
+            role="tab"
+            type="button"
+            variant={tab === "books" ? "default" : "ghost"}
+          >
+            <BookOpenText aria-hidden="true" className="size-4" strokeWidth={1.8} />
+            Books
           </Button>
         </div>
 
@@ -195,6 +229,38 @@ export function StashExperience() {
             {saving ? "Saving…" : "Upload books"}
           </Button>
 
+          {books !== null && books.length > 0 && (
+            <div className="mt-3 flex items-center gap-2">
+              <div className="relative min-w-0 flex-1">
+                <Input
+                aria-label="Search books"
+                className="h-10 rounded-xl border-2 text-xs focus-visible:border-ring"
+                onChange={(event) => setBookQuery(event.target.value)}
+                placeholder="Search books"
+                spellCheck={false}
+                type="text"
+                value={bookQuery}
+              />
+              </div>
+              <Select onValueChange={(value) => value && setBookSort(value as typeof bookSort)} value={bookSort}>
+                <SelectTrigger aria-label="Sort books" className="h-10 w-24 shrink-0 rounded-xl text-xs font-semibold">
+                  <SelectValue>{(value: string) => ({ recent: "Recent", name: "Name", size: "Size", type: "Type" })[value as "recent" | "name" | "size" | "type"] ?? value}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Recent</SelectItem>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="size">Size</SelectItem>
+                  <SelectItem value="type">Type</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {books !== null && books.length > 0 && (
+            <p className="mt-2 px-1 text-[10px] font-bold uppercase tabular-nums tracking-wide text-foreground">
+              {visibleBooks.length} {visibleBooks.length === 1 ? "book" : "books"} · {formatBytes(booksTotalBytes)}
+            </p>
+          )}
+
           {books === null ? (
             <p className="grid place-items-center py-10 text-xs font-semibold text-foreground">
               <LoaderCircle aria-hidden="true" className="size-5 animate-spin" />
@@ -209,9 +275,13 @@ export function StashExperience() {
                 EPUB, PDF, TXT, Markdown, MOBI, FB2, RTF — saved on this device only.
               </p>
             </div>
+          ) : visibleBooks.length === 0 ? (
+            <p className="py-10 text-center text-xs font-semibold text-foreground">
+              No books match that search.
+            </p>
           ) : (
             <ul className="mt-3 divide-y divide-border/60">
-              {books.map((book) => (
+              {visibleBooks.map((book) => (
                 <li className="flex items-center gap-3 py-3" key={book.id}>
                   <BookOpenText
                     aria-hidden="true"

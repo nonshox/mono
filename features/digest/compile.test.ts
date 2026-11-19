@@ -1,72 +1,46 @@
 import { describe, expect, it } from "vitest";
-import {
-  compileLetter,
-  compileYear,
-  nudgeQuestionFor,
-  polishEntry,
-} from "./compile";
-
-const entries = (texts: string[]) =>
-  texts.map((text, index) => ({
-    day: `2026-11-${String(index + 1).padStart(2, "0")}`,
-    text,
-    satisfied: 50,
-  }));
-
-describe("compileLetter", () => {
-  it("reports days, words and signs off with Your week", () => {
-    const letter = compileLetter(
-      entries(["Berlin trip booked", "Berlin coffee with Sam", "thinking Berlin again"]),
-    );
-    expect(letter).toContain("3 days");
-    expect(letter).toContain("themes · berlin");
-    expect(letter.trimEnd().endsWith("Your week</i>")).toBe(true);
-  });
-
-  it("handles an empty week without throwing", () => {
-    expect(compileLetter([])).toContain("Your week");
-  });
-});
-
-describe("compileYear", () => {
-  it("reports total days and signs off with Your year", () => {
-    const letter = compileYear(
-      entries(["Berlin trip booked", "Deep work all day"]),
-    );
-    expect(letter).toContain("2 days");
-    expect(letter.trimEnd().endsWith("Your year</i>")).toBe(true);
-  });
-
-  it("handles an empty year without throwing", () => {
-    expect(compileYear([])).toContain("Your year");
-  });
-});
+import { compileLetter, nudgeQuestionFor } from "./compile";
 
 describe("nudgeQuestionFor", () => {
-  it("anchors to a recurring theme when one exists", () => {
-    const recent = entries(["Berlin", "Berlin walk", "Berlin cafe", "Berlin museum"]);
-    expect(nudgeQuestionFor(recent, 3)).toContain("berlin");
+  it("uses the fallback bank with no entries and appends the breathing cue", () => {
+    const nudge = nudgeQuestionFor([], 0);
+    expect(nudge).toContain("The day's almost gone");
+    expect(nudge).toContain("5 in · 5 out");
   });
 
-  it("rotates the fallback bank deterministically", () => {
-    expect(nudgeQuestionFor([], 0)).toBe(nudgeQuestionFor([], 0));
-    expect(nudgeQuestionFor([], 1)).not.toBe(nudgeQuestionFor([], 0));
+  it("grounds the nudge in recent themes when entries exist", () => {
+    const entries = [
+      { day: "2026-11-16", text: "the lathe project ate my afternoon again", satisfied: null },
+      { day: "2026-11-17", text: "finally got the lathe to cut clean faces", satisfied: null },
+      { day: "2026-11-18", text: "lathe again. this time it behaved", satisfied: null },
+    ];
+    const nudge = nudgeQuestionFor(entries, 0);
+    expect(nudge.toLowerCase()).toContain("lathe");
+    expect(nudge).toContain("5 in · 5 out");
+  });
+
+  it("is deterministic for the same seed", () => {
+    expect(nudgeQuestionFor([], 3)).toBe(nudgeQuestionFor([], 3));
+    expect(nudgeQuestionFor([], 4)).not.toBe(nudgeQuestionFor([], 3));
   });
 });
 
-describe("polishEntry", () => {
-  it("strips fillers, fixes the lone i, capitalizes and closes the sentence", () => {
-    expect(polishEntry("um i went to the gym today i feel good")).toBe(
-      "I went to the gym today I feel good.",
-    );
+describe("compileLetter", () => {
+  it("returns the empty-week compassion with no entries", () => {
+    const letter = compileLetter([]);
+    expect(letter).toContain("Your week");
+    expect(letter.toLowerCase()).toContain("dot will wait");
   });
 
-  it("collapses spaces and stray punctuation without inventing content", () => {
-    expect(polishEntry("hello  world")).toBe("Hello world.");
-    expect(polishEntry("called him,,, no answer")).toBe("Called him, no answer.");
-  });
-
-  it("leaves an already-tidied sentence alone (fixture is idempotent)", () => {
-    expect(polishEntry("Walked the dog.")).toBe("Walked the dog.");
+  it("summarises the week when entries exist, without HTML for plain output", () => {
+    const entries = [
+      { day: "2026-11-16", text: "a long quiet line about the weather and the work", satisfied: 80 },
+      { day: "2026-11-18", text: "another line, shorter", satisfied: null },
+    ];
+    const letter = compileLetter(entries, true);
+    expect(letter).toContain("Your week");
+    expect(letter).toContain("2 days");
+    expect(letter).not.toContain("<b>");
+    expect(letter).not.toContain("</i>");
   });
 });

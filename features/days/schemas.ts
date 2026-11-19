@@ -18,6 +18,14 @@ export const upsertDaySchema = z
   })
   .strict();
 
+/** One short line appended to the day — gratitude prompts stay small. */
+export const appendDaySchema = z
+  .object({
+    day: dayKeySchema,
+    text: z.string().trim().min(1).max(300),
+  })
+  .strict();
+
 export const deleteDaySchema = z
   .object({
     day: dayKeySchema,

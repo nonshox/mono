@@ -6,7 +6,7 @@ import { getUserRow } from "@/features/users/service";
 import { PageLoader } from "@/components/shared/page-loader";
 import { SessionExpired } from "@/components/shared/session-expired";
 import { ServiceUnavailable } from "@/components/shared/service-unavailable";
-import { UserAvatar } from "@/components/shared/user-avatar";
+import { AvatarUploader } from "@/components/features/profile/avatar-uploader";
 import { ActionsEditor } from "@/components/features/check/actions-editor";
 
 export const metadata = {
@@ -59,11 +59,7 @@ async function AuthenticatedProfile() {
         >
           {/* Identity */}
           <div className="flex items-center gap-4 px-4 pt-4 sm:px-6 sm:pt-6">
-            <UserAvatar
-              avatar={user?.avatar || undefined}
-              name={name || email}
-              size={76}
-            />
+            <AvatarUploader avatar={user?.avatar || undefined} name={name || email} />
             <div className="min-w-0 flex-1">
               <h2 className="type-section truncate text-foreground">
                 {name || "Your name"}

@@ -23,6 +23,7 @@ import { BUCKET_LABELS } from "@/features/check/types";
 import type { Bucket, TimelineItem } from "@/features/check/types";
 import { TimelineRow } from "@/components/features/check/timeline-row";
 import { SuggestionsPanel } from "@/components/features/check/suggestions-panel";
+import { GratitudeLine } from "@/components/features/check/gratitude-line";
 import { useCheckStore } from "@/features/check/store";
 import { suggestBucket } from "@/features/ai/client-api";
 import { getApiErrorMessage } from "@/lib/api-client";
@@ -40,6 +41,7 @@ type DragState = {
 
 export function BucketCard({ bucket }: { bucket: Bucket }) {
   const items = useCheckStore((state) => state.items);
+  const today = useCheckStore((state) => state.day);
   const manage = useCheckStore((state) => state.manage[bucket]);
   const draft = useCheckStore((state) => state.drafts[bucket]);
   const editingId = useCheckStore((state) => state.editingId);
@@ -310,6 +312,8 @@ export function BucketCard({ bucket }: { bucket: Bucket }) {
         <p className="mt-2 py-1.5 text-xs font-medium text-foreground">Nothing yet</p>
       )}
 
+      {bucket === "evening" && today && <GratitudeLine day={today} />}
+
       {manage && (
         <form className="mt-auto flex items-center gap-1 pt-2" onSubmit={submit}>
           <Input
@@ -317,7 +321,7 @@ export function BucketCard({ bucket }: { bucket: Bucket }) {
             className="h-8 border-0 bg-transparent px-0 text-sm placeholder:text-foreground/40 focus-visible:border-transparent focus-visible:ring-0 md:text-sm"
             maxLength={150}
             onChange={(event) => setDraft(bucket, event.target.value)}
-            placeholder="One small thing…"
+            placeholder={bucket === "rise" ? "when X, I will Y…" : "One small thing…"}
             spellCheck={false}
             value={draft}
           />

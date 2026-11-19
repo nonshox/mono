@@ -1,8 +1,14 @@
 import type { MetadataRoute } from "next";
 
-/** It's an app, not a marketing site — keep clones out of search indexes. */
+/** The app itself stays out of search; only the public landing page is crawlable. */
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: [{ userAgent: "*", disallow: "/" }],
+    rules: [
+      {
+        userAgent: "*",
+        allow: ["/about", "/llms.txt", "/logotype/", "/favicon.ico"],
+        disallow: "/",
+      },
+    ],
   };
 }

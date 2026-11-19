@@ -38,9 +38,9 @@ export function EndDayButton() {
     };
   }, []);
 
-  const total = items.length;
-  const done = items.filter((item) => item.done).length;
-  const percent = total ? Math.round((done / total) * 100) : 0;
+  const percent = items.length
+    ? Math.round((items.filter((item) => item.done).length / items.length) * 100)
+    : 0;
 
   const endDay = async () => {
     if (items.length === 0) return;
@@ -65,9 +65,7 @@ export function EndDayButton() {
         </span>
         <div>
           <p className="type-title text-foreground">Day closed</p>
-          <p className="mt-1 text-xs text-foreground">
-            {satisfied}% · the dots have today — rest well.
-          </p>
+          <p className="mt-0.5 text-xs tabular-nums text-foreground">{satisfied}%</p>
         </div>
       </section>
     );
@@ -77,13 +75,14 @@ export function EndDayButton() {
   return (
     <section
       aria-label="Close the day"
-      className="mt-6 flex flex-col items-center gap-3 rounded-2xl border-2 border-border/70 bg-popover px-4 py-5 text-center"
+      className="mt-6 rounded-2xl border-2 border-border/70 bg-popover p-3"
     >
       <Button
         aria-label={`Close the day, ${percent} percent done`}
         className="h-14 w-full gap-2 rounded-2xl text-sm font-extrabold"
         disabled={!ready || items.length === 0 || saving}
         onClick={() => void endDay()}
+        title={ready ? undefined : "Available after 6pm"}
         type="button"
         variant="default"
       >
@@ -92,13 +91,8 @@ export function EndDayButton() {
         ) : (
           <ProgressRing className="size-5" percent={percent} />
         )}
-        {saving ? "Closing the day…" : `Close the day · ${percent}%`}
+        {saving ? "Closing…" : `Close the day · ${percent}%`}
       </Button>
-      <p className="text-[11px] leading-4 text-foreground">
-        {ready
-          ? "Logs today and clears the board for tomorrow."
-          : `Evening practice — available after 6pm · ${done} of ${total} done.`}
-      </p>
     </section>
   );
 }

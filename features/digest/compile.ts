@@ -20,9 +20,12 @@ const fmtDay = (day: string) =>
     timeZone: "UTC",
   }).format(new Date(`${day}T00:00:00.000Z`));
 
-const themeLine = (themes: Array<{ label: string }>) =>
+const themeLine = (
+  themes: Array<{ label: string }>,
+  safe: (value: string) => string = esc,
+) =>
   themes.length > 0
-    ? `themes · ${themes.slice(0, 4).map((theme) => esc(theme.label)).join(" · ")}`
+    ? `themes · ${themes.slice(0, 4).map((theme) => safe(theme.label)).join(" · ")}`
     : null;
 
 const satisfactionLine = (entries: DigestEntry[], label = "satisfaction") => {
@@ -34,10 +37,19 @@ const satisfactionLine = (entries: DigestEntry[], label = "satisfaction") => {
   return `${label} · ${avg}% avg over ${rated.length} ${rated.length === 1 ? "day" : "days"}`;
 };
 
-/** Your week, compiled from what you actually wrote. Signed "Your week". */
-export function compileLetter(entries: DigestEntry[]): string {
+/** Your week, compiled from what you actually wrote. Signed "Your week".
+ * Pass `plain: true` for in-app display (no HTML tags). */
+export function compileLetter(
+  entries: DigestEntry[],
+  plain = false,
+): string {
+  const escOpen = plain ? "" : "<b>";
+  const escClose = plain ? "" : "</b>";
+  const italic = (text: string) => (plain ? text : `<i>${text}</i>`);
+  const safe = plain ? (value: string) => value : esc;
+
   if (entries.length === 0) {
-    return "<b>Your week</b>\nempty — the dot will wait for you.\n\n<i>Your week</i>";
+    return `${escOpen}Your week${escClose}\nempty — the dot will wait for you.\n\n${italic("Your week")}`;
   }
   const totalWords = entries.reduce((sum, entry) => sum + wordsOf(entry.text), 0);
   const longest = [...entries].sort((a, b) => wordsOf(b.text) - wordsOf(a.text))[0];
@@ -49,13 +61,13 @@ export function compileLetter(entries: DigestEntry[]): string {
     .sort((a, b) => wordsOf(b) - wordsOf(a))[0];
 
   const lines = [
-    `<b>Your week</b> · ${entries.length} ${entries.length === 1 ? "day" : "days"} · ${totalWords} words`,
-    `longest day · ${esc(fmtDay(longest.day))} · ${wordsOf(longest.text)} words`,
-    themeLine(themes),
+    `${escOpen}Your week${escClose} · ${entries.length} ${entries.length === 1 ? "day" : "days"} · ${totalWords} words`,
+    `longest day · ${safe(fmtDay(longest.day))} · ${wordsOf(longest.text)} words`,
+    themeLine(themes, safe),
     satisfactionLine(entries),
-    bestLine ? `<i>“${esc(bestLine)}”</i>` : null,
+    bestLine ? italic(`“${safe(bestLine)}”`) : null,
     "",
-    "<i>Your week</i>",
+    italic("Your week"),
   ].filter((line): line is string => line !== null);
   return lines.join("\n");
 }
@@ -121,6 +133,9 @@ const NUDGE_BANK = [
   "Nothing much happened? Write that instead.",
 ];
 
+/** Appended to every nudge — evidence: slow breathing before writing improves state. */
+const BREATH = "5 in · 5 out — then one line for today.";
+
 /**
  * One evening nudge grounded in recent themes; deterministic per day.
  * Returns a complete line — the fallback bank rotates by day-of-year.
@@ -128,9 +143,9 @@ const NUDGE_BANK = [
 export function nudgeQuestionFor(entries: DigestEntry[], seed: number): string {
   const themes = extractThemes(entries, 1);
   if (themes[0]) {
-    return `<i>${esc(themes[0].label)}</i> keeps coming up — how did today go?`;
+    return `<i>${esc(themes[0].label)}</i> keeps coming up — how did today go? ${BREATH}`;
   }
-  return NUDGE_BANK[seed % NUDGE_BANK.length];
+  return `${NUDGE_BANK[seed % NUDGE_BANK.length]} ${BREATH}`;
 }
 
 const FILLERS = /\b(u+m+|u+h+|erm+|err+|ah+)\b/gi;

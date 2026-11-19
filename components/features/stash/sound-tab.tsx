@@ -1,6 +1,6 @@
 "use client";
 
-import { MoonStar, Square, AudioLines, CloudRain, Radio } from "lucide-react";
+import { Square, AudioLines, CloudRain, Radio, Timer } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,11 @@ const NOISE_TYPES: Array<{ value: NoiseType; label: string }> = [
   { value: "pink", label: "Pink · softer static" },
   { value: "white", label: "White · bright" },
 ];
-const TIMER_MINUTES = [15, 25, 50] as const;
+const PRESETS = [
+  { preset: "calm", label: "Calm · 10" },
+  { preset: "focus", label: "Focus · 25" },
+  { preset: "deep", label: "Deep · 50" },
+] as const;
 
 function SoundCard({
   icon,
@@ -92,7 +96,7 @@ export function SoundTab() {
   const setNoiseVolume = useStashStore((st) => st.setNoiseVolume);
   const toggleDrone = useStashStore((st) => st.toggleDrone);
   const setDroneVolume = useStashStore((st) => st.setDroneVolume);
-  const startTimer = useStashStore((st) => st.startTimer);
+  const startSession = useStashStore((st) => st.startSession);
   const cancelTimer = useStashStore((st) => st.cancelTimer);
   const finishTimer = useStashStore((st) => st.finishTimer);
   const stopAll = useStashStore((st) => st.stopAll);
@@ -106,7 +110,12 @@ export function SoundTab() {
       setNow(current);
       if (current >= timerEndAt) {
         finishTimer();
-        toast.success("Focus session done — sound faded out");
+        try {
+          navigator.vibrate?.([160, 80, 160]);
+        } catch {
+          // No haptics — the chime already played.
+        }
+        toast.success("Session done");
       }
     }, 500);
     return () => window.clearInterval(id);
@@ -223,14 +232,9 @@ export function SoundTab() {
         <section className="rounded-2xl border-2 border-border/70 bg-popover p-4">
           <div className="flex items-center gap-2.5">
             <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-muted text-foreground">
-              <MoonStar aria-hidden="true" className="size-4" strokeWidth={1.8} />
+              <Timer aria-hidden="true" className="size-4" strokeWidth={1.8} />
             </span>
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-foreground">Focus timer</p>
-              <p className="text-[11px] text-foreground">
-                {remainingMs !== null ? "Fades out when done" : "Everything keeps running"}
-              </p>
-            </div>
+            <p className="text-xs font-bold text-foreground">Session</p>
           </div>
           <div className="mt-3 border-t border-border/60 pt-3">
             {remainingMs !== null ? (
@@ -249,15 +253,15 @@ export function SoundTab() {
               </div>
             ) : (
               <div className="flex flex-wrap items-center gap-2">
-                {TIMER_MINUTES.map((minutes) => (
+                {PRESETS.map(({ preset, label }) => (
                   <Button
-                    className="h-9 rounded-xl px-4 text-xs font-bold tabular-nums"
-                    key={minutes}
-                    onClick={() => startTimer(minutes)}
+                    className="h-9 rounded-xl px-4 text-xs font-bold"
+                    key={preset}
+                    onClick={() => startSession(preset)}
                     type="button"
                     variant="outline"
                   >
-                    {minutes} min
+                    {label}
                   </Button>
                 ))}
               </div>

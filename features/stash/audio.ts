@@ -248,6 +248,27 @@ class StashAudioEngine {
     this.drone = { gain: out, nodes: [...oscillators, lfo, lfoDepth, filter] };
   }
 
+  /** Soft two-note chime — the session-complete punctuation. */
+  playChime(): void {
+    if (typeof window === "undefined") return;
+    const ctx = this.ensure();
+    const now = ctx.currentTime;
+    for (const [index, frequency] of [523.25, 783.99].entries()) {
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.value = frequency;
+      const gain = ctx.createGain();
+      const t0 = now + index * 0.9;
+      gain.gain.setValueAtTime(0, t0);
+      gain.gain.linearRampToValueAtTime(0.22, t0 + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.6);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 1.7);
+    }
+  }
+
   stopAll(): void {
     this.fadeOut(this.brainwave);
     this.fadeOut(this.noise);

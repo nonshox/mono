@@ -2,15 +2,12 @@
 
 import {
   Check,
-  ChevronLeft,
-  ChevronRight,
   GraduationCap,
   Languages,
   LoaderCircle,
   PenLine,
   Plus,
   Search,
-  Shuffle,
   Trash2,
   Volume2,
   X,
@@ -44,12 +41,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { getApiErrorMessage } from "@/lib/api-client";
 import { toast } from "sonner";
 import {
   deleteWord,
+  isDue,
   listWords,
+  previewGrades,
+  reviewWord,
   saveWord,
   updateWord,
+  type Grade,
   type StashWord,
 } from "@/features/stash/idb";
 
@@ -89,7 +91,9 @@ export function StashWords() {
   const [saving, setSaving] = useState(false);
 
   const [practicing, setPracticing] = useState(false);
-  const [cardIndex, setCardIndex] = useState(0);
+  const [practiceMode, setPracticeMode] = useState<"due" | "all">("due");
+  const [sessionIndex, setSessionIndex] = useState(0);
+  const [sessionCount, setSessionCount] = useState(0);
   const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
@@ -194,52 +198,133 @@ export function StashWords() {
     );
   }, [words, query]);
 
-  const deck = words ?? [];
-  const card = deck.length > 0 ? deck[cardIndex % deck.length] : null;
+  const dueCountMemo = useMemo(
+    () => (words ?? []).filter((word) => isDue(word)).length,
+    [words],
+  );
+  // The session queue is a snapshot — rescheduling a card mid-session must
+  // not remove it from the deck under the user's fingertips.
+  const [sessionDeck, setSessionDeck] = useState<StashWord[]>([]);
+  const card = sessionDeck[sessionIndex] as StashWord | undefined;
+
+  const buildDeck = (mode: "due" | "all", source: StashWord[]) =>
+    mode === "due"
+      ? source.filter((word) => isDue(word)).sort((a, b) => a.dueAt.localeCompare(b.dueAt))
+      : source;
 
   const openPractice = () => {
-    setDialogOpen(false);
-    setCardIndex(0);
+    const mode = dueCountMemo > 0 ? "due" : "all";
+    setPracticeMode(mode);
+    setSessionDeck(buildDeck(mode, words ?? []));
+    setSessionIndex(0);
+    setSessionCount(0);
     setRevealed(false);
     setPracticing(true);
   };
 
-  const step = (direction: 1 | -1) => {
+  const switchMode = () => {
+    const next = practiceMode === "due" ? "all" : "due";
+    setPracticeMode(next);
+    setSessionDeck(buildDeck(next, words ?? []));
+    setSessionIndex(0);
+    setSessionCount(0);
     setRevealed(false);
-    setCardIndex((current) => {
-      const length = deck.length;
-      return (current + direction + length) % length;
-    });
   };
 
-  const shuffle = () => {
-    if (deck.length < 2) return;
-    setRevealed(false);
-    setCardIndex((current) => {
-      let next = current;
-      while (next === current) {
-        next = Math.floor(Math.random() * deck.length);
+  const grade = (gradeValue: Grade) => {
+    if (!card) return;
+    const target = card;
+    void (async () => {
+      try {
+        const updated = await reviewWord(target.id, gradeValue);
+        setWords((current) =>
+          (current ?? []).map((word) => (word.id === updated.id ? updated : word)),
+        );
+      } catch (cause) {
+        toast.error(getApiErrorMessage(cause, "Could not save that review"));
       }
-      return next;
-    });
+    })();
+    setSessionCount((count) => count + 1);
+    setSessionIndex((index) => index + 1);
+    setRevealed(false);
   };
 
-  if (practicing && card) {
+  if (practicing) {
+    // Session complete — quiet close, no ceremony.
+    if (!card) {
+      const remaining = dueCountMemo;
+      return (
+        <section
+          aria-label="Session complete"
+          className="flex flex-col items-center gap-4 py-14 text-center"
+        >
+          <span className="grid size-14 place-items-center rounded-full bg-muted text-foreground">
+            <Check aria-hidden="true" className="size-6" strokeWidth={2} />
+          </span>
+          <div>
+            <p className="type-title text-foreground">Session done</p>
+            <p className="mt-1 text-xs tabular-nums text-foreground">
+              {sessionCount} {sessionCount === 1 ? "card" : "cards"} reviewed
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {remaining > 0 && (
+              <Button
+                className="h-10 rounded-xl border-2 px-5 text-xs font-bold"
+                onClick={() => {
+                  setSessionDeck(buildDeck("due", words ?? []));
+                  setSessionIndex(0);
+                  setSessionCount(0);
+                  setRevealed(false);
+                }}
+                type="button"
+                variant="outline"
+              >
+                {`${remaining} more due`}
+              </Button>
+            )}
+            <Button
+              className="h-10 rounded-xl px-5 text-xs font-bold"
+              onClick={() => setPracticing(false)}
+              type="button"
+            >
+              Done
+            </Button>
+          </div>
+        </section>
+      );
+    }
+
+    const preview = previewGrades(card);
     return (
       <section aria-label="Practice words">
-        <div className="flex items-center justify-between px-1 pb-3">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-foreground">
-            {`Card ${(cardIndex % deck.length) + 1} of ${deck.length}`}
+        <div className="flex items-center justify-between gap-2 px-1 pb-3">
+          <p className="text-[11px] font-bold tabular-nums uppercase tracking-wide text-foreground">
+            {practiceMode === "due"
+              ? `${Math.min(sessionIndex + 1, sessionDeck.length)} of ${sessionDeck.length} due`
+              : `Card ${Math.min(sessionIndex + 1, sessionDeck.length)} of ${sessionDeck.length}`}
           </p>
-          <Button
-            aria-label="Close practice"
-            className="size-8 rounded-full"
-            onClick={() => setPracticing(false)}
-            size="icon"
-            variant="ghost"
-          >
-            <X aria-hidden="true" className="size-4" strokeWidth={1.8} />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              aria-pressed={practiceMode === "due"}
+              className="h-7 rounded-full px-2.5 text-[11px] font-bold"
+              onClick={switchMode}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              {practiceMode === "due" ? "Due" : "All"}
+            </Button>
+            <Button
+              aria-label="Close practice"
+              className="size-8 rounded-full"
+              onClick={() => setPracticing(false)}
+              size="icon"
+              variant="ghost"
+            >
+              <X aria-hidden="true" className="size-4" strokeWidth={1.8} />
+            </Button>
+          </div>
         </div>
 
         <Button
@@ -274,34 +359,42 @@ export function StashWords() {
           )}
         </Button>
 
-        <div className="mt-3 flex items-center justify-between gap-2">
-          <Button
-            aria-label="Previous card"
-            className="size-11 rounded-xl border-2"
-            onClick={() => step(-1)}
-            size="icon"
-            variant="outline"
-          >
-            <ChevronLeft aria-hidden="true" className="size-4" strokeWidth={2} />
-          </Button>
-          <Button
-            className="h-11 flex-1 gap-2 rounded-xl border-2 text-xs font-bold"
-            onClick={shuffle}
-            variant="outline"
-          >
-            <Shuffle aria-hidden="true" className="size-4" strokeWidth={1.8} />
-            Shuffle
-          </Button>
-          <Button
-            aria-label="Next card"
-            className="size-11 rounded-xl"
-            onClick={() => step(1)}
-            size="icon"
-            variant="default"
-          >
-            <ChevronRight aria-hidden="true" className="size-4" strokeWidth={2} />
-          </Button>
-        </div>
+        {revealed ? (
+          <div className="mt-3 grid grid-cols-4 gap-1.5">
+            {(
+              [
+                { grade: "again", label: "Again" },
+                { grade: "hard", label: "Hard" },
+                { grade: "good", label: "Good" },
+                { grade: "easy", label: "Easy" },
+              ] as const
+            ).map(({ grade: gradeValue, label }) => (
+              <Button
+                className="h-14 flex-col gap-0.5 rounded-xl text-[11px] font-extrabold"
+                key={gradeValue}
+                onClick={() => grade(gradeValue)}
+                type="button"
+                variant={gradeValue === "again" ? "outline" : "default"}
+              >
+                {label}
+                <span className="text-[10px] font-semibold tabular-nums opacity-75">
+                  {preview[gradeValue]}
+                </span>
+              </Button>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-3 grid place-items-center">
+            <Button
+              className="h-12 w-full rounded-xl border-2 text-xs font-bold"
+              onClick={() => setRevealed(true)}
+              type="button"
+              variant="outline"
+            >
+              Reveal
+            </Button>
+          </div>
+        )}
       </section>
     );
   }
@@ -335,7 +428,9 @@ export function StashWords() {
           variant="outline"
         >
           <GraduationCap aria-hidden="true" className="size-4" strokeWidth={1.8} />
-          <span className="hidden min-[480px]:inline">Practice</span>
+          <span className="hidden min-[480px]:inline">
+            {dueCountMemo > 0 ? `Review · ${dueCountMemo}` : "Practice"}
+          </span>
         </Button>
         <Button
           className="h-11 shrink-0 gap-1.5 rounded-xl text-xs font-bold"

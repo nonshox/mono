@@ -15,6 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { MicButton } from "@/components/shared/mic-button";
 import { PolishButton } from "@/components/shared/polish-button";
 import { JournalHeader } from "@/components/features/journal/journal-header";
+import { TodayStrip } from "@/components/features/journal/today-strip";
+import { OnThisDay } from "@/components/features/journal/on-this-day";
 import type { CompletedBook } from "@/features/books/client-api";
 import {
   AlertDialog,
@@ -26,7 +28,6 @@ import {
   AlertDialogTitle,
   AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
-import Link from "next/link";
 
 function shortLabel(day: string): string {
   return new Intl.DateTimeFormat("en-US", {
@@ -43,11 +44,13 @@ export function JournalExperience({
   entries,
   books,
   years,
+  today,
 }: {
   entries: DayEntry[];
   books: CompletedBook[];
   /** Every year with at least one entry, ascending. */
   years: number[];
+  today: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -55,6 +58,19 @@ export function JournalExperience({
   const urlQuery = searchParams.get("q") ?? "";
 
   const [items, setItems] = useState(entries);
+  // Today's entry as the feed sees it — starts as the server-rendered seed,
+  // then follows TodayStrip saves so the writer never shows stale text.
+  const currentToday = items.find((item) => item.day === today)?.text ?? null;
+  // Feed stays truthful after a Today save — upsert or drop today's row.
+  const onTodaySaved = (text: string) => {
+    setItems((prev) => {
+      const rest = prev.filter((item) => item.day !== today);
+      if (!text) return rest;
+      const existing = prev.find((item) => item.day === today);
+      return [...rest, { day: today, text, satisfied: existing?.satisfied ?? null }]
+        .sort((a, b) => a.day.localeCompare(b.day));
+    });
+  };
   const [query, setQuery] = useState(urlQuery);
   const [lastUrlQuery, setLastUrlQuery] = useState(urlQuery);
   const [loadedYears, setLoadedYears] = useState<number[]>(() =>
@@ -140,7 +156,7 @@ export function JournalExperience({
   }, [items]);
 
   const toggleExpand = (day: string) => {
-    // Auto-save on close â€” collapse persists dirty drafts.
+    // Auto-save on close — collapse persists dirty drafts.
     if (editingDay) void commit();
     setExpandedDay((prev) => (prev === day ? null : day));
     setEditingDay(null);
@@ -228,20 +244,18 @@ export function JournalExperience({
             showSearch={false}
             total={0}
           />
-          <div className="flex flex-col items-center gap-3 pt-16 text-center">
-          <span className="grid size-14 place-items-center rounded-full bg-muted text-foreground">
-            <BookOpen aria-hidden="true" className="size-6" strokeWidth={1.5} />
-          </span>
-          <p className="text-sm font-semibold text-foreground">Nothing written yet</p>
-          <p className="max-w-xs text-xs leading-relaxed text-foreground">
-            Your days gather here in order â€” write your first dot on the home page.
-          </p>
-          <Link
-            className="mt-1 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
-            href="/"
-          >
-            Go to home
-          </Link>
+          <div className="mt-3 flex flex-col gap-3">
+            <TodayStrip initialText={currentToday} onSaved={onTodaySaved} today={today} />
+            <OnThisDay today={today} />
+          </div>
+          <div className="flex flex-col items-center gap-3 pt-12 text-center">
+            <span className="grid size-14 place-items-center rounded-full bg-muted text-foreground">
+              <BookOpen aria-hidden="true" className="size-6" strokeWidth={1.5} />
+            </span>
+            <p className="text-sm font-semibold text-foreground">Nothing written yet</p>
+            <p className="max-w-xs text-xs leading-relaxed text-foreground">
+              Your first dot starts right here.
+            </p>
           </div>
         </div>
       </main>
@@ -260,11 +274,16 @@ export function JournalExperience({
           total={items.length}
         />
 
+        <div className="mt-3 flex flex-col gap-3">
+          <TodayStrip initialText={currentToday} onSaved={onTodaySaved} today={today} />
+          <OnThisDay today={today} />
+        </div>
+
         <ThemesRow onSelectTheme={setQuery} themes={themes} />
 
         {groups.length === 0 && (
           <p className="px-0.5 py-10 text-center text-sm text-foreground">
-            No days match â€œ{trimmedQuery}â€.
+            No days match “{trimmedQuery}”.
           </p>
         )}
 
@@ -285,7 +304,7 @@ export function JournalExperience({
                     {!isExpanded ? (
                       <EntryRow entry={entry} onOpen={toggleExpand} query={trimmedQuery} />
                     ) : (
-                      /* Expanded â€” solid card in place: date, words, actions */
+                      /* Expanded — solid card in place: date, words, actions */
                       <div className="min-w-0 overflow-hidden rounded-xl border-2 border-border/80 bg-popover">
                         <div className="flex items-center justify-between gap-2 py-1.5 pl-3 pr-1">
                           <p className="type-label leading-4 text-foreground">

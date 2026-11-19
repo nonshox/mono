@@ -14,8 +14,8 @@ export function SettingsExport() {
     >
       <h2 className="type-eyebrow">Export</h2>
       <p className="mt-2 text-xs leading-5 text-foreground">
-        Everything Mono stores about you — journal, dots, check items —
-        as a file. Your data never leaves except into this file.
+        Your words live on this server. Take a copy now and then — in case the
+        box ever dies, your years go with it.
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <a className={linkClass} download href="/api/export?format=json">
@@ -24,7 +24,7 @@ export function SettingsExport() {
         </a>
         <a className={linkClass} download href="/api/export?format=markdown">
           <FileText aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
-          Markdown — read &amp; print
+          Markdown — read & print
         </a>
       </div>
     </section>

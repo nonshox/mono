@@ -7,6 +7,7 @@ import {
   BellRing,
   NotebookPen,
   Unlink,
+  Mail,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,8 @@ export function SettingsExperience({
   const [letterSaving, setLetterSaving] = useState(false);
   const [review, setReview] = useState("");
   const [reviewLoading, setReviewLoading] = useState(false);
+  const [letter, setLetter] = useState("");
+  const [letterLoading, setLetterLoading] = useState(false);
   const [sessions, setSessions] = useState(initialSessions);
   const [pendingSession, setPendingSession] = useState("");
   const [refreshingSessions, setRefreshingSessions] = useState(false);
@@ -143,6 +146,31 @@ export function SettingsExperience({
     const link = document.createElement("a");
     link.href = url;
     link.download = "mono-year-in-review.txt";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const generateLetter = async () => {
+    if (letterLoading) return;
+    setLetterLoading(true);
+    setError("");
+    try {
+      const { data } = await apiClient.post<{ letter: string }>("/ai/letter");
+      setLetter(data.letter);
+    } catch (cause) {
+      setError(getApiErrorMessage(cause, "Compilation failed"));
+    } finally {
+      setLetterLoading(false);
+    }
+  };
+
+  const downloadLetter = () => {
+    if (!letter) return;
+    const blob = new Blob([letter], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "mono-week-letter.txt";
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -329,6 +357,54 @@ export function SettingsExperience({
           sessions={sessions}
         />
         <SettingsExport />
+
+        {/* Your week, on demand — the same letter the Sunday cron sends */}
+        <section
+          aria-label="Your week"
+          className="rounded-2xl border-2 border-border/70 bg-popover p-4 sm:p-5"
+        >
+          <h2 className="type-eyebrow">
+            Your week
+          </h2>
+          <p className="mt-2 text-xs leading-5 text-foreground">
+            The letter the Telegram bot sends on Sundays — words written, the
+            longest day, recurring themes, the line to keep. Compiled on this
+            device, nothing leaves it.
+          </p>
+          <Button
+            aria-busy={letterLoading}
+            className="mt-3 h-9 gap-1.5 rounded-full border-2 border-border px-4 text-xs font-semibold disabled:opacity-40"
+            disabled={letterLoading}
+            onClick={() => void generateLetter()}
+            type="button"
+            variant="outline"
+          >
+            {letterLoading ? (
+              <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+            ) : (
+              <Mail aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+            )}
+            {letterLoading ? "Compiling your week…" : "Compile my week"}
+          </Button>
+          {letter && (
+            <div className="mt-3 rounded-xl border border-border/60 p-4">
+              <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">
+                {letter}
+              </p>
+              <div className="mt-3 border-t border-border/50 pt-2">
+                <Button
+                  className="h-auto gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
+                  onClick={downloadLetter}
+                  type="button"
+                  variant="ghost"
+                >
+                  <Download aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+                  Download .txt
+                </Button>
+              </div>
+            </div>
+          )}
+        </section>
 
         {/* Year in review â€” compiled locally from your entries */}
         <section

@@ -4,11 +4,13 @@ import { NO_STORE_HEADERS, getAuthAccount,
   jsonError,
   logFailure } from "@/lib/http";
 import {
+  appendToDay,
   deleteDayEntry,
   listYearEntries,
   upsertDayEntry,
 } from "@/features/days/service";
 import {
+  appendDaySchema,
   deleteDaySchema,
   upsertDaySchema,
   yearSchema,
@@ -83,6 +85,43 @@ export async function POST(request: Request) {
   } catch (error) {
     logFailure("Day save", error);
     return jsonError(502, "DAY_SAVE_FAILED", "That day could not be saved.");
+  }
+}
+
+export async function PATCH(request: Request) {
+  if (!isSameOrigin(request)) {
+    return jsonError(403, "ORIGIN_REJECTED", "Request origin was rejected.");
+  }
+
+  const auth = await getAuthAccount("Day append");
+  if ("response" in auth) {
+    return auth.response;
+  }
+  if (!auth.account) {
+    return jsonError(401, "UNAUTHENTICATED", "Sign in to write your days.");
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError(400, "INVALID_JSON", "Request body must be valid JSON.");
+  }
+
+  const parsed = appendDaySchema.safeParse(body);
+  if (!parsed.success) {
+    return jsonError(400, "INVALID_INPUT", "One short line, please.");
+  }
+
+  try {
+    const entry = await appendToDay(auth.account.$id, parsed.data.day, parsed.data.text);
+    return NextResponse.json({ day: entry });
+  } catch (cause) {
+    if (cause instanceof Error && cause.message.includes("full")) {
+      return jsonError(400, "DAY_FULL", cause.message);
+    }
+    logFailure("Day append", cause);
+    return jsonError(502, "DAY_APPEND_FAILED", "That line could not be added.");
   }
 }
 

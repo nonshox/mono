@@ -22,6 +22,15 @@ export async function saveDay(day: string, text: string): Promise<DayEntry> {
   return data.day;
 }
 
+/** Append one short line to the day — gratitude, notes, telegrams. */
+export async function appendDay(day: string, text: string): Promise<DayEntry> {
+  const { data } = await apiClient.patch<{ day: DayEntry }>("/days", {
+    day,
+    text,
+  });
+  return data.day;
+}
+
 export async function deleteDay(day: string): Promise<void> {
   await apiClient.delete("/days", { data: { day } });
 }

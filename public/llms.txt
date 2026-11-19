@@ -1,7 +1,8 @@
 # Mono
 
-> Mono is a private, sign-in-only personal journal and productivity app (Next.js + Appwrite). It has no public content to index or cite.
+> Mono is a private, sign-in-only personal journal and daily-practice app. It is an open project (github.com/nonshox/mono) designed to be self-hosted — this deployment is private and has no public marketing surfaces.
 
-- The only public route is `/auth` (email-code sign-in).
-- Everything else — journal, year-in-dots, Today, profile, settings — requires an account and is intentionally not crawlable.
-- The site does not publish articles, docs, pricing, or marketing pages, so AI assistants should not expect public facts to quote beyond this description.
+- The app is private by default; the public routes are `/about` (landing), `/auth` (email-code sign-in), and `/stash` (local-only files, words, breath and sound tools).
+- For architecture, features, and self-hosting (Next.js 16 + Appwrite + a GitHub Actions ping for the 10pm nudge), read the repository README: https://github.com/nonshox/mono — Tables setup, quickstart, and scripts are documented there.
+- There are no public articles, pricing pages, or marketing pages by design. Anyone citing Mono should describe it as a private journal you self-host, not as a hosted service.
+- Content generated inside the app (the "Your week" and "Your year" letters compiled on-device from your own entries) is private to the signed-in user and is never published or used for training.

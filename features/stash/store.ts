@@ -15,7 +15,7 @@ type StashAudioState = {
   noiseVolume: number;
   droneOn: boolean;
   droneVolume: number;
-  /** Epoch ms when the focus timer ends; null when idle. */
+  /** Epoch ms when the session ends; null when idle. */
   timerEndAt: number | null;
 
   toggleBrainwave: () => void;
@@ -27,9 +27,10 @@ type StashAudioState = {
   setNoiseVolume: (volume: number) => void;
   toggleDrone: () => void;
   setDroneVolume: (volume: number) => void;
-  startTimer: (minutes: number) => void;
+  /** One tap — band, tones and timer all set up for the moment. */
+  startSession: (preset: "calm" | "focus" | "deep") => void;
   cancelTimer: () => void;
-  /** Fade everything out and reset — used when the timer rings. */
+  /** Fade everything out and reset — used when the session ends. */
   finishTimer: () => void;
   stopAll: () => void;
 };
@@ -96,10 +97,37 @@ export const useStashStore = create<StashAudioState>((set, get) => ({
     if (s.droneOn) stashAudio.rideDrone(volume);
     set({ droneVolume: volume });
   },
-  startTimer: (minutes) => set({ timerEndAt: Date.now() + minutes * 60_000 }),
+  startSession: (preset) => {
+    const s = get();
+    // One tap = the complete setup for that moment.
+    const presets = {
+      calm: { minutes: 10, band: "alpha" as BrainwaveBand, noise: false },
+      focus: { minutes: 25, band: "beta" as BrainwaveBand, noise: false },
+      deep: { minutes: 50, band: "beta" as BrainwaveBand, noise: true },
+    } as const;
+    const p = presets[preset];
+    stashAudio.setBrainwave({
+      on: true,
+      band: p.band,
+      isochronic: s.isochronic,
+      volume: s.brainwaveVolume,
+    });
+    const patch: Partial<StashAudioState> = {
+      brainwaveOn: true,
+      band: p.band,
+      timerEndAt: Date.now() + p.minutes * 60_000,
+    };
+    if (p.noise) {
+      stashAudio.setNoise({ on: true, type: "brown", volume: s.noiseVolume });
+      patch.noiseOn = true;
+      patch.noiseType = "brown";
+    }
+    set(patch);
+  },
   cancelTimer: () => set({ timerEndAt: null }),
   finishTimer: () => {
     stashAudio.stopAll();
+    stashAudio.playChime();
     set({
       timerEndAt: null,
       brainwaveOn: false,
