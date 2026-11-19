@@ -1,12 +1,14 @@
 "use client";
 
 import {
+  AudioLines,
   BookOpenText,
   Download,
   Languages,
   LoaderCircle,
   Trash2,
   Upload,
+  Wind,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -24,6 +26,8 @@ import { FileInput } from "@/components/ui/file-input";
 import { Button } from "@/components/ui/button";
 import { formatBytes } from "@/features/stash/format";
 import { StashWords } from "@/components/features/stash/stash-words";
+import { BreathTab } from "@/components/features/stash/breath-tab";
+import { SoundTab } from "@/components/features/stash/sound-tab";
 import {
   deleteBook,
   listBooks,
@@ -40,7 +44,7 @@ function shortDate(iso: string): string {
 }
 
 export function StashExperience() {
-  const [tab, setTab] = useState<"books" | "words">("books");
+  const [tab, setTab] = useState<"books" | "words" | "breath" | "sound">("books");
   const [books, setBooks] = useState<StashBook[] | null>(null);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -111,7 +115,7 @@ export function StashExperience() {
           <Button
             aria-controls="stash-panel-books"
             aria-selected={tab === "books"}
-            className="h-11 flex-1 gap-2 rounded-xl text-xs font-bold"
+            className="h-11 flex-1 gap-1 rounded-xl text-xs font-bold sm:gap-2"
             id="stash-tab-books"
             onClick={() => setTab("books")}
             role="tab"
@@ -124,7 +128,7 @@ export function StashExperience() {
           <Button
             aria-controls="stash-panel-words"
             aria-selected={tab === "words"}
-            className="h-11 flex-1 gap-2 rounded-xl text-xs font-bold"
+            className="h-11 flex-1 gap-1 rounded-xl text-xs font-bold sm:gap-2"
             id="stash-tab-words"
             onClick={() => setTab("words")}
             role="tab"
@@ -133,6 +137,32 @@ export function StashExperience() {
           >
             <Languages aria-hidden="true" className="size-4" strokeWidth={1.8} />
             Words
+          </Button>
+          <Button
+            aria-controls="stash-panel-breath"
+            aria-selected={tab === "breath"}
+            className="h-11 flex-1 gap-1 rounded-xl text-xs font-bold sm:gap-2"
+            id="stash-tab-breath"
+            onClick={() => setTab("breath")}
+            role="tab"
+            type="button"
+            variant={tab === "breath" ? "default" : "ghost"}
+          >
+            <Wind aria-hidden="true" className="size-4" strokeWidth={1.8} />
+            Breath
+          </Button>
+          <Button
+            aria-controls="stash-panel-sound"
+            aria-selected={tab === "sound"}
+            className="h-11 flex-1 gap-1 rounded-xl text-xs font-bold sm:gap-2"
+            id="stash-tab-sound"
+            onClick={() => setTab("sound")}
+            role="tab"
+            type="button"
+            variant={tab === "sound" ? "default" : "ghost"}
+          >
+            <AudioLines aria-hidden="true" className="size-4" strokeWidth={1.8} />
+            Sound
           </Button>
         </div>
 
@@ -176,7 +206,7 @@ export function StashExperience() {
                 No books yet
               </p>
               <p className="max-w-xs text-xs leading-5 text-foreground">
-                EPUB, PDF, TXT, Markdown, MOBI, FB2, RTF â€” saved on this device only.
+                EPUB, PDF, TXT, Markdown, MOBI, FB2, RTF — saved on this device only.
               </p>
             </div>
           ) : (
@@ -193,7 +223,7 @@ export function StashExperience() {
                       {book.name}
                     </p>
                     <p className="text-[11px] tabular-nums text-foreground">
-                      {formatBytes(book.size)} Â· {shortDate(book.addedAt)}
+                      {formatBytes(book.size)} · {shortDate(book.addedAt)}
                     </p>
                   </div>
                   <Button
@@ -216,7 +246,7 @@ export function StashExperience() {
                     <AlertDialogContent>
                       <AlertDialogTitle>Remove this book?</AlertDialogTitle>
                       <AlertDialogDescription className="mt-1.5">
-                        {`â€œ${book.name}â€ will be deleted from this device. It is not stored anywhere else.`}
+                        {`“${book.name}” will be deleted from this device. It is not stored anywhere else.`}
                       </AlertDialogDescription>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Keep</AlertDialogCancel>
@@ -239,6 +269,22 @@ export function StashExperience() {
           role="tabpanel"
         >
           <StashWords />
+        </div>
+        <div
+          aria-labelledby="stash-tab-breath"
+          hidden={tab !== "breath"}
+          id="stash-panel-breath"
+          role="tabpanel"
+        >
+          <BreathTab />
+        </div>
+        <div
+          aria-labelledby="stash-tab-sound"
+          hidden={tab !== "sound"}
+          id="stash-panel-sound"
+          role="tabpanel"
+        >
+          <SoundTab />
         </div>
       </div>
     </main>

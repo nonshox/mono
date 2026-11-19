@@ -1,6 +1,6 @@
 "use client";
 
-import { LoaderCircle } from "lucide-react";
+import { LoaderCircle, MoonStar } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ProgressRing } from "@/components/shared/progress-ring";
@@ -15,9 +15,9 @@ function canSatisfy(): boolean {
 }
 
 /**
- * Single evening button — merged "satisfy" + "reset": logs today's completion
- * and clears the board for tomorrow. Disabled before 6pm (evening practice)
- * and once the day is closed.
+ * The daily ritual's payoff — a full-width evening moment, not a tiny corner
+ * pill. Disabled before 6pm; once the day is closed it becomes the reminder
+ * that rest is the reward.
  */
 export function EndDayButton() {
   const items = useCheckStore((state) => state.items);
@@ -38,43 +38,67 @@ export function EndDayButton() {
     };
   }, []);
 
-  const percent = items.length
-    ? Math.round((items.filter((item) => item.done).length / items.length) * 100)
-    : 0;
+  const total = items.length;
+  const done = items.filter((item) => item.done).length;
+  const percent = total ? Math.round((done / total) * 100) : 0;
 
   const endDay = async () => {
     if (items.length === 0) return;
     try {
       await satisfy(percent);
       await reset();
-      toast.success(`Check: ${percent}% — cleared for tomorrow`);
+      toast.success(`Day closed — ${percent}% · see you tomorrow`);
     } catch {
       toast.error("Could not close the day");
     }
   };
 
+  // --- The day is closed: a quiet full stop -------------------------------
+  if (satisfied !== null) {
+    return (
+      <section
+        aria-label="Day closed"
+        className="mt-6 flex flex-col items-center gap-3 rounded-2xl border-2 border-border/70 bg-popover px-6 py-8 text-center"
+      >
+        <span className="grid size-14 place-items-center rounded-full bg-muted text-foreground">
+          <MoonStar aria-hidden="true" className="size-6" strokeWidth={1.5} />
+        </span>
+        <div>
+          <p className="type-title text-foreground">Day closed</p>
+          <p className="mt-1 text-xs text-foreground">
+            {satisfied}% · the dots have today — rest well.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  // --- Evening: the big moment --------------------------------------------
   return (
-    <div className="mt-6 flex items-center justify-end">
+    <section
+      aria-label="Close the day"
+      className="mt-6 flex flex-col items-center gap-3 rounded-2xl border-2 border-border/70 bg-popover px-4 py-5 text-center"
+    >
       <Button
-        aria-label={
-          satisfied !== null
-            ? `Best day, ${satisfied} percent`
-            : `End of day, ${percent} percent done`
-        }
-        className="gap-1.5 rounded-full px-4 text-xs font-extrabold text-background hover:opacity-80 disabled:opacity-30"
-        disabled={!ready || items.length === 0 || saving || satisfied !== null}
+        aria-label={`Close the day, ${percent} percent done`}
+        className="h-14 w-full gap-2 rounded-2xl text-sm font-extrabold"
+        disabled={!ready || items.length === 0 || saving}
         onClick={() => void endDay()}
-        title={ready ? undefined : "Available after 6pm"}
         type="button"
         variant="default"
       >
         {saving ? (
-          <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+          <LoaderCircle aria-hidden="true" className="size-5 animate-spin" />
         ) : (
-          <ProgressRing percent={satisfied ?? percent} />
+          <ProgressRing className="size-5" percent={percent} />
         )}
-        {satisfied !== null ? "Best" : "Done"}
+        {saving ? "Closing the day…" : `Close the day · ${percent}%`}
       </Button>
-    </div>
+      <p className="text-[11px] leading-4 text-foreground">
+        {ready
+          ? "Logs today and clears the board for tomorrow."
+          : `Evening practice — available after 6pm · ${done} of ${total} done.`}
+      </p>
+    </section>
   );
 }

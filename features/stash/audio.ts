@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Everything Pause makes is synthesized on the fly with Web Audio — no audio
+ * Everything The Stash makes is synthesized on the fly with Web Audio — no audio
  * files, no network, no AI. Starts only from user gestures; stopping always
  * fades rather than cuts, so nothing clicks.
  */
@@ -57,7 +57,7 @@ type Running = {
   nodes: AudioNode[];
 };
 
-class PauseAudioEngine {
+class StashAudioEngine {
   private ctx: AudioContext | null = null;
   private brainwave: Running | null = null;
   private noise: (Running & { type: NoiseType }) | null = null;
@@ -258,4 +258,4 @@ class PauseAudioEngine {
   }
 }
 
-export const pauseAudio = new PauseAudioEngine();
+export const stashAudio = new StashAudioEngine();

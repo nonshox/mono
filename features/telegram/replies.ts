@@ -59,10 +59,10 @@ export async function replyWeek(
   chatId: string,
   userId: string,
 ): Promise<void> {
-  const weekAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
-  const entries = (await listRecentEntries(userId, 30)).filter(
+  const user = await getUserRow(userId).catch(() => null);
+  const timeZone = user?.tz ?? null;
+  const weekAgo = userDay(timeZone, new Date(Date.now() - 6 * 24 * 60 * 60 * 1000));
+  const entries = (await listRecentEntries(userId, 30, timeZone)).filter(
     (entry) => entry.day >= weekAgo,
   );
   if (entries.length === 0) {

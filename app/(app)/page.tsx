@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { getCurrentAccount, AppwriteUnavailableError } from "@/features/auth/session";
 import { getUserRow } from "@/features/users/service";
 import { listYearEntries, listYearsWithEntries } from "@/features/days/service";
-import { userDay } from "@/lib/dates";
+import { userDay, userTimeZone } from "@/lib/dates";
 import { PageLoader } from "@/components/shared/page-loader";
 import { SessionExpired } from "@/components/shared/session-expired";
 import { ServiceUnavailable } from "@/components/shared/service-unavailable";
@@ -32,8 +32,8 @@ async function AuthenticatedHome() {
 
   const user = await getUserRow(account.$id).catch(() => null);
   const firstName = user?.name.trim().split(/\s+/)[0] ?? "";
-  const year = new Date().getUTCFullYear();
   const today = userDay(user?.tz);
+  const year = Number(today.slice(0, 4));
   const [entries, years] = await Promise.all([
     listYearEntries(account.$id, year).catch(() => []),
     listYearsWithEntries(account.$id).catch(() => []),
@@ -42,7 +42,7 @@ async function AuthenticatedHome() {
     weekday: "long",
     month: "long",
     day: "numeric",
-    timeZone: "UTC",
+    timeZone: userTimeZone(user?.tz),
   }).format(new Date());
 
   return (

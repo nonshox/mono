@@ -18,18 +18,12 @@ export default function NotFound() {
             >
               Go home
             </Link>
-            {/* Stash and Pause are the app pages open to everyone. */}
+            {/* Stash is the one app page open to everyone. */}
             <Link
               className="inline-flex h-9 items-center justify-center rounded-lg border-2 border-border px-4 text-sm font-medium text-foreground outline-none transition hover:border-foreground/50 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
               href="/stash"
             >
               Try Stash
-            </Link>
-            <Link
-              className="inline-flex h-9 items-center justify-center rounded-lg border-2 border-border px-4 text-sm font-medium text-foreground outline-none transition hover:border-foreground/50 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-              href="/pause"
-            >
-              Pause
             </Link>
           </div>
         }

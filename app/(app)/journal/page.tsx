@@ -37,7 +37,7 @@ async function AuthenticatedJournal() {
   // Windowed load — latest year first; earlier years are lazy-loaded by the
   // client ("Load earlier years") so the archive never hits the browser whole.
   const years = await listYearsWithEntries(account.$id).catch(() => []);
-  const latest = years[years.length - 1] ?? new Date().getFullYear();
+  const latest = years[years.length - 1] ?? new Date().getUTCFullYear();
   const [entries, books] = await Promise.all([
     listYearEntries(account.$id, latest).catch(() => []),
     listBooks(account.$id).catch(() => []),

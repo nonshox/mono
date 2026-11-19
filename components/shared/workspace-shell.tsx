@@ -10,7 +10,6 @@ import {
   Moon,
   Settings,
   Sun,
-  Wind,
   ListChecks,
   UserRound,
 } from "lucide-react";
@@ -40,7 +39,6 @@ const breadcrumbs: Record<string, string> = {
   "/journal": "Journal",
   "/check": "Check",
   "/stash": "Stash",
-  "/pause": "Pause",
 };
 
 // Single source for both nav surfaces (desktop pill + mobile bottom pill).
@@ -49,7 +47,6 @@ const NAV_ITEMS = [
   { href: "/journal", icon: BookOpenText, label: "Journal" },
   { href: "/check", icon: ListChecks, label: "Check" },
   { href: "/stash", icon: Archive, label: "Stash" },
-  { href: "/pause", icon: Wind, label: "Pause" },
 ] as const;
 
 export function WorkspaceShell({ children }: { children: ReactNode }) {

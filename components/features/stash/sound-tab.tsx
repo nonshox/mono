@@ -12,10 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { VolumeStepper } from "@/components/features/pause/volume-stepper";
-import { formatClock } from "@/features/pause/time";
-import { usePauseStore } from "@/features/pause/store";
-import type { BrainwaveBand, NoiseType } from "@/features/pause/audio";
+import { VolumeStepper } from "@/components/features/stash/volume-stepper";
+import { formatClock } from "@/features/stash/time";
+import { useStashStore } from "@/features/stash/store";
+import type { BrainwaveBand, NoiseType } from "@/features/stash/audio";
 
 const BANDS: Array<{ value: BrainwaveBand; label: string }> = [
   { value: "delta", label: "Delta · 2 Hz · deep sleep" },
@@ -73,29 +73,29 @@ function SoundCard({
 }
 
 export function SoundTab() {
-  const brainwaveOn = usePauseStore((st) => st.brainwaveOn);
-  const band = usePauseStore((st) => st.band);
-  const isochronic = usePauseStore((st) => st.isochronic);
-  const brainwaveVolume = usePauseStore((st) => st.brainwaveVolume);
-  const noiseOn = usePauseStore((st) => st.noiseOn);
-  const noiseType = usePauseStore((st) => st.noiseType);
-  const noiseVolume = usePauseStore((st) => st.noiseVolume);
-  const droneOn = usePauseStore((st) => st.droneOn);
-  const droneVolume = usePauseStore((st) => st.droneVolume);
-  const timerEndAt = usePauseStore((st) => st.timerEndAt);
-  const toggleBrainwave = usePauseStore((st) => st.toggleBrainwave);
-  const setBand = usePauseStore((st) => st.setBand);
-  const setIsochronic = usePauseStore((st) => st.setIsochronic);
-  const setBrainwaveVolume = usePauseStore((st) => st.setBrainwaveVolume);
-  const toggleNoise = usePauseStore((st) => st.toggleNoise);
-  const setNoiseType = usePauseStore((st) => st.setNoiseType);
-  const setNoiseVolume = usePauseStore((st) => st.setNoiseVolume);
-  const toggleDrone = usePauseStore((st) => st.toggleDrone);
-  const setDroneVolume = usePauseStore((st) => st.setDroneVolume);
-  const startTimer = usePauseStore((st) => st.startTimer);
-  const cancelTimer = usePauseStore((st) => st.cancelTimer);
-  const finishTimer = usePauseStore((st) => st.finishTimer);
-  const stopAll = usePauseStore((st) => st.stopAll);
+  const brainwaveOn = useStashStore((st) => st.brainwaveOn);
+  const band = useStashStore((st) => st.band);
+  const isochronic = useStashStore((st) => st.isochronic);
+  const brainwaveVolume = useStashStore((st) => st.brainwaveVolume);
+  const noiseOn = useStashStore((st) => st.noiseOn);
+  const noiseType = useStashStore((st) => st.noiseType);
+  const noiseVolume = useStashStore((st) => st.noiseVolume);
+  const droneOn = useStashStore((st) => st.droneOn);
+  const droneVolume = useStashStore((st) => st.droneVolume);
+  const timerEndAt = useStashStore((st) => st.timerEndAt);
+  const toggleBrainwave = useStashStore((st) => st.toggleBrainwave);
+  const setBand = useStashStore((st) => st.setBand);
+  const setIsochronic = useStashStore((st) => st.setIsochronic);
+  const setBrainwaveVolume = useStashStore((st) => st.setBrainwaveVolume);
+  const toggleNoise = useStashStore((st) => st.toggleNoise);
+  const setNoiseType = useStashStore((st) => st.setNoiseType);
+  const setNoiseVolume = useStashStore((st) => st.setNoiseVolume);
+  const toggleDrone = useStashStore((st) => st.toggleDrone);
+  const setDroneVolume = useStashStore((st) => st.setDroneVolume);
+  const startTimer = useStashStore((st) => st.startTimer);
+  const cancelTimer = useStashStore((st) => st.cancelTimer);
+  const finishTimer = useStashStore((st) => st.finishTimer);
+  const stopAll = useStashStore((st) => st.stopAll);
   const [now, setNow] = useState(() => Date.now());
 
   // Focus timer tick — drift-free, derived from timerEndAt.
@@ -117,7 +117,7 @@ export function SoundTab() {
     if (timerEndAt === null) return;
     const prev = document.title;
     const render = () => {
-      document.title = `${formatClock(Math.max(0, timerEndAt - Date.now()))} · Pause`;
+      document.title = `${formatClock(Math.max(0, timerEndAt - Date.now()))} · Stash`;
     };
     render();
     const id = window.setInterval(render, 1000);

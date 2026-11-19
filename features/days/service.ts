@@ -2,6 +2,7 @@ import "server-only";
 
 
 import { sha256RowId } from "@/lib/row-id";
+import { userDay } from "@/lib/dates";
 import { AppwriteException, Query, type Models } from "node-appwrite";
 import { getDatabaseId, getTables, isNotFound } from "@/lib/appwrite/tables";
 import { logFailure } from "@/lib/http";
@@ -204,12 +205,13 @@ export async function listRecentEntriesSince(
   }));
 }
 
-/** The last `limit` entries of the current year, ascending by day. */
+/** The last `limit` entries of the user's local year, ascending by day. */
 export async function listRecentEntries(
   userId: string,
   limit = 7,
+  timeZone?: string | null,
 ): Promise<DayEntry[]> {
-  const year = new Date().getUTCFullYear();
+  const year = Number(userDay(timeZone).slice(0, 4));
   const entries = await listYearEntries(userId, year);
   return entries.slice(-limit);
 }

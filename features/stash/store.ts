@@ -1,11 +1,11 @@
 "use client";
 
 import { create } from "zustand";
-import { pauseAudio, type BrainwaveBand, type NoiseType } from "./audio";
+import { stashAudio, type BrainwaveBand, type NoiseType } from "./audio";
 
 const DEFAULT_VOLUME = 60;
 
-type PauseState = {
+type StashAudioState = {
   brainwaveOn: boolean;
   band: BrainwaveBand;
   isochronic: boolean;
@@ -34,7 +34,7 @@ type PauseState = {
   stopAll: () => void;
 };
 
-export const usePauseStore = create<PauseState>((set, get) => ({
+export const useStashStore = create<StashAudioState>((set, get) => ({
   brainwaveOn: false,
   band: "alpha",
   isochronic: false,
@@ -49,57 +49,57 @@ export const usePauseStore = create<PauseState>((set, get) => ({
   toggleBrainwave: () => {
     const s = get();
     const brainwaveOn = !s.brainwaveOn;
-    pauseAudio.setBrainwave({ on: brainwaveOn, band: s.band, isochronic: s.isochronic, volume: s.brainwaveVolume });
+    stashAudio.setBrainwave({ on: brainwaveOn, band: s.band, isochronic: s.isochronic, volume: s.brainwaveVolume });
     set({ brainwaveOn });
   },
   setBand: (band) => {
     const s = get();
-    pauseAudio.setBrainwave({ on: s.brainwaveOn, band, isochronic: s.isochronic, volume: s.brainwaveVolume });
+    stashAudio.setBrainwave({ on: s.brainwaveOn, band, isochronic: s.isochronic, volume: s.brainwaveVolume });
     set({ band });
   },
   setIsochronic: (isochronic) => {
     const s = get();
-    pauseAudio.setBrainwave({ on: s.brainwaveOn, band: s.band, isochronic, volume: s.brainwaveVolume });
+    stashAudio.setBrainwave({ on: s.brainwaveOn, band: s.band, isochronic, volume: s.brainwaveVolume });
     set({ isochronic });
   },
   setBrainwaveVolume: (volume) => {
     const s = get();
-    if (s.brainwaveOn) pauseAudio.rideBrainwave(volume);
+    if (s.brainwaveOn) stashAudio.rideBrainwave(volume);
     set({ brainwaveVolume: volume });
   },
   toggleNoise: () => {
     const s = get();
     const noiseOn = !s.noiseOn;
-    pauseAudio.setNoise({ on: noiseOn, type: s.noiseType, volume: s.noiseVolume });
+    stashAudio.setNoise({ on: noiseOn, type: s.noiseType, volume: s.noiseVolume });
     set({ noiseOn });
   },
   setNoiseType: (noiseType) => {
     const s = get();
-    pauseAudio.setNoise({ on: s.noiseOn, type: noiseType, volume: s.noiseVolume });
+    stashAudio.setNoise({ on: s.noiseOn, type: noiseType, volume: s.noiseVolume });
     set({ noiseType });
   },
   setNoiseVolume: (volume) => {
     const s = get();
     if (s.noiseOn) {
-      pauseAudio.setNoise({ on: true, type: s.noiseType, volume });
+      stashAudio.setNoise({ on: true, type: s.noiseType, volume });
     }
     set({ noiseVolume: volume });
   },
   toggleDrone: () => {
     const s = get();
     const droneOn = !s.droneOn;
-    pauseAudio.setDrone({ on: droneOn, volume: s.droneVolume });
+    stashAudio.setDrone({ on: droneOn, volume: s.droneVolume });
     set({ droneOn });
   },
   setDroneVolume: (volume) => {
     const s = get();
-    if (s.droneOn) pauseAudio.rideDrone(volume);
+    if (s.droneOn) stashAudio.rideDrone(volume);
     set({ droneVolume: volume });
   },
   startTimer: (minutes) => set({ timerEndAt: Date.now() + minutes * 60_000 }),
   cancelTimer: () => set({ timerEndAt: null }),
   finishTimer: () => {
-    pauseAudio.stopAll();
+    stashAudio.stopAll();
     set({
       timerEndAt: null,
       brainwaveOn: false,
@@ -108,7 +108,7 @@ export const usePauseStore = create<PauseState>((set, get) => ({
     });
   },
   stopAll: () => {
-    pauseAudio.stopAll();
+    stashAudio.stopAll();
     set({
       timerEndAt: null,
       brainwaveOn: false,

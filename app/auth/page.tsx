@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 
 const siteUrl = getSiteUrl();
 
-// The only public pages besides /stash and /pause. Factual, minimal schema —
-// the app is private everywhere else; the root default keeps /auth out of search indexes.
+// The only public page besides /stash. Factual, minimal schema — the app is
+// private everywhere else; the root default keeps /auth out of search indexes.
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [

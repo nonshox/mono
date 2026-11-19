@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { acquireWakeLock, releaseWakeLock } from "@/features/pause/wake-lock";
+import { acquireWakeLock, releaseWakeLock } from "@/features/stash/wake-lock";
 
 type PhaseKind = "in" | "hold" | "out";
 type Phase = { kind: PhaseKind; seconds: number };

@@ -97,7 +97,7 @@ export async function GET(request: Request) {
 
       let message = FALLBACK_MESSAGE;
       try {
-        const recent = await listRecentEntries(target.id, 7);
+        const recent = await listRecentEntries(target.id, 7, target.tz);
         message = nudgeQuestionFor(recent, seed);
       } catch (error) {
         // Best-effort contextual line — fall back to the generic one.
