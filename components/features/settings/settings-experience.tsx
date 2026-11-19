@@ -25,6 +25,7 @@ import { SettingsSessions } from "@/components/features/settings/settings-sessio
 import { SettingsExport } from "@/components/features/settings/settings-export";
 import { SettingsDanger } from "@/components/features/settings/settings-danger";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export function SettingsExperience({
   email,
@@ -454,6 +455,14 @@ export function SettingsExperience({
         </section>
 
         <SettingsDanger />
+
+        {/* About Mono — public page, allowed */}
+        <Link
+          className="mx-auto mt-6 block w-fit text-[10px] font-semibold uppercase tracking-wider text-foreground/50 no-underline outline-none transition hover:text-foreground focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          href="/about"
+        >
+          About Mono
+        </Link>
 
         {(error || message) && (
           <p

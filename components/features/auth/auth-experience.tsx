@@ -263,6 +263,13 @@ export function AuthExperience() {
           Try Stash — everything on this device, no account needed
           <ArrowRight aria-hidden="true" className="size-3.5" strokeWidth={2} />
         </Link>
+        <Link
+          className="inline-flex items-center gap-1.5 text-xs text-foreground/70 outline-none underline decoration-border underline-offset-4 transition hover:text-foreground hover:decoration-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          href="/about"
+        >
+          About Mono — how it works and how to self-host
+          <ArrowRight aria-hidden="true" className="size-3" strokeWidth={2} />
+        </Link>
         <p className="type-eyebrow text-foreground">
           A slow, private journal
         </p>

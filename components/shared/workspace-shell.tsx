@@ -9,6 +9,7 @@ import {
   LogOut,
   Moon,
   Settings,
+  Info,
   Sun,
   ListChecks,
   UserRound,
@@ -239,6 +240,17 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                     strokeWidth={1.75}
                   />
                   Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="rounded-lg px-2 py-2 text-xs"
+                  onClick={() => router.push("/about")}
+                >
+                  <Info
+                    aria-hidden="true"
+                    className="size-4"
+                    strokeWidth={1.75}
+                  />
+                  About Mono
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
